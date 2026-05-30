@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const {connectDB} = require('./Model/index.js');
+const connectDB = require("./config/db");
 const routers = require("./Route/index.js");
 // const logger = require("morgan");
 require('dotenv').config();
