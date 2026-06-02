@@ -1,0 +1,36 @@
+[
+  {
+    "_id": "6a110001aaaaaaaaaaaaaaaa",
+    "userId": "6a200001bbbbbbbbbbbbbbbb",
+
+    "items": [
+      {
+        "productId": "6a300001cccccccccccccccc",
+        "variantSku": "IP15PM-256-BLUE",
+        "quantity": 1
+      }
+    ],
+
+    "shippingAddress": {
+      "fullName": "Nguyen Van A",
+      "phone": "0123456789",
+      "province": "Ha Noi",
+      "district": "Cau Giay",
+      "ward": "Dich Vong",
+      "addressLine": "So 1, Duong ABC"
+    },
+
+    "paymentMethod": "cod",
+    "paymentStatus": "unpaid",
+
+    "orderStatus": "pending",
+
+    "shippingFee": 30000,
+    "discount": 0,
+    "totalAmount": 29020000,
+
+    "note": "",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]

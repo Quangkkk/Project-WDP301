@@ -1,0 +1,18 @@
+[
+  {
+    "_id": "6a120001aaaaaaaaaaaaaaaa",
+    "userId": "6a200001bbbbbbbbbbbbbbbb",
+    "productId": "6a300001cccccccccccccccc",
+    "orderId": "6a110001aaaaaaaaaaaaaaaa",
+
+    "rating": 5,
+    "comment": "Sản phẩm đẹp, giao hàng nhanh, dùng ổn.",
+    "images": [
+      "https://example.com/review-iphone-1.jpg"
+    ],
+
+    "status": "visible",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]
