@@ -1,83 +1,52 @@
-{
-  "_id": "6a300001cccccccccccccccc",
-  "name": "iPhone 15 Pro Max 256GB",
-  "slug": "iphone-15-pro-max-256gb",
-  "sku": "IP15PM-256-TITAN",
-  "brand": "Apple",
-  "categoryId": "6a0e7d8d3696c48aac1d902c",
-
-  "shortDescription": "iPhone 15 Pro Max 256GB chính hãng, chip A17 Pro, camera 48MP.",
-  "description": "Sản phẩm iPhone 15 Pro Max với thiết kế titan, hiệu năng cao, phù hợp chơi game, quay video và làm việc.",
-
-  "images": [
-    {
-      "url": "https://example.com/iphone-15-pro-max.jpg",
-      "alt": "iPhone 15 Pro Max",
-      "isPrimary": true
-    }
-  ],
-
-  "price": 30990000,
-  "salePrice": 28990000,
-  "currency": "VND",
-
-  "stock": {
-    "quantity": 50,
-    "reserved": 3,
-    "lowStockThreshold": 5
-  },
-
-  "specs": {
-    "cpu": "Apple A17 Pro",
-    "ram": "8GB",
-    "storage": "256GB",
-    "screen": "6.7 inch OLED",
-    "battery": "4422mAh",
-    "operatingSystem": "iOS",
-    "camera": "48MP",
-    "connectivity": "5G",
-    "warrantyMonths": 12
-  },
-
-  "variants": [
-    {
-      "sku": "IP15PM-256-BLUE",
-      "attributes": {
-        "color": "Blue Titanium",
-        "storage": "256GB"
-      },
-      "price": 30990000,
-      "salePrice": 28990000,
-      "stockQuantity": 20,
-      "images": [
-        "https://example.com/iphone-blue.jpg"
-      ]
+[
+  {
+    "_id": "6a300001cccccccccccccccc",
+    "name": "iPhone 15 Pro Max 256GB",
+    "slug": "iphone-15-pro-max-256gb",
+    "sku": "IP15PM-256-TITAN",
+    "brandId": "6a160001aaaaaaaaaaaaaaaa",
+    "categoryId": "6a0e7d8d3696c48aac1d902c",
+    "shortDescription": "iPhone 15 Pro Max 256GB chính hãng, chip A17 Pro, camera 48MP.",
+    "description": "Sản phẩm iPhone 15 Pro Max với thiết kế titan, hiệu năng cao, phù hợp chơi game, quay video và làm việc.",
+    "images": [
+      {
+        "url": "https://example.com/iphone-15-pro-max.jpg",
+        "alt": "iPhone 15 Pro Max",
+        "isPrimary": true
+      }
+    ],
+    "price": 30990000,
+    "salePrice": 28990000,
+    "currency": "VND",
+    "stock": {
+      "quantity": 50,
+      "reserved": 3,
+      "lowStockThreshold": 5
     },
-    {
-      "sku": "IP15PM-256-BLACK",
-      "attributes": {
-        "color": "Black Titanium",
-        "storage": "256GB"
-      },
-      "price": 30990000,
-      "salePrice": 28990000,
-      "stockQuantity": 30,
-      "images": [
-        "https://example.com/iphone-black.jpg"
-      ]
-    }
-  ],
-
-  "rating": {
-    "average": 4.8,
-    "count": 120
-  },
-
-  "tags": ["iphone", "apple", "smartphone", "5g"],
-
-  "status": "active",
-  "isFeatured": true,
-
-  "createdAt": "2026-05-30T00:00:00.000Z",
-  "updatedAt": "2026-05-30T00:00:00.000Z"
-}
+    "specs": {
+      "cpu": "Apple A17 Pro",
+      "ram": "8GB",
+      "storage": "256GB",
+      "screen": "6.7 inch OLED",
+      "battery": "4422mAh",
+      "operatingSystem": "iOS",
+      "camera": "48MP",
+      "connectivity": "5G",
+      "warrantyMonths": 12
+    },
+    "rating": {
+      "average": 4.8,
+      "count": 120
+    },
+    "tags": [
+      "iphone",
+      "apple",
+      "smartphone",
+      "5g"
+    ],
+    "status": "active",
+    "isFeatured": true,
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]

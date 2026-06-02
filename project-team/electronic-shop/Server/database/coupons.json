@@ -1,0 +1,34 @@
+[
+  {
+    "_id": "6a180001aaaaaaaaaaaaaaaa",
+    "code": "SALE10",
+    "description": "Discount 10% for orders from 5,000,000 VND",
+    "discountType": "percentage",
+    "discountValue": 10,
+    "maxDiscountAmount": 500000,
+    "minOrderAmount": 5000000,
+    "usageLimit": 100,
+    "usedCount": 0,
+    "startAt": "2026-05-01T00:00:00.000Z",
+    "endAt": "2026-06-30T23:59:59.000Z",
+    "status": "active",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  },
+  {
+    "_id": "6a180002aaaaaaaaaaaaaaaa",
+    "code": "FREESHIP",
+    "description": "Free shipping for orders from 1,000,000 VND",
+    "discountType": "fixed",
+    "discountValue": 30000,
+    "maxDiscountAmount": 30000,
+    "minOrderAmount": 1000000,
+    "usageLimit": 200,
+    "usedCount": 0,
+    "startAt": "2026-05-01T00:00:00.000Z",
+    "endAt": "2026-12-31T23:59:59.000Z",
+    "status": "active",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]
