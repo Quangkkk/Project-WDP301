@@ -1,29 +1,12 @@
-# TechHome — WDP301 Frontend UI
+# React + Vite
 
-Giao diện đơn giản, màu dễ nhìn, bám theo use case trong bảng WDP301.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Phân quyền & trang
+Currently, two official plugins are available:
 
-| Role | Use case | Trang UI |
-|------|----------|----------|
-| **Guest** | Sign in / Sign out, xem category, brand, product | `index.html`, `products.html`, `product-detail.html`, `login.html` |
-| **User** | Payment, Change password, Forgot password, Get/Update/Delete user | `profile.html`, `checkout.html`, `forgot-password.html` |
-| **Admin** | CRUD user, category, brand, product, productDetail | `admin.html` (menu trái từng entity) |
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Chạy project
+## Expanding the ESLint configuration
 
-```powershell
-cd "d:\SUMMER_2026\WDP301\Tech Home web"
-npx --yes serve . -l 3000
-```
-
-Mở: http://localhost:3000
-
-Hoặc double-click `index.html`.
-
-## Cấu trúc
-
-- `css/design-system.css` — màu nhẹ (#2563eb, nền #f8fafc)
-- `css/components.css` — header, card, table, admin layout
-- `admin.html` — 5 panel: Users, Categories, Brands, Products, Product Details
-- Chỉ frontend, không backend
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

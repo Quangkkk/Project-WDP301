@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "6a0e7d8d3696c48aac1d902c",
+    "name": "Phone",
+    "slug": "phone",
+    "status": "active"
+  },
+  {
+    "_id": "6a0ea781f093da3d6b119317",
+    "name": "Tablet",
+    "slug": "tablet",
+    "status": "active"
+  },
+  {
+    "_id": "6a0ea781f093da3d6b119318",
+    "name": "Laptop",
+    "slug": "laptop",
+    "status": "active"
+  },
+  {
+    "_id": "6a0ec86f9c66c45ebaed96d9",
+    "name": "TV",
+    "slug": "tv",
+    "status": "active"
+  }
+]

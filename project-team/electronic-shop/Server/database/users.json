@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "6a200001bbbbbbbbbbbbbbbb",
+    "name": "Nguyen Van A",
+    "email": "customer@example.com",
+    "passwordHash": "$2b$10$exampleHashedPassword",
+    "phone": "0123456789",
+    "avatarUrl": "https://example.com/avatar/customer.png",
+    "roleId": "6a150001aaaaaaaaaaaaaaaa",
+    "status": "active",
+    "addresses": [
+      {
+        "province": "Ha Noi",
+        "district": "Cau Giay",
+        "ward": "Dich Vong",
+        "addressLine": "So 1, Duong ABC",
+        "isDefault": true
+      }
+    ],
+    "emailVerified": false,
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  },
+  {
+    "_id": "6a200002bbbbbbbbbbbbbbbb",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "passwordHash": "$2b$10$exampleHashedPassword",
+    "phone": "0987654321",
+    "avatarUrl": "https://example.com/avatar/admin.png",
+    "roleId": "6a150003aaaaaaaaaaaaaaaa",
+    "status": "active",
+    "addresses": [],
+    "emailVerified": true,
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]
