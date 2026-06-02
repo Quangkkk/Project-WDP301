@@ -1,18 +1,22 @@
 [
   {
     "_id": "6a150001aaaaaaaaaaaaaaaa",
-    "name": "Customer"
+    "name": "Customer",
+    "code": "customer"
   },
   {
     "_id": "6a150002aaaaaaaaaaaaaaaa",
-    "name": "Staff"
+    "name": "Staff",
+    "code": "staff"
   },
   {
     "_id": "6a150003aaaaaaaaaaaaaaaa",
-    "name": "Manager"
+    "name": "Manager",
+    "code": "manager"
   },
   {
     "_id": "6a150004aaaaaaaaaaaaaaaa",
-    "name": "Admin"
+    "name": "Admin",
+    "code": "admin"
   }
 ]

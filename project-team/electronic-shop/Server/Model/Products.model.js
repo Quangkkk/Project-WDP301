@@ -19,8 +19,9 @@ const productSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    brand: {
-      type: String,
+    brandId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
       required: true,
     },
     categoryId: {
@@ -69,20 +70,7 @@ const productSchema = new mongoose.Schema(
     specs: {
       type: Object,
       default: {},
-    },
-    variants: [
-      {
-        sku: String,
-        attributes: {
-          color: String,
-          storage: String,
-        },
-        price: Number,
-        salePrice: Number,
-        stockQuantity: Number,
-        images: [String],
-      },
-    ],
+    },     
     rating: {
       average: {
         type: Number,
@@ -106,7 +94,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 module.exports = mongoose.model("Product", productSchema);

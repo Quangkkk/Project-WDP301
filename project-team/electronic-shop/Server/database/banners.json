@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "6a190001aaaaaaaaaaaaaaaa",
+    "title": "iPhone Sale",
+    "description": "Big discount for selected Apple products",
+    "imageUrl": "https://example.com/banners/iphone-sale.jpg",
+    "linkUrl": "/products?brand=apple",
+    "status": "active",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  },
+  {
+    "_id": "6a190002aaaaaaaaaaaaaaaa",
+    "title": "Laptop Deals",
+    "description": "Promotion for laptop category",
+    "imageUrl": "https://example.com/banners/laptop-deals.jpg",
+    "linkUrl": "/products?category=laptop",
+    "status": "active",
+    "createdAt": "2026-05-30T00:00:00.000Z",
+    "updatedAt": "2026-05-30T00:00:00.000Z"
+  }
+]
