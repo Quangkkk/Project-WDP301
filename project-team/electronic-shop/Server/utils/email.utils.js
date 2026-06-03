@@ -10,9 +10,9 @@ const sendVerificationEmail = async (to, code) => {
   });
 
   await transporter.sendMail({
-    from: `"Electronic Shop" <${process.env.EMAIL_USER}>`,
+    from: `"TechHome" <${process.env.EMAIL_USER}>`,
     to,
-    subject: "Verify your Electronic Shop account",
+    subject: "Verify your account for TechHome",
     html: `
       <div style="font-family: Arial, sans-serif;">
         <h2>Email Verification</h2>

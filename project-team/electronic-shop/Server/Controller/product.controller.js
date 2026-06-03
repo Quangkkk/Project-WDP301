@@ -1,5 +1,7 @@
 const Product = require("../Model/Products.model");
 const Variant = require("../Model/Variant.model");
+require("../Model/Brand.model");
+require("../Model/Categories.model");
 
 const getAllProducts = async (req, res) => {
   try {
