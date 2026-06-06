@@ -1,162 +1,148 @@
-const { default: mongoose } = require('mongoose');
-const db = require('../Model/index.js');
-const Category = db.category
+const mongoose = require("mongoose");
+const Category = require("../Model/Category.model");
+
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 const addCategory = async (req, res) => {
-    try {
-        
-        //\\data from req.body
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","AREA_DATA: ", body);
+  try {
+    const { name } = req.body;
 
-        //\\validate req data
-        if (!body) {
-            // console.log({ERROR: 'Require area data!'})
-            return res.status(400).send({ ERROR: 'Require area data!' })
-        }
-
-        //\\Initialize new AREA + Save AREA to database
-        const dataDB = await new Category(body).save(); // console.log("\x1b[32m%s\x1b[0m","AREA: ", dataDB);
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object 
-        const data = dataDB.toObject()
-        //delete attribute
-        delete data._id;
-        delete data.createdAt;
-        delete data.updatedAt;
-        delete data.__v; // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-
-        //\\RESPONSE
-        return res.status(201).send({ message: 'Create successfully!', data: data });
-    } catch (error) {
-        return res.status(500).send({ ERROR: error.message });
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "name is required",
+      });
     }
-}
 
+    const category = await Category.create({
+      name,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Create category successfully",
+      data: category,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create category",
+      error: error.message,
+    });
+  }
+};
 
 const getAllCategory = async (req, res) => {
-    try {
-        //watch path is true?
+  try {
+    const categories = await Category.find()
+      .select("-createdAt -updatedAt -__v")
+      .sort({ name: 1 });
 
-        //\\Find one AREA by id + validate return data.
-        const dataDB = await Category.find()
-            .select('-createdAt -updatedAt -__v -_id'); // console.log("\x1b[32m%s\x1b[0m","AREA:",dataDB)
-
-        //\\Check AREA - this only work with findById
-        if (!dataDB) {
-            // console.log("area not found or wrong id")
-            return res.status(200).send({ message: 'No information', areaId: id });
-        }
-
-        //\\RESPONSE
-        return res.send({ message: 'Read successfully!', data: dataDB });
-    } catch (error) {
-        return res.send({ error: error.message });
-    }
-}
+    return res.status(200).json({
+      success: true,
+      message: "Get categories successfully",
+      count: categories.length,
+      data: categories,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get categories",
+      error: error.message,
+    });
+  }
+};
 
 const updateCategoryById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
 
-        //\\Get id from req.params and data from req.body
-        const id = req.params.id; // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Find AREA by id and update with new data
-        // const updatedCategory = await Category.findByIdAndUpdate(id, data, { new: true });
-        const dataDB = await Category.findOneAndUpdate(
-            { _id: id },
-            body,
-            { returnDocument: "after" }
-        ).select('-createdAt -updatedAt -__v -_id');  // console.log("\x1b[32m%s\x1b[0m","AREA: ",dataDB)
-
-
-        //\\CHECK AREA - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Update successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category id",
+      });
     }
-}
+
+    if (name === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "No data to update",
+      });
+    }
+
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      { name },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-createdAt -updatedAt -__v");
+
+    if (!updatedCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Update category successfully",
+      data: updatedCategory,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update category",
+      error: error.message,
+    });
+  }
+};
 
 const deleteCategoryById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        //\\Get id from req.params
-        const id = req.params.id;   // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId  
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Find and delete AREA
-        const dataDB = await Category.findByIdAndDelete(id)
-            .select('-createdAt -updatedAt -__v -_id') // console.log("\x1b[32m%s\x1b[0m","AREA: ",dataDB)
-
-        //\\Check AREA - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No area information', areaId: id });
-        }
-
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject();  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Delete successfully!', data: data });
-
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category id",
+      });
     }
-}
 
+    const deletedCategory = await Category.findByIdAndDelete(id).select(
+      "-createdAt -updatedAt -__v"
+    );
 
+    if (!deletedCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
 
-// Export all CRUD handlers so route files can attach them to Express endpoints.
-const crudController = {
+    return res.status(200).json({
+      success: true,
+      message: "Delete category successfully",
+      data: deletedCategory,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete category",
+      error: error.message,
+    });
+  }
+};
 
-    addCategory,
-    getAllCategory,
-    updateCategoryById,
-    deleteCategoryById,
-
-}
-
-module.exports = crudController
+module.exports = {
+  addCategory,
+  getAllCategory,
+  updateCategoryById,
+  deleteCategoryById,
+};

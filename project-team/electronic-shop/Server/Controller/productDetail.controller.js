@@ -1,217 +1,193 @@
-const { default: mongoose } = require('mongoose');
-const db = require('../Model/index.js');
-const ProductDetail = db.productDetail
+const mongoose = require("mongoose");
+const ProductDetail = require("../Model/ProductDetail.model");
+const Product = require("../Model/Product.model");
+
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 const addProductDetail = async (req, res) => {
-    try {
+  try {
+    const { chip, memory, RAM, SIM, screen_size, color } = req.body;
 
-        //\\data from req.body
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","AREA_DATA: ", body);
-
-        //\\validate req data
-        if (!body) {
-            // console.log({ERROR: 'Require area data!'})
-            return res.status(400).send({ ERROR: 'Require area data!' })
-        }
-
-        //\\Initialize new AREA + Save AREA to database
-        const dataDB = await new ProductDetail(body).save(); // console.log("\x1b[32m%s\x1b[0m","AREA: ", dataDB);
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object 
-        const data = dataDB.toObject()
-        //delete attribute
-        delete data.createdAt;
-        delete data.updatedAt;
-        delete data.__v; // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-
-        //\\RESPONSE
-        return res.status(201).send({ message: 'Create successfully!', data: data });
-    } catch (error) {
-        return res.status(500).send({ ERROR: error.message });
+    if (!chip || !memory || !RAM || !SIM || !screen_size || !color) {
+      return res.status(400).json({
+        success: false,
+        message: "chip, memory, RAM, SIM, screen_size and color are required",
+      });
     }
-}
+
+    const productDetail = await ProductDetail.create({
+      chip,
+      memory,
+      RAM,
+      SIM,
+      screen_size,
+      color,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Create product detail successfully",
+      data: productDetail,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create product detail",
+      error: error.message,
+    });
+  }
+};
+
+const getAllProductDetails = async (req, res) => {
+  try {
+    const productDetails = await ProductDetail.find().sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Get product details successfully",
+      count: productDetails.length,
+      data: productDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get product details",
+      error: error.message,
+    });
+  }
+};
 
 const getProductDetailById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        //\\Get id from req.params
-        const id = req.params.id;   // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id params!")
-            return res.status(400).send({ ERROR: 'Require ProductDetailId!' })
-        }
-
-        //\\Validate MongoDB ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Find one AREA by id + validate return data.
-        const dataDB = await ProductDetail.findById({ _id: id })
-            .select('-createdAt -updatedAt -__v '); // console.log("\x1b[32m%s\x1b[0m","AREA:",dataDB)
-
-        //\\Check AREA - this only work with findById
-        if (!dataDB) {
-            // console.log("area not found or wrong id")
-            return res.status(200).send({ message: 'No information', areaId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Read successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product detail id",
+      });
     }
-}
 
-// const getProductDetailByProductId = async (req, res) => {
-//     try {
+    const productDetail = await ProductDetail.findById(id);
 
-//         //\\Get id from req.params
-//         const id = req.params.id;  console.log("\x1b[32m%s\x1b[0m","USER_ID: ", req.params);
+    if (!productDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Product detail not found",
+      });
+    }
 
-//         //\\Check req params
-//         if (!id) {
-//             // console.log("ERROR: 'Require id params!")
-//             return res.status(400).send({ ERROR: 'Require ProductDetailId!' })
-//         }
-
-//         //\\Validate MongoDB ObjectId
-//         if (!mongoose.isValidObjectId(id)) {
-//             return res.status(400).send({ message: 'Invalidate id:', id });
-//         }
-
-//         //\\Find one AREA by id + validate return data.
-//         const dataDB = await ProductDetail.find({ product_id: id })
-//             .select('-createdAt -updatedAt -__v '); // console.log("\x1b[32m%s\x1b[0m","AREA:",dataDB)
-
-//         //\\Check AREA - this only work with findById
-//         if (!dataDB) {
-//             // console.log("area not found or wrong id")
-//             return res.status(200).send({ message: 'No information', areaId: id });
-//         }
-
-  
-
-//         //\\RESPONSE
-//         return res.send({ message: 'Read successfully!', data: dataDB });
-//     } catch (error) {
-//         return res.send({ error: error.message });
-//     }
-// }
+    return res.status(200).json({
+      success: true,
+      message: "Get product detail successfully",
+      data: productDetail,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get product detail",
+      error: error.message,
+    });
+  }
+};
 
 const updateProductDetailById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        //\\Get id from req.params and data from req.body
-        const id = req.params.id; // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Find AREA by id and update with new data
-        // const updatedProductDetail = await ProductDetail.findByIdAndUpdate(id, data, { new: true });
-        const dataDB = await ProductDetail.findOneAndUpdate(
-            { _id: id },
-            body,
-            { returnDocument: "after" }
-        ).select('-createdAt -updatedAt -__v -_id');  // console.log("\x1b[32m%s\x1b[0m","AREA: ",dataDB)
-
-
-        //\\CHECK AREA - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Update successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product detail id",
+      });
     }
-}
+
+    const updateData = {};
+
+    const { chip, memory, RAM, SIM, screen_size, color } = req.body;
+
+    if (chip !== undefined) updateData.chip = chip;
+    if (memory !== undefined) updateData.memory = memory;
+    if (RAM !== undefined) updateData.RAM = RAM;
+    if (SIM !== undefined) updateData.SIM = SIM;
+    if (screen_size !== undefined) updateData.screen_size = screen_size;
+    if (color !== undefined) updateData.color = color;
+
+    const updatedProductDetail = await ProductDetail.findByIdAndUpdate(
+      id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updatedProductDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Product detail not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Update product detail successfully",
+      data: updatedProductDetail,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update product detail",
+      error: error.message,
+    });
+  }
+};
 
 const deleteProductDetailById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        //\\Get id from req.params
-        const id = req.params.id;   // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId  
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Find and delete AREA
-        const dataDB = await ProductDetail.findByIdAndDelete(id)
-            .select('-createdAt -updatedAt -__v -_id') // console.log("\x1b[32m%s\x1b[0m","AREA: ",dataDB)
-
-        //\\Check AREA - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No area information', areaId: id });
-        }
-
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject();  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-
-
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Delete successfully!', data: data });
-
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product detail id",
+      });
     }
-}
 
+    const deletedProductDetail = await ProductDetail.findByIdAndDelete(id);
 
+    if (!deletedProductDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Product detail not found",
+      });
+    }
 
-// Export all CRUD handlers so route files can attach them to Express endpoints.
-const crudController = {
+    await Product.updateMany(
+      { product_detail_id: id },
+      { $unset: { product_detail_id: "" } }
+    );
 
-    addProductDetail,
-    getProductDetailById,
-    // getProductDetailByProductId,
-    updateProductDetailById,
-    deleteProductDetailById,
-    
+    return res.status(200).json({
+      success: true,
+      message: "Delete product detail successfully",
+      data: deletedProductDetail,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete product detail",
+      error: error.message,
+    });
+  }
+};
 
-}
-
-module.exports = crudController
+module.exports = {
+  addProductDetail,
+  getAllProductDetails,
+  getProductDetailById,
+  updateProductDetailById,
+  deleteProductDetailById,
+};
