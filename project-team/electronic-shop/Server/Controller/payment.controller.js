@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const db = require('../Model');
+const db = require('../models');
 const {PayOS} = require('@payos/node');
 // const { utcToZonedTime } = require("date-fns-tz");
 const Bill = db.bill;

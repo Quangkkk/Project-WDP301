@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Brand = require("../Model/Brand.model");
+const Brand = require("../models/Brand.model");
 
 const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);

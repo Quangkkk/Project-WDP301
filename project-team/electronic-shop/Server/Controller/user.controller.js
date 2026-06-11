@@ -1,7 +1,7 @@
 //\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\
 
 const { default: mongoose } = require('mongoose');
-const db = require('../Model/index.js');
+const db = require('../models/index.js');
 const User = db.user;
 
 

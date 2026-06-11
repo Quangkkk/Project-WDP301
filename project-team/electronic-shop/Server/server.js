@@ -1,10 +1,13 @@
 const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
-const { connectDB } = require("./Model/index.js");
-const routers = require("./Route/index.js");
 
-dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({
+  path: path.join(__dirname, ".env"),
+});
+
+const { connectDB } = require("./models");
+const routers = require("./Route");
 
 const app = express();
 
@@ -44,10 +47,10 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/auth", routers.auth);
 app.use("/user", routers.user);
 app.use("/category", routers.category);
 app.use("/product", routers.product);
-app.use("/product-detail", routers.productDetail);
 app.use("/brand", routers.brand);
 app.use("/payment", routers.payment);
 

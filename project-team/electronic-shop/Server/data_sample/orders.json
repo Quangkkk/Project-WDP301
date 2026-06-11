@@ -1,0 +1,29 @@
+[
+  {
+    "_id": { "$oid": "665000000000000000000801" },
+    "userId": { "$oid": "665000000000000000000102" },
+    "shippingAddressId": { "$oid": "665000000000000000000701" },
+    "items": [
+      {
+        "product_id": { "$oid": "665000000000000000000501" },
+        "variant_id": { "$oid": "665000000000000000000601" },
+        "name": "iPhone 15",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15.png",
+        "price": 18990000,
+        "quantity": 1,
+        "color": "Black",
+        "ram": "6GB",
+        "storage": "128GB"
+      }
+    ],
+    "subtotal": 18990000,
+    "shippingFee": 30000,
+    "total": 19020000,
+    "paymentMethod": "COD",
+    "paymentStatus": "PENDING",
+    "orderStatus": "PENDING",
+    "note": "Order sample with separate shipping address collection",
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  }
+]

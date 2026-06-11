@@ -1,0 +1,79 @@
+[
+  {
+    "_id": { "$oid": "665000000000000000000601" },
+    "productId": { "$oid": "665000000000000000000501" },
+    "sku": "IPHONE15-128-BLACK",
+    "attributes": {
+      "color": "Black",
+      "storage": "128GB",
+      "ram": "6GB"
+    },
+    "price": 19990000,
+    "salePrice": 18990000,
+    "stockQuantity": 20,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-black-1.png",
+      "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-black-2.png"
+    ],
+    "status": "active",
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000602" },
+    "productId": { "$oid": "665000000000000000000501" },
+    "sku": "IPHONE15-256-BLUE",
+    "attributes": {
+      "color": "Blue",
+      "storage": "256GB",
+      "ram": "6GB"
+    },
+    "price": 22990000,
+    "salePrice": 21990000,
+    "stockQuantity": 12,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-blue-1.png"
+    ],
+    "status": "active",
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000603" },
+    "productId": { "$oid": "665000000000000000000502" },
+    "sku": "MACAIRM2-8-256-MIDNIGHT",
+    "attributes": {
+      "color": "Midnight",
+      "storage": "256GB SSD",
+      "ram": "8GB"
+    },
+    "price": 24990000,
+    "salePrice": 23990000,
+    "stockQuantity": 8,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2-midnight.png"
+    ],
+    "status": "active",
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000604" },
+    "productId": { "$oid": "665000000000000000000503" },
+    "sku": "S24ULTRA-12-256-GRAY",
+    "attributes": {
+      "color": "Titanium Gray",
+      "storage": "256GB",
+      "ram": "12GB"
+    },
+    "price": 28990000,
+    "salePrice": 27990000,
+    "stockQuantity": 15,
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/products/s24-ultra-gray.png"
+    ],
+    "status": "active",
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  }
+]

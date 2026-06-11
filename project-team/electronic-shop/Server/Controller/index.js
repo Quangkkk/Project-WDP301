@@ -2,14 +2,14 @@ const user = require("./user.controller");
 const category = require("./category.controller");
 const brand = require("./brand.controller");
 const product = require("./product.controller");
-const productDetail = require("./productDetail.controller");
+const payment = require("./payment.controller");
+const auth = require("./auth.controller");
 
-const controllers = {
+module.exports = {
   user,
   category,
   brand,
   product,
-  productDetail,
+  payment,
+  auth,
 };
-
-module.exports = controllers;

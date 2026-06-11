@@ -1,0 +1,60 @@
+[
+  {
+    "_id": { "$oid": "665000000000000000000101" },
+    "name": "Admin Demo",
+    "email": "admin@example.com",
+    "passwordHash": "hashed_password_demo_only",
+    "phone": "0900000001",
+    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-admin.png",
+    "roleId": { "$oid": "665000000000000000000001" },
+    "status": "active",
+    "addresses": [],
+    "emailVerified": true,
+    "verificationCode": null,
+    "verificationCodeExpires": null,
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000102" },
+    "name": "Customer Demo",
+    "email": "customer@example.com",
+    "passwordHash": "hashed_password_demo_only",
+    "phone": "0900000002",
+    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-customer.png",
+    "roleId": { "$oid": "665000000000000000000002" },
+    "status": "active",
+    "addresses": [
+      {
+        "fullName": "Customer Demo",
+        "phone": "0900000002",
+        "province": "Ha Noi",
+        "district": "Cau Giay",
+        "ward": "Dich Vong Hau",
+        "addressLine": "So 1 Xuan Thuy",
+        "isDefault": true
+      }
+    ],
+    "emailVerified": true,
+    "verificationCode": null,
+    "verificationCodeExpires": null,
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000103" },
+    "name": "Staff Demo",
+    "email": "staff@example.com",
+    "passwordHash": "hashed_password_demo_only",
+    "phone": "0900000003",
+    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-staff.png",
+    "roleId": { "$oid": "665000000000000000000003" },
+    "status": "active",
+    "addresses": [],
+    "emailVerified": true,
+    "verificationCode": null,
+    "verificationCodeExpires": null,
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  }
+]

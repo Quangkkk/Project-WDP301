@@ -1,9 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const User = require("../Model/User.model");
-const Role = require("../Model/Roles.model");
-const { sendVerificationEmail } = require("../utils/email.utils");
+const User = require("../models/User.model");
+const Role = require("../models/Roles.model");
+const { sendVerificationEmail } = require("../mailtrap/email");
 
 const generateVerificationCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();

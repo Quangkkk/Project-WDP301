@@ -1,0 +1,16 @@
+[
+  {
+    "_id": { "$oid": "665000000000000000000901" },
+    "amount_price": 19990000,
+    "counter_account_name": "CUSTOMER DEMO",
+    "counter_account_number": "1234567890",
+    "order_code_pay_os": 100000001,
+    "status": "PENDING",
+    "order_status": "FREE",
+    "transaction_bank_time": "",
+    "reference_bank": "",
+    "user_id": { "$oid": "665000000000000000000102" },
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  }
+]

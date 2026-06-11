@@ -1,0 +1,38 @@
+[
+  {
+    "_id": { "$oid": "665000000000000000000501" },
+    "name": "iPhone 15",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15.png",
+    "description": "Apple iPhone 15 chính hãng, thiết kế hiện đại, camera chất lượng cao.",
+    "price": 19990000,
+    "product_detail_id": { "$oid": "665000000000000000000401" },
+    "brand_id": { "$oid": "665000000000000000000301" },
+    "category_id": { "$oid": "665000000000000000000202" },
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000502" },
+    "name": "MacBook Air M2 13 inch",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2.png",
+    "description": "MacBook Air M2 mỏng nhẹ, phù hợp học tập, văn phòng và lập trình cơ bản.",
+    "price": 24990000,
+    "product_detail_id": { "$oid": "665000000000000000000402" },
+    "brand_id": { "$oid": "665000000000000000000301" },
+    "category_id": { "$oid": "665000000000000000000201" },
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "665000000000000000000503" },
+    "name": "Samsung Galaxy S24 Ultra",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/galaxy-s24-ultra.png",
+    "description": "Samsung Galaxy S24 Ultra màn hình lớn, hiệu năng mạnh, camera cao cấp.",
+    "price": 28990000,
+    "product_detail_id": { "$oid": "665000000000000000000403" },
+    "brand_id": { "$oid": "665000000000000000000302" },
+    "category_id": { "$oid": "665000000000000000000202" },
+    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+  }
+]
