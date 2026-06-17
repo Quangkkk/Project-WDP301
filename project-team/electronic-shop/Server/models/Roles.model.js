@@ -9,16 +9,9 @@ const roleSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-
     name: {
       type: String,
       required: true,
-      trim: true,
-    },
-
-    description: {
-      type: String,
-      default: null,
       trim: true,
     },
   },

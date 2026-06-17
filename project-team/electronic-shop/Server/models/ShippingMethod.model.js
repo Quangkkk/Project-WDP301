@@ -7,29 +7,25 @@ const shippingMethodSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     base_fee: {
       type: Number,
       required: true,
       min: 0,
       default: 0,
     },
-
-    estimated_days: {
+    estimate_days: {
       type: Number,
       required: true,
       min: 0,
+      default: 0,
     },
-
-    is_active: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model(
-  "ShippingMethod",
-  shippingMethodSchema
-);
+module.exports = mongoose.model("ShippingMethod", shippingMethodSchema);

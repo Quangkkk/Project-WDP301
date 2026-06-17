@@ -7,13 +7,11 @@ const ticketMessageSchema = new mongoose.Schema(
       ref: "SupportTicket",
       required: true,
     },
-
     sender_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-
     message: {
       type: String,
       required: true,
@@ -25,7 +23,4 @@ const ticketMessageSchema = new mongoose.Schema(
 
 ticketMessageSchema.index({ ticket_id: 1 });
 
-module.exports = mongoose.model(
-  "TicketMessage",
-  ticketMessageSchema
-);
+module.exports = mongoose.model("TicketMessage", ticketMessageSchema);

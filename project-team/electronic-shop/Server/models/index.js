@@ -8,7 +8,6 @@ const UserAddress = require("./UserAddress.model");
 
 const Category = require("./Category.model");
 const Brand = require("./Brand.model");
-
 const Product = require("./Product.model");
 const ProductVariant = require("./ProductVariant.model");
 
@@ -17,101 +16,51 @@ const CartItem = require("./CartItem.model");
 const Wishlist = require("./Wishlist.model");
 
 const ShippingMethod = require("./ShippingMethod.model");
-
 const Order = require("./Orders.model");
 const OrderItem = require("./OrderItem.model");
-const Payment = require("./Payment.model");
 
 const Review = require("./Review.model");
-
-const ChatConversation = require(
-  "./ChatConversation.model"
-);
-const SupportTicket = require("./SupportTicket.model");
-const TicketMessage = require("./TicketMessage.model");
-
 const Coupon = require("./Coupon.model");
 const CouponUsage = require("./CouponUsage.model");
 
+const ChatConversation = require("./ChatConversation.model");
+const ChatMessage = require("./ChatMessage.model");
+const SupportTicket = require("./SupportTicket.model");
+const TicketMessage = require("./TicketMessage.model");
+
 const db = {
   mongoose,
-
   User,
   Role,
   Permission,
   RolePermission,
   UserAddress,
-
   Category,
   Brand,
-
   Product,
   ProductVariant,
-
   Cart,
   CartItem,
   Wishlist,
-
   ShippingMethod,
-
   Order,
   OrderItem,
-  Payment,
-
   Review,
-
-  ChatConversation,
-  SupportTicket,
-  TicketMessage,
-
   Coupon,
   CouponUsage,
-
-  User,
-  Role,
-  Permission,
-  RolePermission,
-  UserAddress,
-
-  Category,
-  Brand,
-
-  Product,
-  ProductVariant,
-
-  Cart,
-  CartItem,
-  Wishlist,
-
-  ShippingMethod,
-
-  Order,
-  OrderItem,
-  Payment,
-
-  Review,
-
   ChatConversation,
+  ChatMessage,
   SupportTicket,
   TicketMessage,
-
-  Coupon,
-  CouponUsage,
 };
 
 db.connectDB = async () => {
   try {
     mongoose.set("strictQuery", true);
-
     await mongoose.connect(process.env.MONGO_URI);
-
     console.log("Connected to MongoDB successfully");
   } catch (error) {
-    console.error(
-      "Error connecting to MongoDB:",
-      error.message
-    );
-
+    console.error("Error connecting to MongoDB:", error.message);
     process.exit(1);
   }
 };

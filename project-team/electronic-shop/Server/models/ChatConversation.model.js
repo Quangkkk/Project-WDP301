@@ -7,13 +7,11 @@ const chatConversationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
     staff_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
     },
-
     status: {
       type: String,
       enum: ["open", "pending", "closed"],
@@ -26,7 +24,4 @@ const chatConversationSchema = new mongoose.Schema(
 chatConversationSchema.index({ customer_id: 1 });
 chatConversationSchema.index({ staff_id: 1 });
 
-module.exports = mongoose.model(
-  "ChatConversation",
-  chatConversationSchema
-);
+module.exports = mongoose.model("ChatConversation", chatConversationSchema);

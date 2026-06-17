@@ -7,7 +7,6 @@ const rolePermissionSchema = new mongoose.Schema(
       ref: "Role",
       required: true,
     },
-
     permission_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Permission",
@@ -17,17 +16,6 @@ const rolePermissionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-rolePermissionSchema.index(
-  {
-    role_id: 1,
-    permission_id: 1,
-  },
-  {
-    unique: true,
-  }
-);
+rolePermissionSchema.index({ role_id: 1, permission_id: 1 }, { unique: true });
 
-module.exports = mongoose.model(
-  "RolePermission",
-  rolePermissionSchema
-);
+module.exports = mongoose.model("RolePermission", rolePermissionSchema);

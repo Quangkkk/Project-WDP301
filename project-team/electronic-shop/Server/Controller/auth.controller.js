@@ -1,187 +1,91 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 const User = require("../models/User.model");
 const Role = require("../models/Roles.model");
-const { sendVerificationEmail } = require("../mailtrap/email");
 
-const generateVerificationCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+const safeSelect = "-hash_pass -__v";
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const buildToken = (user, role) => {
+  return jwt.sign(
+    {
+      user_id: user._id,
+      role_id: user.role_id,
+      role: role?.code ? role.code.toUpperCase() : undefined,
+    },
+    process.env.JWT_SECRET || "dev_secret_key",
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+  );
+};
+
+const getCustomerRole = async () => {
+  let role = await Role.findOne({ code: "customer" });
+
+  if (!role) {
+    role = await Role.create({
+      code: "customer",
+      name: "Customer",
+    });
+  }
+
+  return role;
 };
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, img_url, role_id } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Name, email and password are required",
+        message: "name, email and password are required",
       });
     }
 
-    const existedUser = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existedUser = await User.findOne({ email: normalizedEmail });
 
     if (existedUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
+      return res.status(409).json({ success: false, message: "Email already exists" });
     }
 
-    const customerRole = await Role.findOne({ code: "customer" });
+    let role;
+    if (role_id) {
+      if (!isValidObjectId(role_id)) {
+        return res.status(400).json({ success: false, message: "Invalid role_id" });
+      }
 
-    if (!customerRole) {
-      return res.status(500).json({
-        success: false,
-        message: "Customer role not found. Please seed roles first.",
-      });
+      role = await Role.findById(role_id);
+      if (!role) {
+        return res.status(404).json({ success: false, message: "Role not found" });
+      }
+    } else {
+      role = await getCustomerRole();
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const verificationCode = generateVerificationCode();
+    const hash_pass = await bcrypt.hash(password, 10);
 
     const user = await User.create({
+      role_id: role._id,
       name,
-      email,
-      phone,
-      passwordHash,
-      roleId: customerRole._id,
-      status: "pending",
-      emailVerified: false,
-      verificationCode,
-      verificationCodeExpires: new Date(Date.now() + 10 * 60 * 1000),
+      email: normalizedEmail,
+      hash_pass,
+      phone: phone || null,
+      img_url: img_url || null,
+      status: "unverified",
     });
 
-    await sendVerificationEmail(email, verificationCode);
+    const data = await User.findById(user._id).select(safeSelect).populate("role_id", "name code");
 
     return res.status(201).json({
       success: true,
-      message: "Register successfully. Please check your email to verify your account.",
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        status: user.status,
-        emailVerified: user.emailVerified,
-      },
+      message: "Register successfully. Account status is unverified.",
+      data,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Register failed",
-      error: error.message,
-    });
-  }
-};
-
-const verifyEmail = async (req, res) => {
-  try {
-    const { email, code } = req.body;
-
-    if (!email || !code) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and verification code are required",
-      });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    if (user.emailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already verified",
-      });
-    }
-
-    if (user.verificationCode !== code) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid verification code",
-      });
-    }
-
-    if (!user.verificationCodeExpires || user.verificationCodeExpires < new Date()) {
-      return res.status(400).json({
-        success: false,
-        message: "Verification code has expired",
-      });
-    }
-
-    user.emailVerified = true;
-    user.status = "active";
-    user.verificationCode = null;
-    user.verificationCodeExpires = null;
-
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Email verified successfully. You can login now.",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Verify email failed",
-      error: error.message,
-    });
-  }
-};
-
-const resendVerificationCode = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    if (user.emailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already verified",
-      });
-    }
-
-    const verificationCode = generateVerificationCode();
-
-    user.verificationCode = verificationCode;
-    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-    await user.save();
-
-    await sendVerificationEmail(email, verificationCode);
-
-    return res.status(200).json({
-      success: true,
-      message: "Verification code has been resent",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Resend verification code failed",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to register", error: error.message });
   }
 };
 
@@ -190,81 +94,110 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+      return res.status(400).json({ success: false, message: "email and password are required" });
     }
 
-    const user = await User.findOne({ email }).populate("roleId", "name code");
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail }).populate("role_id", "name code");
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
-    const isPasswordMatch = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isPasswordMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+    const isMatch = await bcrypt.compare(password, user.hash_pass);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify your email before login",
-      });
+    if (user.status === "blocked") {
+      return res.status(403).json({ success: false, message: "Account has been blocked" });
     }
 
-    if (user.status !== "active") {
-      return res.status(403).json({
-        success: false,
-        message: "Your account is not active",
-      });
+    if (user.status === "unverified") {
+      return res.status(403).json({ success: false, message: "Account has not been verified" });
     }
 
-    const accessToken = jwt.sign(
-      {
-        userId: user._id,
-        roleId: user.roleId._id,
-        role: user.roleId.code,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-      }
-    );
+    const token = buildToken(user, user.role_id);
+    const data = await User.findById(user._id).select(safeSelect).populate("role_id", "name code");
 
     return res.status(200).json({
       success: true,
       message: "Login successfully",
-      accessToken,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatarUrl: user.avatarUrl,
-        role: user.roleId,
-      },
+      token,
+      accessToken: token,
+      data,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Login failed",
-      error: error.message,
+    return res.status(500).json({ success: false, message: "Failed to login", error: error.message });
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { email, user_id } = req.body;
+
+    const filter = {};
+
+    if (user_id) {
+      if (!isValidObjectId(user_id)) {
+        return res.status(400).json({ success: false, message: "Invalid user_id" });
+      }
+
+      filter._id = user_id;
+    } else if (email) {
+      filter.email = email.toLowerCase().trim();
+    } else {
+      return res.status(400).json({ success: false, message: "email or user_id is required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      filter,
+      { status: "active" },
+      { new: true, runValidators: true }
+    )
+      .select(safeSelect)
+      .populate("role_id", "name code");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Verify email successfully", data: user });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to verify email", error: error.message });
+  }
+};
+
+const resendVerificationCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "email is required" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.status === "active") {
+      return res.status(200).json({ success: true, message: "Account is already active" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "No verification code is stored. Use /auth/verify-email to set status to active.",
     });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to resend verification code", error: error.message });
   }
 };
 
 module.exports = {
   register,
+  login,
   verifyEmail,
   resendVerificationCode,
-  login,
 };

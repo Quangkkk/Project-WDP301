@@ -7,13 +7,11 @@ const brandSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     logo_img: {
       type: String,
       trim: true,
       default: null,
     },
-
     status: {
       type: String,
       enum: ["active", "inactive"],
@@ -22,5 +20,7 @@ const brandSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+brandSchema.index({ name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Brand", brandSchema);

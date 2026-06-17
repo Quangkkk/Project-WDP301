@@ -7,19 +7,16 @@ const couponUsageSchema = new mongoose.Schema(
       ref: "Coupon",
       required: true,
     },
-
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-
     order_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       default: null,
     },
-
     used_count: {
       type: Number,
       min: 1,
@@ -29,17 +26,6 @@ const couponUsageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-couponUsageSchema.index(
-  {
-    coupon_id: 1,
-    user_id: 1,
-  },
-  {
-    unique: true,
-  }
-);
+couponUsageSchema.index({ coupon_id: 1, user_id: 1, order_id: 1 });
 
-module.exports = mongoose.model(
-  "CouponUsage",
-  couponUsageSchema
-);
+module.exports = mongoose.model("CouponUsage", couponUsageSchema);

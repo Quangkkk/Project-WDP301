@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     role_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -22,53 +22,31 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    phone: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
-      default: null,
-    },
-
-    img_url: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
     hash_pass: {
       type: String,
       required: true,
     },
 
+    phone: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    img_url: {
+      type: String,
+      default: null,
+    },
+
     status: {
       type: String,
-      enum: [
-        "pending",
-        "active",
-        "inactive",
-        "blocked",
-        "banned",
-      ],
-      default: "pending",
-    },
-
-    email_verified: {
-      type: Boolean,
-      default: false,
-    },
-
-    verification_code: {
-      type: String,
-      default: null,
-    },
-
-    verification_code_expires: {
-      type: Date,
-      default: null,
+      enum: ["unverified", "active", "blocked"],
+      default: "unverified",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", UserSchema);

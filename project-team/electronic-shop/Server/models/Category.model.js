@@ -7,7 +7,6 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     status: {
       type: String,
       enum: ["active", "inactive"],
@@ -16,5 +15,7 @@ const categorySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+categorySchema.index({ name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Category", categorySchema);

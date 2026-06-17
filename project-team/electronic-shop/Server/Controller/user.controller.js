@@ -1,365 +1,270 @@
-//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\ CRUD - ADVANCE //\\//\\
+const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 
-const { default: mongoose } = require('mongoose');
-const db = require('../models/index.js');
-const User = db.user;
+const User = require("../models/User.model");
+const Role = require("../models/Roles.model");
+const UserAddress = require("../models/UserAddress.model");
 
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const safeSelect = "-hash_pass -__v";
 
-
-// Create a USER
 const addUser = async (req, res) => {
-    try {
+  try {
+    const { role_id, name, email, password, hash_pass, phone, img_url, status } = req.body;
 
-        //\\Get data from req.body
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Initialize new USER + Save USER to database
-        const dataDB = await new User(body).save(); // console.log("\x1b[32m%s\x1b[0m","USER: ", dataDB);
-
-        //\\Validate data
-        //convert mongo document to a plain-old JavaScript object 
-        const data = dataDB.toObject()
-        //delete attribute
-        delete data._id;
-        delete data.createdAt;
-        delete data.updatedAt;
-        delete data.__v
-
-        //\\RESPONSE
-        return res.status(201).send({ message: 'Create successfully!', data: data });
-    } catch (error) {
-        return res.status(500).send({ ERROR: error.message });
+    if (!role_id || !name || !email || (!password && !hash_pass)) {
+      return res.status(400).json({
+        success: false,
+        message: "role_id, name, email and password/hash_pass are required",
+      });
     }
-}
 
-
-
-
-
-// Read one USER by id && Include related COUNTRY && AREA
-const getUserById = async (req, res) => {
-    try {
-
-        //\\Get id from req.params
-        const id = req.params.id;   // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate Mongo ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ ERROR: 'Invalidate id:', id });
-        }
-
-        //\\Find one USER by id + relation schema COUNTRY && AREA + Validate return data.
-        // const user = await User.find({ _id: id }).populate('country').select('-createdAt -updatedAt -__v');
-        const dataDB = await User.findById(id)
-            .select('-createdAt -updatedAt -__v -_id')
-        // .populate({
-        //     path: 'country',
-        //     select: '-createdAt -updatedAt -__v -_id',
-        // }); // console.log("\x1b[32m%s\x1b[0m", "USER:", dataDB)
-
-
-        //\\check data - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', userId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object 
-        const data = dataDB.toObject()
-        //delete attribute 
-
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Read successfully!', data: data });
-    } catch (error) {
-        return res.status(500).send({ error: error.message });
+    if (!isValidObjectId(role_id)) {
+      return res.status(400).json({ success: false, message: "Invalid role_id" });
     }
-}
 
-const getUserByPhone = async (req, res) => {
-    try {
-
-        //\\Get id from req.params
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Find one USER by id + relation schema COUNTRY && AREA + Validate return data.
-        // const user = await User.find({ _id: id }).populate('country').select('-createdAt -updatedAt -__v');
-        const dataDB = await User.find({phone: body.phone})
-            .select('-createdAt -updatedAt -__v -_id')
-        // .populate({
-        //     path: 'country',
-        //     select: '-createdAt -updatedAt -__v -_id',
-        // }); // console.log("\x1b[32m%s\x1b[0m", "USER:", dataDB)
-
-
-        //\\check data - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', userId: id });
-        }
-
-
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Read successfully!', data: dataDB });
-    } catch (error) {
-        return res.status(500).send({ error: error.message });
+    const role = await Role.findById(role_id);
+    if (!role) {
+      return res.status(404).json({ success: false, message: "Role not found" });
     }
-}
 
-
-const getUserByEmail = async (req, res) => {
-    try {
-
-        //\\Get id from req.params
-        const body = req.body;  console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-
-        //\\Find one USER by id + relation schema COUNTRY && AREA + Validate return data.
-        // const user = await User.find({ _id: id }).populate('country').select('-createdAt -updatedAt -__v');
-        const dataDB = await User.find({ email: body.email })
-            .select('-createdAt -updatedAt -__v -_id')
-        // .populate({
-        //     path: 'country',
-        //     select: '-createdAt -updatedAt -__v -_id',
-        // }); // console.log("\x1b[32m%s\x1b[0m", "USER:", dataDB)
-
-
-        //\\check data - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', userId: id });
-        }
-
- 
-
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Read successfully!', data: dataDB });
-    } catch (error) {
-        return res.status(500).send({ error: error.message });
+    const existedUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existedUser) {
+      return res.status(409).json({ success: false, message: "Email already exists" });
     }
-}
 
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : hash_pass;
+
+    const user = await User.create({
+      role_id,
+      name,
+      email: email.toLowerCase().trim(),
+      hash_pass: hashedPassword,
+      phone: phone || null,
+      img_url: img_url || null,
+      status: status || "active",
+    });
+
+    const data = await User.findById(user._id).select(safeSelect).populate("role_id", "name code");
+    return res.status(201).json({ success: true, message: "Create user successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to create user", error: error.message });
+  }
+};
 
 const getAllUser = async (req, res) => {
-    try {
+  try {
+    const { role_id, status, q } = req.query;
+    const filter = {};
 
-        //\\Find one USER by id + relation schema COUNTRY && AREA + Validate return data.
-        // const user = await User.find({ _id: id }).populate('country').select('-createdAt -updatedAt -__v');
-        const dataDB = await User.find()
-            .select('-createdAt -updatedAt -__v -_id')
-        // console.log("\x1b[32m%s\x1b[0m", "USER:", dataDB)
-
-
-        //\\check data - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', userId: id });
-        }
-
-        
-        //\\RESPONSE
-        return res.status(200).send({ message: 'Read successfully!', data: dataDB });
-    } catch (error) {
-        return res.status(500).send({ error: error.message });
+    if (role_id) filter.role_id = role_id;
+    if (status) filter.status = status;
+    if (q) {
+      filter.$or = [
+        { name: new RegExp(q, "i") },
+        { email: new RegExp(q, "i") },
+        { phone: new RegExp(q, "i") },
+      ];
     }
-}
 
-// Update one USER by id.
+    const data = await User.find(filter)
+      .select(safeSelect)
+      .populate("role_id", "name code")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, count: data.length, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to get users", error: error.message });
+  }
+};
+
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid user id" });
+    }
+
+    const user = await User.findById(id).select(safeSelect).populate("role_id", "name code");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const addresses = await UserAddress.find({ user_id: id })
+      .select("-__v")
+      .sort({ is_default: -1, createdAt: -1 });
+
+    return res.status(200).json({ success: true, data: { user, addresses } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to get user", error: error.message });
+  }
+};
+
 const updateUserById = async (req, res) => {
-    try {
-        //\\Get id from req.params and data from req.body
-        const id = req.params.id; // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-
-        //\\Find USER by id + update with new data
-        // const updatedUser = await User.findByIdAndUpdate(id, data, { returnDocument: "after" });
-        const dataDB = await User.findOneAndUpdate(
-            { _id: id },
-            body,
-            { returnDocument: "after" }
-        ).select('-createdAt -updatedAt -__v -_id'); // console.log("\x1b[32m%s\x1b[0m","USER: ",dataDB)
-
-        //\\CHECK USER - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Update successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid user id" });
     }
-}
 
+    const allowedFields = ["role_id", "name", "email", "phone", "img_url", "status"];
+    const updateData = {};
 
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
 
-// Delete one USER by id.
+    if (updateData.email) {
+      updateData.email = updateData.email.toLowerCase().trim();
+      const existedUser = await User.findOne({ email: updateData.email, _id: { $ne: id } });
+      if (existedUser) {
+        return res.status(409).json({ success: false, message: "Email already exists" });
+      }
+    }
+
+    if (updateData.role_id) {
+      if (!isValidObjectId(updateData.role_id)) {
+        return res.status(400).json({ success: false, message: "Invalid role_id" });
+      }
+
+      const role = await Role.findById(updateData.role_id);
+      if (!role) {
+        return res.status(404).json({ success: false, message: "Role not found" });
+      }
+    }
+
+    if (req.body.password) updateData.hash_pass = await bcrypt.hash(req.body.password, 10);
+    if (req.body.hash_pass) updateData.hash_pass = req.body.hash_pass;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ success: false, message: "No data to update" });
+    }
+
+    const data = await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+      .select(safeSelect)
+      .populate("role_id", "name code");
+
+    if (!data) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Update user successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to update user", error: error.message });
+  }
+};
+
 const deleteUserById = async (req, res) => {
-    try {
-
-        //\\Get id from req.params
-        const id = req.params.id;   // console.log("\x1b[32m%s\x1b[0m","USER_ID: ", id);
-
-        //\\Check req params
-        if (!id) {
-            // console.log("ERROR: 'Require id param!")
-            return res.status(400).send({ ERROR: 'Require UserId!' })
-        }
-
-        //\\Validate MongoDB ObjectId
-        if (!mongoose.isValidObjectId(id)) {
-            return res.status(400).send({ message: 'Invalidate id:', id });
-        }
-
-        //\\Find and delete USER
-        const dataDB = await User.findByIdAndDelete(id)
-            .select('-createdAt -updatedAt -__v -_id'); // console.log("\x1b[32m%s\x1b[0m","USER: ",dataDB)
-
-        //\\CHECK USER - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Delete successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid user id" });
     }
-}
 
-// Delete one USER by email.
-const deleteUserByEmail = async (req, res) => {
-    try {
-
-     //\\Get id from req.params
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Find and delete USER
-        const dataDB = await User.findOneAndDelete({email: body.email})
-            .select('-createdAt -updatedAt -__v -_id'); // console.log("\x1b[32m%s\x1b[0m","USER: ",dataDB)
-
-        //\\CHECK USER - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Delete successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+    const data = await User.findByIdAndDelete(id).select(safeSelect);
+    if (!data) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
-}
 
-// Delete one USER by phone.
-const deleteUserByPhone = async (req, res) => {
-    try {
+    await UserAddress.deleteMany({ user_id: id });
+    return res.status(200).json({ success: true, message: "Delete user successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to delete user", error: error.message });
+  }
+};
 
+const createAddress = async (req, res) => {
+  try {
+    const user_id = req.params.userId || req.body.user_id;
+    const { receiver_name, receiver_phone, province, district, ward, address_line, is_default } = req.body;
 
-     //\\Get id from req.params
-        const body = req.body; // console.log("\x1b[32m%s\x1b[0m","USER_DATA: ", body);
-
-        //\\Check req data
-        if (!body) {
-            // console.log({ERROR: 'Require user body!'})
-            return res.status(400).send({ ERROR: 'Require user data!' })
-        }
-
-        //\\Find and delete USER
-        const dataDB = await User.findOneAndDelete({phone: body.phone})
-            .select('-createdAt -updatedAt -__v -_id'); // console.log("\x1b[32m%s\x1b[0m","USER: ",dataDB)
-
-        //\\CHECK USER - this only work with findById
-        if (!dataDB) {
-            return res.status(200).send({ message: 'No information', countryId: id });
-        }
-
-        //\\Validate data response
-        //convert mongo document to a plain-old JavaScript object to delete
-        const data = dataDB.toObject()  // console.log("\x1b[32m%s\x1b[0m","RESPONSE_DATA: ", data);
-        //delete attribute
-
-        //\\RESPONSE
-        return res.send({ message: 'Delete successfully!', data: data });
-    } catch (error) {
-        return res.send({ error: error.message });
+    if (!isValidObjectId(user_id)) {
+      return res.status(400).json({ success: false, message: "Invalid user_id" });
     }
-}
 
+    const user = await User.findById(user_id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
+    if (!receiver_name || !receiver_phone || !province || !district || !ward || !address_line) {
+      return res.status(400).json({ success: false, message: "Missing address required fields" });
+    }
 
+    if (is_default) await UserAddress.updateMany({ user_id }, { is_default: false });
 
-// Export all CRUD handlers so route files can attach them to Express endpoints.
-const crudController = {
+    const data = await UserAddress.create({
+      user_id,
+      receiver_name,
+      receiver_phone,
+      province,
+      district,
+      ward,
+      address_line,
+      is_default: Boolean(is_default),
+    });
 
-    addUser,
-    getUserById,
-    // getUserByPhone,
-    // getUserByEmail,
-    getAllUser,
-    updateUserById,
-    deleteUserById,
-    deleteUserByEmail,
-    deleteUserByPhone,
+    return res.status(201).json({ success: true, message: "Create address successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to create address", error: error.message });
+  }
+};
 
-}
+const updateAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    if (!isValidObjectId(addressId)) {
+      return res.status(400).json({ success: false, message: "Invalid address id" });
+    }
 
-module.exports = crudController
+    const address = await UserAddress.findById(addressId);
+    if (!address) {
+      return res.status(404).json({ success: false, message: "Address not found" });
+    }
+
+    if (req.body.is_default) {
+      await UserAddress.updateMany({ user_id: address.user_id }, { is_default: false });
+    }
+
+    const allowedFields = ["receiver_name", "receiver_phone", "province", "district", "ward", "address_line", "is_default"];
+    const updateData = {};
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
+
+    const data = await UserAddress.findByIdAndUpdate(addressId, updateData, { new: true, runValidators: true });
+    return res.status(200).json({ success: true, message: "Update address successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to update address", error: error.message });
+  }
+};
+
+const deleteAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    if (!isValidObjectId(addressId)) {
+      return res.status(400).json({ success: false, message: "Invalid address id" });
+    }
+
+    const data = await UserAddress.findByIdAndDelete(addressId);
+    if (!data) {
+      return res.status(404).json({ success: false, message: "Address not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Delete address successfully", data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to delete address", error: error.message });
+  }
+};
+
+module.exports = {
+  addUser,
+  getAllUser,
+  getUserById,
+  updateUserById,
+  deleteUserById,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+};

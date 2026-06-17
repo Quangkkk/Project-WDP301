@@ -2,9 +2,8 @@ const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
 
-dotenv.config({
-  path: path.join(__dirname, ".env"),
-});
+// Load .env from Server/.env
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const { connectDB } = require("./models");
 const routers = require("./Route");
@@ -16,27 +15,26 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
   "https://localhost:5173",
   "https://127.0.0.1:5173",
-];
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
+  if (!origin || allowedOrigins.includes(origin)) {
+    if (origin) res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
 
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 connectDB();
 
@@ -50,9 +48,21 @@ app.get("/", (req, res) => {
 app.use("/auth", routers.auth);
 app.use("/user", routers.user);
 app.use("/category", routers.category);
-app.use("/product", routers.product);
 app.use("/brand", routers.brand);
-app.use("/payment", routers.payment);
+app.use("/product", routers.product);
+app.use("/cart", routers.cart);
+app.use("/order", routers.order);
+app.use("/review", routers.review);
+app.use("/coupon", routers.coupon);
+app.use("/shipping-method", routers.shippingMethod);
+app.use("/role", routers.role);
+app.use("/permission", routers.permission);
+app.use("/support", routers.support);
+app.use("/chat", routers.chat);
+
+app.use((req, res) => {
+  return res.status(404).json({ success: false, message: "API endpoint not found" });
+});
 
 const PORT = process.env.PORT || 8080;
 

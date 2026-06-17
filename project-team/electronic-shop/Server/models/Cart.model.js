@@ -7,7 +7,6 @@ const cartSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-
     session_id: {
       type: String,
       trim: true,
