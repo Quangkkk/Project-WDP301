@@ -13,9 +13,12 @@ const rolePermissionSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: false },
+    versionKey: false,
+  }
 );
 
 rolePermissionSchema.index({ role_id: 1, permission_id: 1 }, { unique: true });
 
-module.exports = mongoose.model("RolePermission", rolePermissionSchema);
+module.exports = mongoose.model("RolePermission", rolePermissionSchema, "role_permissions");

@@ -17,27 +17,35 @@ const orderItemSchema = new mongoose.Schema(
       ref: "ProductVariant",
       default: null,
     },
-    quantity: {
-      type: Number,
-      required: true,
-      min: 1,
+    image: {
+      type: String,
+      default: null,
+      trim: true,
     },
     unit_price: {
       type: Number,
       required: true,
       min: 0,
     },
-    sub_total: {
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    subtotal: {
       type: Number,
       required: true,
       min: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: false },
+    versionKey: false,
+  }
 );
 
 orderItemSchema.index({ order_id: 1 });
 orderItemSchema.index({ product_id: 1 });
 orderItemSchema.index({ variant_id: 1 });
 
-module.exports = mongoose.model("OrderItem", orderItemSchema);
+module.exports = mongoose.model("OrderItem", orderItemSchema, "order_items");

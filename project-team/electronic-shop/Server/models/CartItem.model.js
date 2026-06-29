@@ -29,9 +29,12 @@ const cartItemSchema = new mongoose.Schema(
       min: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
 cartItemSchema.index({ cart_id: 1, product_id: 1, variant_id: 1 }, { unique: true });
 
-module.exports = mongoose.model("CartItem", cartItemSchema);
+module.exports = mongoose.model("CartItem", cartItemSchema, "cart_items");

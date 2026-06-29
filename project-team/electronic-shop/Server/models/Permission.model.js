@@ -7,7 +7,6 @@ const permissionSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      lowercase: true,
     },
     name: {
       type: String,
@@ -16,11 +15,14 @@ const permissionSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      trim: true,
       default: null,
+      trim: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
-module.exports = mongoose.model("Permission", permissionSchema);
+module.exports = mongoose.model("Permission", permissionSchema, "permissions");

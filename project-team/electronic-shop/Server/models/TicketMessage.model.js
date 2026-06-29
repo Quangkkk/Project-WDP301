@@ -18,9 +18,13 @@ const ticketMessageSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: false },
+    versionKey: false,
+  }
 );
 
 ticketMessageSchema.index({ ticket_id: 1 });
+ticketMessageSchema.index({ sender_id: 1 });
 
-module.exports = mongoose.model("TicketMessage", ticketMessageSchema);
+module.exports = mongoose.model("TicketMessage", ticketMessageSchema, "ticket_messages");

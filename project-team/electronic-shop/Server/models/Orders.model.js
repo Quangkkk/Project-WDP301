@@ -12,37 +12,6 @@ const orderSchema = new mongoose.Schema(
       ref: "ShippingMethod",
       default: null,
     },
-    payment_method: {
-      type: String,
-      enum: ["cod", "bank_transfer", "momo", "vnpay", "card", "payos"],
-      required: true,
-      default: "cod",
-    },
-    status: {
-      type: String,
-      enum: ["pending", "confirmed", "processing", "shipping", "completed", "cancelled", "returned"],
-      default: "pending",
-    },
-    payment_status: {
-      type: String,
-      enum: ["unpaid", "pending", "paid", "failed", "refunded", "cancelled"],
-      default: "unpaid",
-    },
-    shipping_fee: {
-      type: Number,
-      min: 0,
-      default: 0,
-    },
-    discount_amount: {
-      type: Number,
-      min: 0,
-      default: 0,
-    },
-    total_amount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
     receiver_name: {
       type: String,
       required: true,
@@ -53,43 +22,63 @@ const orderSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    shipping_province: {
+    address_province: {
       type: String,
       required: true,
       trim: true,
     },
-    shipping_ward: {
+    address_ward: {
       type: String,
       required: true,
       trim: true,
     },
-    shipping_district: {
+    address_district: {
       type: String,
       required: true,
       trim: true,
     },
-    shipping_address_line: {
+    address_address_line: {
       type: String,
       required: true,
       trim: true,
     },
-    note: {
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    total_amount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    payment_method: {
       type: String,
+      required: true,
+      default: "cod",
       trim: true,
+    },
+    payment_status: {
+      type: String,
+      default: "unpaid",
+      trim: true,
+    },
+    coupon_code: {
+      type: String,
       default: null,
-    },
-    cancel_reason: {
-      type: String,
       trim: true,
-      default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
 orderSchema.index({ user_id: 1 });
 orderSchema.index({ shipping_method_id: 1 });
-orderSchema.index({ status: 1 });
 orderSchema.index({ payment_status: 1 });
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.model("Order", orderSchema, "orders");

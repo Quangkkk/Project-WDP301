@@ -4,30 +4,27 @@ const Product = require("../models/Product.model");
 const ProductVariant = require("../models/ProductVariant.model");
 const Brand = require("../models/Brand.model");
 const Category = require("../models/Category.model");
-const CartItem = require("../models/CartItem.model");
-const OrderItem = require("../models/OrderItem.model");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const normalizeImages = (images) => {
-  if (!images) return [];
-  if (Array.isArray(images)) return images;
-  return [images];
+const pickVariantValue = (body) => body.variant_value || body.variant_name || body.name || body.value;
+const pickVariantImage = (body) => {
+  if (body.image !== undefined) return body.image;
+  if (Array.isArray(body.images)) return body.images[0] || null;
+  return body.images || null;
 };
 
-const createVariantPayload = (variant, productId) => ({
-  product_id: productId,
-  sku: variant.sku,
-  variant_name: variant.variant_name,
-  color: variant.color || null,
-  storage: variant.storage || null,
-  ram: variant.ram || null,
-  attributes_json: variant.attributes_json || {},
-  images: normalizeImages(variant.images),
-  price: variant.price,
-  sale_price: variant.sale_price || 0,
-  stock_quantity: variant.stock_quantity || 0,
-  status: variant.status || "active",
+const buildVariantPayload = (body, productId) => ({
+  product_id: productId || body.product_id,
+  sku: body.sku,
+  variant_value: pickVariantValue(body),
+  price: body.price,
+  image: pickVariantImage(body),
+  attributes_json: body.attributes_json || {},
+  weight: body.weight ?? null,
+  sale_price: body.sale_price ?? 0,
+  stock_quantity: body.stock_quantity ?? 0,
+  is_active: body.is_active !== undefined ? body.is_active : body.status ? body.status === "active" : true,
 });
 
 const createProduct = async (req, res) => {
@@ -38,20 +35,16 @@ const createProduct = async (req, res) => {
       name,
       sku,
       description,
-      total_cart_addition,
+      total_review,
+      average_rating,
+      rating_count,
       status,
       is_featured,
-      images,
-      price,
-      sale_price,
       variants,
     } = req.body;
 
     if (!brand_id || !category_id || !name || !sku) {
-      return res.status(400).json({
-        success: false,
-        message: "brand_id, category_id, name and sku are required",
-      });
+      return res.status(400).json({ success: false, message: "brand_id, category_id, name and sku are required" });
     }
 
     if (!isValidObjectId(brand_id) || !isValidObjectId(category_id)) {
@@ -62,7 +55,7 @@ const createProduct = async (req, res) => {
     if (!brand) return res.status(404).json({ success: false, message: "Brand not found" });
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
 
-    const existedSku = await Product.findOne({ sku });
+    const existedSku = await Product.findOne({ sku: String(sku).toUpperCase().trim() });
     if (existedSku) return res.status(409).json({ success: false, message: "Product SKU already exists" });
 
     const product = await Product.create({
@@ -70,34 +63,27 @@ const createProduct = async (req, res) => {
       category_id,
       name,
       sku,
-      description,
-      total_cart_addition,
-      status,
-      is_featured,
-      images: normalizeImages(images),
-      price: price || 0,
-      sale_price: sale_price || 0,
+      description: description || null,
+      total_review: total_review ?? 0,
+      average_rating: average_rating ?? 0,
+      rating_count: rating_count ?? 0,
+      status: status || "active",
+      is_featured: Boolean(is_featured),
     });
 
     let createdVariants = [];
     if (Array.isArray(variants) && variants.length > 0) {
-      for (const variant of variants) {
-        if (!variant.sku || !variant.variant_name || variant.price === undefined) {
-          await Product.findByIdAndDelete(product._id);
-          return res.status(400).json({
-            success: false,
-            message: "Each variant must have sku, variant_name and price",
-          });
+      const payload = variants.map((variant) => {
+        const variantPayload = buildVariantPayload(variant, product._id);
+        if (!variantPayload.sku || !variantPayload.variant_value || variantPayload.price === undefined) {
+          throw new Error("Each variant must have sku, variant_value and price");
         }
-      }
-      createdVariants = await ProductVariant.insertMany(variants.map((variant) => createVariantPayload(variant, product._id)));
+        return variantPayload;
+      });
+      createdVariants = await ProductVariant.insertMany(payload);
     }
 
-    return res.status(201).json({
-      success: true,
-      message: "Create product successfully",
-      data: { product, variants: createdVariants },
-    });
+    return res.status(201).json({ success: true, message: "Create product successfully", data: { product, variants: createdVariants } });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to create product", error: error.message });
   }
@@ -110,25 +96,30 @@ const getAllProducts = async (req, res) => {
     if (category_id) filter.category_id = category_id;
     if (brand_id) filter.brand_id = brand_id;
     if (status) filter.status = status;
-    if (featured !== undefined) filter.is_featured = featured === "true";
-    if (q) filter.$or = [{ name: new RegExp(q, "i") }, { sku: new RegExp(q, "i") }];
+    if (featured !== undefined) filter.is_featured = featured === "true" || featured === true;
+    if (q) filter.$text = { $search: q };
 
     const products = await Product.find(filter)
       .populate("brand_id", "name logo_img status")
       .populate("category_id", "name status")
-      .sort({ createdAt: -1 })
+      .select("-__v")
+      .sort({ created_at: -1 })
       .lean();
 
     const productIds = products.map((product) => product._id);
-    const variants = await ProductVariant.find({ product_id: { $in: productIds } }).select("-__v").lean();
-    const variantsByProduct = variants.reduce((map, variant) => {
+    const variants = await ProductVariant.find({ product_id: { $in: productIds }, is_active: true }).select("-__v").lean();
+    const variantsByProduct = variants.reduce((acc, variant) => {
       const key = String(variant.product_id);
-      if (!map[key]) map[key] = [];
-      map[key].push(variant);
-      return map;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(variant);
+      return acc;
     }, {});
 
-    const data = products.map((product) => ({ ...product, variants: variantsByProduct[String(product._id)] || [] }));
+    const data = products.map((product) => ({
+      ...product,
+      variants: variantsByProduct[String(product._id)] || [],
+    }));
+
     return res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to get products", error: error.message });
@@ -143,12 +134,11 @@ const getProductById = async (req, res) => {
     const product = await Product.findById(id)
       .populate("brand_id", "name logo_img status")
       .populate("category_id", "name status")
-      .select("-__v")
-      .lean();
+      .select("-__v");
 
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
-    const variants = await ProductVariant.find({ product_id: id }).select("-__v").sort({ createdAt: -1 });
 
+    const variants = await ProductVariant.find({ product_id: id }).select("-__v").sort({ created_at: -1 });
     return res.status(200).json({ success: true, data: { product, variants } });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to get product", error: error.message });
@@ -176,18 +166,18 @@ const updateProductById = async (req, res) => {
       "name",
       "sku",
       "description",
-      "total_cart_addition",
-      "status",
-      "is_featured",
-      "images",
-      "price",
-      "sale_price",
+      "total_review",
       "average_rating",
       "rating_count",
+      "status",
+      "is_featured",
     ];
+
     const updateData = {};
     for (const field of allowedFields) if (req.body[field] !== undefined) updateData[field] = req.body[field];
-    if (req.body.images !== undefined) updateData.images = normalizeImages(req.body.images);
+
+    if (updateData.brand_id && !isValidObjectId(updateData.brand_id)) return res.status(400).json({ success: false, message: "Invalid brand_id" });
+    if (updateData.category_id && !isValidObjectId(updateData.category_id)) return res.status(400).json({ success: false, message: "Invalid category_id" });
 
     if (Object.keys(updateData).length === 0) return res.status(400).json({ success: false, message: "No data to update" });
 
@@ -208,12 +198,10 @@ const deleteProductById = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid product id" });
 
-    const data = await Product.findByIdAndDelete(id);
+    const data = await Product.findByIdAndDelete(id).select("-__v");
     if (!data) return res.status(404).json({ success: false, message: "Product not found" });
 
     await ProductVariant.deleteMany({ product_id: id });
-    await CartItem.deleteMany({ product_id: id });
-
     return res.status(200).json({ success: true, message: "Delete product successfully", data });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to delete product", error: error.message });
@@ -223,19 +211,20 @@ const deleteProductById = async (req, res) => {
 const createVariant = async (req, res) => {
   try {
     const product_id = req.params.productId || req.body.product_id;
-    if (!isValidObjectId(product_id)) return res.status(400).json({ success: false, message: "Invalid product_id" });
+    if (!product_id || !isValidObjectId(product_id)) return res.status(400).json({ success: false, message: "Valid product_id is required" });
 
     const product = await Product.findById(product_id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
-    if (!req.body.sku || !req.body.variant_name || req.body.price === undefined) {
-      return res.status(400).json({ success: false, message: "sku, variant_name and price are required" });
+    const payload = buildVariantPayload(req.body, product_id);
+    if (!payload.sku || !payload.variant_value || payload.price === undefined) {
+      return res.status(400).json({ success: false, message: "sku, variant_value and price are required" });
     }
 
-    const data = await ProductVariant.create(createVariantPayload(req.body, product_id));
-    return res.status(201).json({ success: true, message: "Create variant successfully", data });
+    const data = await ProductVariant.create(payload);
+    return res.status(201).json({ success: true, message: "Create product variant successfully", data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to create variant", error: error.message });
+    return res.status(500).json({ success: false, message: "Failed to create product variant", error: error.message });
   }
 };
 
@@ -244,16 +233,21 @@ const updateVariant = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid variant id" });
 
-    const allowedFields = ["sku", "variant_name", "color", "storage", "ram", "attributes_json", "images", "price", "sale_price", "stock_quantity", "status"];
+    const allowedFields = ["product_id", "sku", "variant_value", "price", "image", "attributes_json", "weight", "sale_price", "stock_quantity", "is_active"];
     const updateData = {};
+
     for (const field of allowedFields) if (req.body[field] !== undefined) updateData[field] = req.body[field];
-    if (req.body.images !== undefined) updateData.images = normalizeImages(req.body.images);
+    if (req.body.variant_name !== undefined && updateData.variant_value === undefined) updateData.variant_value = req.body.variant_name;
+    if (req.body.images !== undefined && updateData.image === undefined) updateData.image = Array.isArray(req.body.images) ? req.body.images[0] || null : req.body.images;
+    if (req.body.status !== undefined && updateData.is_active === undefined) updateData.is_active = req.body.status === "active";
+
+    if (Object.keys(updateData).length === 0) return res.status(400).json({ success: false, message: "No data to update" });
 
     const data = await ProductVariant.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).select("-__v");
-    if (!data) return res.status(404).json({ success: false, message: "Variant not found" });
-    return res.status(200).json({ success: true, message: "Update variant successfully", data });
+    if (!data) return res.status(404).json({ success: false, message: "Product variant not found" });
+    return res.status(200).json({ success: true, message: "Update product variant successfully", data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to update variant", error: error.message });
+    return res.status(500).json({ success: false, message: "Failed to update product variant", error: error.message });
   }
 };
 
@@ -262,17 +256,11 @@ const deleteVariant = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid variant id" });
 
-    const inOrder = await OrderItem.exists({ variant_id: id });
-    if (inOrder) {
-      return res.status(409).json({ success: false, message: "This variant is used in orders, please set status to inactive instead of deleting" });
-    }
-
     const data = await ProductVariant.findByIdAndDelete(id).select("-__v");
-    if (!data) return res.status(404).json({ success: false, message: "Variant not found" });
-    await CartItem.deleteMany({ variant_id: id });
-    return res.status(200).json({ success: true, message: "Delete variant successfully", data });
+    if (!data) return res.status(404).json({ success: false, message: "Product variant not found" });
+    return res.status(200).json({ success: true, message: "Delete product variant successfully", data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to delete variant", error: error.message });
+    return res.status(500).json({ success: false, message: "Failed to delete product variant", error: error.message });
   }
 };
 

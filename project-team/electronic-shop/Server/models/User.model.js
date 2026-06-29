@@ -1,19 +1,17 @@
 const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
     role_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Role",
       required: true,
     },
-
     name: {
       type: String,
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -21,32 +19,32 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-
-    hash_pass: {
-      type: String,
-      required: true,
-    },
-
     phone: {
       type: String,
       default: null,
       trim: true,
     },
-
     img_url: {
       type: String,
       default: null,
+      trim: true,
     },
-
+    hash_pass: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
-      enum: ["unverified", "active", "blocked"],
       default: "unverified",
+      trim: true,
     },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
   }
 );
 
-module.exports = mongoose.model("User", UserSchema);
+userSchema.index({ phone: 1 }, { unique: true, sparse: true });
+
+module.exports = mongoose.model("User", userSchema, "users");

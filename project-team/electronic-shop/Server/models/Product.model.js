@@ -26,33 +26,10 @@ const productSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      trim: true,
       default: null,
+      trim: true,
     },
-    total_cart_addition: {
-      type: Number,
-      min: 0,
-      default: 0,
-    },
-    status: {
-      type: String,
-      enum: ["draft", "active", "inactive", "out_of_stock"],
-      default: "active",
-    },
-    is_featured: {
-      type: Boolean,
-      default: false,
-    },
-    images: {
-      type: [String],
-      default: [],
-    },
-    price: {
-      type: Number,
-      min: 0,
-      default: 0,
-    },
-    sale_price: {
+    total_review: {
       type: Number,
       min: 0,
       default: 0,
@@ -68,12 +45,24 @@ const productSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    status: {
+      type: String,
+      default: "active",
+      trim: true,
+    },
+    is_featured: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
 productSchema.index({ brand_id: 1 });
 productSchema.index({ category_id: 1 });
 productSchema.index({ name: "text", sku: "text" });
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports = mongoose.model("Product", productSchema, "products");

@@ -7,12 +7,12 @@ const userAddressSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    receiver_name: {
+    receive_name: {
       type: String,
       required: true,
       trim: true,
     },
-    receiver_phone: {
+    receive_phone: {
       type: String,
       required: true,
       trim: true,
@@ -42,9 +42,12 @@ const userAddressSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
 userAddressSchema.index({ user_id: 1 });
 
-module.exports = mongoose.model("UserAddress", userAddressSchema);
+module.exports = mongoose.model("UserAddress", userAddressSchema, "user_addresses");

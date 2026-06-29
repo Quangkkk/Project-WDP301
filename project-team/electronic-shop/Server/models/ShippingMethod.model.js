@@ -19,13 +19,15 @@ const shippingMethodSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active",
+    is_active: {
+      type: Boolean,
+      default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
-module.exports = mongoose.model("ShippingMethod", shippingMethodSchema);
+module.exports = mongoose.model("ShippingMethod", shippingMethodSchema, "shipping_methods");

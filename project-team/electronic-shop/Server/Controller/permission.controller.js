@@ -17,7 +17,7 @@ const createPermission = async (req, res) => {
 
 const getAllPermissions = async (req, res) => {
   try {
-    const data = await Permission.find().select("-__v").sort({ createdAt: -1 });
+    const data = await Permission.find().select("-__v").sort({ created_at: -1 });
     return res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to get permissions", error: error.message });

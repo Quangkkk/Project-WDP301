@@ -24,24 +24,23 @@ const supportTicketSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      trim: true,
       default: null,
+      trim: true,
     },
     status: {
       type: String,
-      enum: ["open", "pending", "resolved", "closed"],
       default: "open",
-    },
-    closedAt: {
-      type: Date,
-      default: null,
+      trim: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
 supportTicketSchema.index({ user_id: 1 });
 supportTicketSchema.index({ assigned_staff_id: 1 });
 supportTicketSchema.index({ order_id: 1 });
 
-module.exports = mongoose.model("SupportTicket", supportTicketSchema);
+module.exports = mongoose.model("SupportTicket", supportTicketSchema, "support_tickets");

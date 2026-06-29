@@ -7,15 +7,22 @@ const roleSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      lowercase: true,
     },
     name: {
       type: String,
       required: true,
       trim: true,
     },
+    description: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
-module.exports = mongoose.model("Role", roleSchema);
+module.exports = mongoose.model("Role", roleSchema, "roles");

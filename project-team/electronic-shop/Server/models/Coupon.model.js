@@ -16,28 +16,28 @@ const couponSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      trim: true,
       default: null,
+      trim: true,
     },
     discount_type: {
       type: String,
-      enum: ["percent", "fixed"],
       required: true,
+      trim: true,
     },
     discount_value: {
       type: Number,
       required: true,
       min: 0,
     },
-    max_discount: {
-      type: Number,
-      min: 0,
-      default: null,
-    },
     min_order_amount: {
       type: Number,
       min: 0,
       default: 0,
+    },
+    max_discount: {
+      type: Number,
+      min: 0,
+      default: null,
     },
     usage_limit: {
       type: Number,
@@ -49,7 +49,7 @@ const couponSchema = new mongoose.Schema(
       min: 0,
       default: null,
     },
-    starts_at: {
+    start_at: {
       type: Date,
       default: null,
     },
@@ -57,13 +57,11 @@ const couponSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active",
-    },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    versionKey: false,
+  }
 );
 
-module.exports = mongoose.model("Coupon", couponSchema);
+module.exports = mongoose.model("Coupon", couponSchema, "coupons");

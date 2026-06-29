@@ -12,13 +12,13 @@ const chatMessageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    messages: {
+    message: {
       type: String,
       required: true,
       trim: true,
     },
     attachments: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [],
     },
     is_read: {
@@ -26,10 +26,13 @@ const chatMessageSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: false },
+    versionKey: false,
+  }
 );
 
 chatMessageSchema.index({ conversation_id: 1 });
 chatMessageSchema.index({ sender_id: 1 });
 
-module.exports = mongoose.model("ChatMessage", chatMessageSchema);
+module.exports = mongoose.model("ChatMessage", chatMessageSchema, "chat_messages");

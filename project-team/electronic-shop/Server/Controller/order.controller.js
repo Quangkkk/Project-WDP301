@@ -12,33 +12,35 @@ const CouponUsage = require("../models/CouponUsage.model");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const calculateDiscount = async (couponCode, userId, subtotal) => {
-  if (!couponCode) return { coupon: null, discountAmount: 0 };
+const normalizeCouponCode = (code) => (code ? String(code).trim().toUpperCase() : null);
 
-  const coupon = await Coupon.findOne({ code: String(couponCode).toUpperCase(), status: "active" });
-  if (!coupon) throw new Error("Coupon not found or inactive");
+const calculateDiscount = async (couponCode, userId, subtotal) => {
+  const code = normalizeCouponCode(couponCode);
+  if (!code) return { coupon: null, discountAmount: 0 };
+
+  const coupon = await Coupon.findOne({ code });
+  if (!coupon) throw new Error("Coupon not found");
 
   const now = new Date();
-  if (coupon.starts_at && coupon.starts_at > now) throw new Error("Coupon has not started yet");
+  if (coupon.start_at && coupon.start_at > now) throw new Error("Coupon has not started yet");
   if (coupon.expired_at && coupon.expired_at < now) throw new Error("Coupon has expired");
-  if (subtotal < coupon.min_order_amount) throw new Error(`Minimum order amount is ${coupon.min_order_amount}`);
+  if (subtotal < Number(coupon.min_order_amount || 0)) throw new Error(`Minimum order amount is ${coupon.min_order_amount}`);
 
   const totalUsed = await CouponUsage.aggregate([
     { $match: { coupon_id: coupon._id } },
     { $group: { _id: null, total: { $sum: "$used_count" } } },
   ]);
-  if (coupon.usage_limit !== null && totalUsed[0]?.total >= coupon.usage_limit) throw new Error("Coupon usage limit reached");
-
-  if (coupon.usage_limit_per_user !== null) {
-    const userUsed = await CouponUsage.aggregate([
-      { $match: { coupon_id: coupon._id, user_id: new mongoose.Types.ObjectId(userId) } },
-      { $group: { _id: null, total: { $sum: "$used_count" } } },
-    ]);
-    if (userUsed[0]?.total >= coupon.usage_limit_per_user) throw new Error("User coupon usage limit reached");
+  if (coupon.usage_limit !== null && coupon.usage_limit !== undefined && (totalUsed[0]?.total || 0) >= coupon.usage_limit) {
+    throw new Error("Coupon usage limit reached");
   }
 
-  let discountAmount = coupon.discount_type === "percent" ? (subtotal * coupon.discount_value) / 100 : coupon.discount_value;
-  if (coupon.max_discount !== null) discountAmount = Math.min(discountAmount, coupon.max_discount);
+  if (coupon.usage_limit_per_user !== null && coupon.usage_limit_per_user !== undefined) {
+    const usage = await CouponUsage.findOne({ coupon_id: coupon._id, user_id: userId });
+    if ((usage?.used_count || 0) >= coupon.usage_limit_per_user) throw new Error("User coupon usage limit reached");
+  }
+
+  let discountAmount = coupon.discount_type === "percent" ? (subtotal * Number(coupon.discount_value || 0)) / 100 : Number(coupon.discount_value || 0);
+  if (coupon.max_discount !== null && coupon.max_discount !== undefined) discountAmount = Math.min(discountAmount, coupon.max_discount);
   discountAmount = Math.min(discountAmount, subtotal);
 
   return { coupon, discountAmount };
@@ -55,6 +57,7 @@ const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
       product_id: item.product_id,
       variant_id: item.variant_id,
       quantity: item.quantity,
+      price: item.price,
     }));
   }
 
@@ -67,6 +70,7 @@ const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
           product_id: item.product_id,
           variant_id: item.variant_id,
           quantity: item.quantity,
+          price: item.price,
         }));
       }
     }
@@ -91,19 +95,24 @@ const buildOrderItems = async (items) => {
     const product = await Product.findById(product_id);
     if (!product) throw new Error("Product not found");
 
-    let unitPrice = product.sale_price > 0 ? product.sale_price : product.price;
+    let unitPrice = rawItem.price !== undefined ? Number(rawItem.price) : 0;
+    let image = rawItem.image || null;
 
     if (variant_id) {
       const variant = await ProductVariant.findById(variant_id);
       if (!variant) throw new Error("Variant not found");
       if (String(variant.product_id) !== String(product_id)) throw new Error("variant_id does not belong to product_id");
+      if (!variant.is_active) throw new Error(`Variant ${variant.sku} is inactive`);
       if (variant.stock_quantity < quantity) throw new Error(`Not enough stock for ${variant.sku}`);
       unitPrice = variant.sale_price > 0 ? variant.sale_price : variant.price;
+      image = variant.image || image;
     }
 
-    const subTotal = unitPrice * quantity;
-    subtotal += subTotal;
-    orderItems.push({ product_id, variant_id, quantity, unit_price: unitPrice, sub_total: subTotal });
+    if (unitPrice < 0) throw new Error("Item price must not be negative");
+
+    const itemSubtotal = unitPrice * quantity;
+    subtotal += itemSubtotal;
+    orderItems.push({ product_id, variant_id, image, unit_price: unitPrice, quantity, subtotal: itemSubtotal });
   }
 
   return { orderItems, subtotal };
@@ -115,21 +124,31 @@ const createOrder = async (req, res) => {
       user_id,
       shipping_method_id,
       payment_method = "cod",
+      payment_status,
       receiver_name,
       receiver_phone,
+      address_province,
+      address_ward,
+      address_district,
+      address_address_line,
       shipping_province,
       shipping_ward,
       shipping_district,
       shipping_address_line,
-      note,
       items,
       cart_id,
       coupon_code,
     } = req.body;
 
     if (!user_id || !isValidObjectId(user_id)) return res.status(400).json({ success: false, message: "Valid user_id is required" });
-    if (!receiver_name || !receiver_phone || !shipping_province || !shipping_ward || !shipping_district || !shipping_address_line) {
-      return res.status(400).json({ success: false, message: "Missing shipping receiver information" });
+
+    const province = address_province || shipping_province;
+    const ward = address_ward || shipping_ward;
+    const district = address_district || shipping_district;
+    const addressLine = address_address_line || shipping_address_line;
+
+    if (!receiver_name || !receiver_phone || !province || !ward || !district || !addressLine) {
+      return res.status(400).json({ success: false, message: "Missing receiver/address information" });
     }
 
     let shippingFee = 0;
@@ -137,7 +156,7 @@ const createOrder = async (req, res) => {
       if (!isValidObjectId(shipping_method_id)) return res.status(400).json({ success: false, message: "Invalid shipping_method_id" });
       const shippingMethod = await ShippingMethod.findById(shipping_method_id);
       if (!shippingMethod) return res.status(404).json({ success: false, message: "Shipping method not found" });
-      shippingFee = shippingMethod.base_fee;
+      shippingFee = Number(shippingMethod.base_fee || 0);
     }
 
     const finalItems = await getItemsFromRequestOrCart({ items, cart_id, user_id });
@@ -148,18 +167,17 @@ const createOrder = async (req, res) => {
     const order = await Order.create({
       user_id,
       shipping_method_id: shipping_method_id || null,
-      payment_method,
-      payment_status: payment_method === "cod" ? "unpaid" : "pending",
-      shipping_fee: shippingFee,
-      discount_amount: discountAmount,
-      total_amount: totalAmount,
       receiver_name,
       receiver_phone,
-      shipping_province,
-      shipping_ward,
-      shipping_district,
-      shipping_address_line,
-      note: note || null,
+      address_province: province,
+      address_ward: ward,
+      address_district: district,
+      address_address_line: addressLine,
+      subtotal,
+      total_amount: totalAmount,
+      payment_method,
+      payment_status: payment_status || (payment_method === "cod" ? "unpaid" : "pending"),
+      coupon_code: coupon ? coupon.code : normalizeCouponCode(coupon_code),
     });
 
     const createdItems = await OrderItem.insertMany(orderItems.map((item) => ({ ...item, order_id: order._id })));
@@ -170,14 +188,20 @@ const createOrder = async (req, res) => {
       }
     }
 
-    if (coupon) await CouponUsage.create({ coupon_id: coupon._id, user_id, order_id: order._id, used_count: 1 });
+    if (coupon) {
+      await CouponUsage.findOneAndUpdate(
+        { coupon_id: coupon._id, user_id },
+        { $inc: { used_count: 1 } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     if (cart_id) await CartItem.deleteMany({ cart_id });
 
     return res.status(201).json({
       success: true,
       message: "Create order successfully",
-      data: { order, items: createdItems, subtotal, discount_amount: discountAmount },
+      data: { order, items: createdItems, subtotal, shipping_fee: shippingFee, discount_amount: discountAmount },
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to create order", error: error.message });
@@ -186,23 +210,22 @@ const createOrder = async (req, res) => {
 
 const getAllOrders = async (req, res) => {
   try {
-    const { user_id, status, payment_status } = req.query;
+    const { user_id, payment_status } = req.query;
     const filter = {};
     if (user_id) filter.user_id = user_id;
-    if (status) filter.status = status;
     if (payment_status) filter.payment_status = payment_status;
 
     const orders = await Order.find(filter)
       .populate("user_id", "name email phone")
-      .populate("shipping_method_id", "name base_fee estimate_days")
+      .populate("shipping_method_id", "name base_fee estimate_days is_active")
       .select("-__v")
-      .sort({ createdAt: -1 })
+      .sort({ created_at: -1 })
       .lean();
 
     const orderIds = orders.map((order) => order._id);
     const items = await OrderItem.find({ order_id: { $in: orderIds } })
-      .populate("product_id", "name sku images")
-      .populate("variant_id", "sku variant_name color storage ram images")
+      .populate("product_id", "name sku status")
+      .populate("variant_id", "sku variant_value image price sale_price")
       .select("-__v")
       .lean();
 
@@ -227,16 +250,20 @@ const getOrderById = async (req, res) => {
 
     const order = await Order.findById(id)
       .populate("user_id", "name email phone")
-      .populate("shipping_method_id", "name base_fee estimate_days")
+      .populate("shipping_method_id", "name base_fee estimate_days is_active")
       .select("-__v")
       .lean();
 
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
     const items = await OrderItem.find({ order_id: id })
-      .populate("product_id", "name sku images")
-      .populate("variant_id", "sku variant_name color storage ram images")
+      .populate("product_id", "name sku status")
+      .populate("variant_id", "sku variant_value image price sale_price")
       .select("-__v");
-    const coupon_usage = await CouponUsage.findOne({ order_id: id }).populate("coupon_id", "code name discount_type discount_value");
+
+    const coupon_usage = order.coupon_code
+      ? await CouponUsage.findOne({ user_id: order.user_id?._id || order.user_id }).populate("coupon_id", "code name discount_type discount_value")
+      : null;
 
     return res.status(200).json({ success: true, data: { order, items, coupon_usage } });
   } catch (error) {
@@ -249,9 +276,28 @@ const updateOrderById = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order id" });
 
-    const allowedFields = ["status", "payment_status", "payment_method", "note", "cancel_reason"];
+    const allowedFields = [
+      "shipping_method_id",
+      "receiver_name",
+      "receiver_phone",
+      "address_province",
+      "address_ward",
+      "address_district",
+      "address_address_line",
+      "subtotal",
+      "total_amount",
+      "payment_method",
+      "payment_status",
+      "coupon_code",
+    ];
     const updateData = {};
     for (const field of allowedFields) if (req.body[field] !== undefined) updateData[field] = req.body[field];
+
+    if (req.body.status !== undefined && updateData.payment_status === undefined) {
+      updateData.payment_status = req.body.status;
+    }
+
+    if (Object.keys(updateData).length === 0) return res.status(400).json({ success: false, message: "No data to update" });
 
     const data = await Order.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).select("-__v");
     if (!data) return res.status(404).json({ success: false, message: "Order not found" });
@@ -264,12 +310,11 @@ const updateOrderById = async (req, res) => {
 const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { cancel_reason } = req.body;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order id" });
 
     const order = await Order.findById(id);
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-    if (["completed", "cancelled", "returned"].includes(order.status)) {
+    if (["paid", "refunded", "cancelled"].includes(order.payment_status)) {
       return res.status(400).json({ success: false, message: "This order cannot be cancelled" });
     }
 
@@ -278,8 +323,7 @@ const cancelOrder = async (req, res) => {
       if (item.variant_id) await ProductVariant.findByIdAndUpdate(item.variant_id, { $inc: { stock_quantity: item.quantity } });
     }
 
-    order.status = "cancelled";
-    order.cancel_reason = cancel_reason || null;
+    order.payment_status = "cancelled";
     await order.save();
 
     return res.status(200).json({ success: true, message: "Cancel order successfully", data: order });
