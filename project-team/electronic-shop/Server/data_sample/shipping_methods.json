@@ -1,0 +1,47 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000701"
+    },
+    "name": "Standard Delivery",
+    "base_fee": 30000,
+    "estimate_days": 3,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000702"
+    },
+    "name": "Fast Delivery",
+    "base_fee": 60000,
+    "estimate_days": 1,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000703"
+    },
+    "name": "Store Pickup",
+    "base_fee": 0,
+    "estimate_days": 0,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

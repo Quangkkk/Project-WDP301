@@ -1,38 +1,152 @@
 [
   {
-    "_id": { "$oid": "665000000000000000000501" },
+    "_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
     "name": "iPhone 15",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15.png",
-    "description": "Apple iPhone 15 chính hãng, thiết kế hiện đại, camera chất lượng cao.",
-    "price": 19990000,
-    "product_detail_id": { "$oid": "665000000000000000000401" },
-    "brand_id": { "$oid": "665000000000000000000301" },
-    "category_id": { "$oid": "665000000000000000000202" },
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "sku": "IPHONE15",
+    "description": "Apple iPhone 15 chinh hang, camera dep, hieu nang on dinh.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000502" },
+    "_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
     "name": "MacBook Air M2 13 inch",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2.png",
-    "description": "MacBook Air M2 mỏng nhẹ, phù hợp học tập, văn phòng và lập trình cơ bản.",
-    "price": 24990000,
-    "product_detail_id": { "$oid": "665000000000000000000402" },
-    "brand_id": { "$oid": "665000000000000000000301" },
-    "category_id": { "$oid": "665000000000000000000201" },
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "sku": "MACBOOK-AIR-M2-13",
+    "description": "Laptop mong nhe phu hop hoc tap, van phong va lap trinh co ban.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000503" },
+    "_id": {
+      "$oid": "665000000000000000000503"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000302"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
     "name": "Samsung Galaxy S24 Ultra",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/products/galaxy-s24-ultra.png",
-    "description": "Samsung Galaxy S24 Ultra màn hình lớn, hiệu năng mạnh, camera cao cấp.",
-    "price": 28990000,
-    "product_detail_id": { "$oid": "665000000000000000000403" },
-    "brand_id": { "$oid": "665000000000000000000302" },
-    "category_id": { "$oid": "665000000000000000000202" },
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "sku": "GALAXY-S24-ULTRA",
+    "description": "Dien thoai Samsung cao cap voi camera zoom va man hinh lon.",
+    "total_review": 1,
+    "average_rating": 4.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000504"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000303"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "Dell XPS 13 Plus",
+    "sku": "DELL-XPS-13-PLUS",
+    "description": "Laptop Dell cao cap, thiet ke gon, man hinh sac net.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000505"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000203"
+    },
+    "name": "AirPods Pro 2",
+    "sku": "AIRPODS-PRO-2",
+    "description": "Tai nghe Apple chong on chu dong, hop sac USB-C.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000204"
+    },
+    "name": "iPad Air M2",
+    "sku": "IPAD-AIR-M2",
+    "description": "May tinh bang Apple iPad Air chip M2, ho tro Apple Pencil Pro.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]

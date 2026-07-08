@@ -1,37 +1,163 @@
-import { Link } from 'react-router-dom'
-import './../../css/components.css'
-import './../../css/design-system.css'
-import './../../css/pages.css'
+import { useMemo, useState } from 'react'
+import Container from 'react-bootstrap/Container'
+import Form from 'react-bootstrap/Form'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import AuthPanel from '../../components/organisms/AuthPanel'
+import MainLayout from '../../components/templates/MainLayout'
+import Alert from '../../components/atoms/Alert'
+import Button from '../../components/atoms/Button'
+import TextField from '../../components/atoms/TextField'
+import { login } from '../../services/auth.service'
+import { getErrorMessage } from '../../services/api'
+import { getUserRole, saveAuth } from '../../utils/authStorage'
 
-const LoginPage = () => {
+function LoginPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const redirectPath = location.state?.from || ''
+
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  })
+
+  const [errors, setErrors] = useState({})
+  const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const isDisabled = useMemo(() => {
+    return !form.email.trim() || !form.password.trim() || isLoading
+  }, [form, isLoading])
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: '',
+    }))
+
+    setMessage('')
+  }
+
+  const validate = () => {
+    const next = {}
+
+    if (!form.email.trim()) {
+      next.email = 'Vui lòng nhập email'
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      next.email = 'Email không hợp lệ'
+    }
+
+    if (!form.password.trim()) {
+      next.password = 'Vui lòng nhập mật khẩu'
+    }
+
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!validate()) return
+
+    try {
+      setIsLoading(true)
+
+      const response = await login({
+        email: form.email.trim(),
+        password: form.password,
+      })
+
+      const token = response?.accessToken || response?.token
+      const user = response?.data
+
+      if (!token || !user) {
+        throw new Error('Login response is missing token or user data')
+      }
+
+      saveAuth({ token, user })
+
+      const role = getUserRole(user)
+      const fallbackPath = ['ADMIN', 'MANAGER', 'STAFF'].includes(role) ? '/admin' : '/'
+
+      navigate(redirectPath || fallbackPath, { replace: true })
+    } catch (error) {
+      setMessage(getErrorMessage(error, 'Đăng nhập thất bại'))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <>
-      <header className="site-header">
-        <div className="container header-inner">
-          <Link to="/" className="logo">
-            <span className="logo-mark">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-            </span>
-            Tech<em>Home</em>
-          </Link>
-        </div>
-      </header>
+    <MainLayout>
+      <section className='page-section'>
+        <Container className='max-w-xl'>
+          <AuthPanel
+            title='Welcome back'
+            subtitle='Đăng nhập để mua hàng và quản lý đơn hàng.'
+          >
+            <Alert type='danger'>{message}</Alert>
 
-      <main className="auth-layout auth-layout--center">
-        <div className="auth-card">
-          <form className="auth-form">
-            <h1>Đăng nhập</h1>
-            <p className="subtitle">Guest đăng nhập để trở thành User</p>
-            <div className="form-group"><label className="form-label">Email</label><input type="email" className="form-input" required /></div>
-            <div className="form-group"><label className="form-label">Mật khẩu</label><input type="password" className="form-input" required /></div>
-            <p className="text-small mb-4"><Link to="/forgot-password" style={{ color: 'var(--blue)' }}>Forgot password?</Link></p>
-            <Link to="/profile" className="btn btn-primary btn-block">Sign in</Link>
-            <p className="text-center text-small text-muted mt-4">Chưa có tài khoản? <Link to="/register" style={{ color: 'var(--blue)' }}>Đăng ký</Link></p>
-            <p className="text-center text-small mt-4"><Link to="/admin" className="text-muted">Admin login →</Link></p>
-          </form>
-        </div>
-      </main>
-    </>
+            <Form onSubmit={handleSubmit}>
+              <TextField
+                label='Email'
+                id='email'
+                name='email'
+                type='email'
+                placeholder='customer@example.com'
+                value={form.email}
+                error={errors.email}
+                onChange={handleChange}
+                className='mb-3'
+              />
+
+              <TextField
+                label='Password'
+                id='password'
+                name='password'
+                type='password'
+                placeholder='••••••••'
+                value={form.password}
+                error={errors.password}
+                onChange={handleChange}
+                className='mb-3'
+              />
+
+              <div className='mb-4 d-flex justify-content-between gap-3 text-sm'>
+                <label className='d-flex align-items-center gap-2 text-slate-600'>
+                  <input type='checkbox' /> Remember me
+                </label>
+
+                <span className='font-bold text-blue-600'>Forgot password?</span>
+              </div>
+
+              <Button
+                type='submit'
+                className='w-100 py-3'
+                isLoading={isLoading}
+                disabled={isDisabled}
+              >
+                Login
+              </Button>
+            </Form>
+
+            <p className='mt-4 mb-0 text-center text-sm text-slate-500'>
+              Don't have an account?{' '}
+              <Link to='/register' className='font-bold text-blue-600'>
+                Register now
+              </Link>
+            </p>
+          </AuthPanel>
+        </Container>
+      </section>
+    </MainLayout>
   )
 }
 

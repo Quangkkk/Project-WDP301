@@ -1,0 +1,44 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "assigned_staff_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000901"
+    },
+    "subject": "Can kiem tra tinh trang giao hang",
+    "description": "Khach hang muon hoi thoi gian giao hang du kien cho don iPhone 15.",
+    "status": "open",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001102"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "assigned_staff_id": null,
+    "order_id": null,
+    "subject": "Tu van mua laptop",
+    "description": "Khach hang can tu van laptop hoc tap va lap trinh co ban.",
+    "status": "pending",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

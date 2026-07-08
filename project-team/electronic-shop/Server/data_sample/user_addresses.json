@@ -1,0 +1,44 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000801"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "receive_name": "Customer Demo",
+    "receive_phone": "0900000002",
+    "province": "Ha Noi",
+    "district": "Cau Giay",
+    "ward": "Dich Vong Hau",
+    "address_line": "So 1 Xuan Thuy",
+    "is_default": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000802"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "receive_name": "Customer Demo",
+    "receive_phone": "0900000002",
+    "province": "Ha Noi",
+    "district": "Nam Tu Liem",
+    "ward": "My Dinh 2",
+    "address_line": "Toa nha FPT, Pho Duy Tan",
+    "is_default": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

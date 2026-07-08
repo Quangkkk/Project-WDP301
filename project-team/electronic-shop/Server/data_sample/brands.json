@@ -1,23 +1,58 @@
 [
   {
-    "_id": { "$oid": "665000000000000000000301" },
+    "_id": {
+      "$oid": "665000000000000000000301"
+    },
     "name": "Apple",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/brands/apple.png",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/apple.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000302" },
+    "_id": {
+      "$oid": "665000000000000000000302"
+    },
     "name": "Samsung",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/brands/samsung.png",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/samsung.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000303" },
+    "_id": {
+      "$oid": "665000000000000000000303"
+    },
     "name": "Dell",
-    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/brands/dell.png",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/dell.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000304"
+    },
+    "name": "Sony",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/sony.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]

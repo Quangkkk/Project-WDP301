@@ -1,0 +1,80 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001301"
+    },
+    "code": "SUMMER10",
+    "name": "Summer Sale 10%",
+    "description": "Giam 10% toi da 2,000,000 VND cho don tu 5,000,000 VND.",
+    "discount_type": "percent",
+    "discount_value": 10,
+    "min_order_amount": 5000000,
+    "max_discount": 2000000,
+    "usage_limit": 100,
+    "usage_limit_per_user": 2,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001302"
+    },
+    "code": "FREESHIP",
+    "name": "Free Ship",
+    "description": "Giam 30,000 VND phi van chuyen cho don tu 1,000,000 VND.",
+    "discount_type": "fixed",
+    "discount_value": 30000,
+    "min_order_amount": 1000000,
+    "max_discount": 30000,
+    "usage_limit": 300,
+    "usage_limit_per_user": 5,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001303"
+    },
+    "code": "WELCOME500",
+    "name": "Welcome 500K",
+    "description": "Giam 500,000 VND cho khach hang moi.",
+    "discount_type": "fixed",
+    "discount_value": 500000,
+    "min_order_amount": 10000000,
+    "max_discount": 500000,
+    "usage_limit": 50,
+    "usage_limit_per_user": 1,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

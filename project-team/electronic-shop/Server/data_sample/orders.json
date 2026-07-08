@@ -1,29 +1,60 @@
 [
   {
-    "_id": { "$oid": "665000000000000000000801" },
-    "userId": { "$oid": "665000000000000000000102" },
-    "shippingAddressId": { "$oid": "665000000000000000000701" },
-    "items": [
-      {
-        "product_id": { "$oid": "665000000000000000000501" },
-        "variant_id": { "$oid": "665000000000000000000601" },
-        "name": "iPhone 15",
-        "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15.png",
-        "price": 18990000,
-        "quantity": 1,
-        "color": "Black",
-        "ram": "6GB",
-        "storage": "128GB"
-      }
-    ],
+    "_id": {
+      "$oid": "665000000000000000000901"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000701"
+    },
+    "receiver_name": "Customer Demo",
+    "receiver_phone": "0900000002",
+    "address_province": "Ha Noi",
+    "address_ward": "Dich Vong Hau",
+    "address_district": "Cau Giay",
+    "address_address_line": "So 1 Xuan Thuy",
     "subtotal": 18990000,
-    "shippingFee": 30000,
-    "total": 19020000,
-    "paymentMethod": "COD",
-    "paymentStatus": "PENDING",
-    "orderStatus": "PENDING",
-    "note": "Order sample with separate shipping address collection",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "total_amount": 19020000,
+    "status": "pending",
+    "payment_method": "cod",
+    "payment_status": "unpaid",
+    "coupon_code": null,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000902"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000702"
+    },
+    "receiver_name": "Customer Demo",
+    "receiver_phone": "0900000002",
+    "address_province": "Ha Noi",
+    "address_ward": "My Dinh 2",
+    "address_district": "Nam Tu Liem",
+    "address_address_line": "Toa nha FPT, Pho Duy Tan",
+    "subtotal": 27990000,
+    "total_amount": 26050000,
+    "status": "completed",
+    "payment_method": "bank_transfer",
+    "payment_status": "paid",
+    "coupon_code": "SUMMER10",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]

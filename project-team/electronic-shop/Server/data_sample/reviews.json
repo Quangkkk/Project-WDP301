@@ -1,0 +1,52 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001001"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000901"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "rating": 5,
+    "comment": "May dep, giao hang nhanh, san pham dung mo ta.",
+    "images": [
+      "https://res.cloudinary.com/demo/image/upload/v1/reviews/iphone-review.png"
+    ],
+    "status": "visible",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001002"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000902"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000503"
+    },
+    "rating": 4,
+    "comment": "Man hinh dep, pin on, gia hoi cao.",
+    "images": [],
+    "status": "visible",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

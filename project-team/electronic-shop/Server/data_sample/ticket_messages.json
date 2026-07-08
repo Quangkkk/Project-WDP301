@@ -1,0 +1,47 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001121"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Shop cho em hoi don hang khi nao giao a?",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001122"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "message": "Don hang dang duoc xu ly va du kien giao trong 3 ngay.",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001123"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001102"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Em can laptop cho sinh vien IT, ngan sach khoang 25 trieu.",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

@@ -1,5 +1,22 @@
 const mongoose = require("mongoose");
 
+const ORDER_STATUS = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipping",
+  "completed",
+  "cancelled",
+];
+
+const PAYMENT_STATUS = [
+  "unpaid",
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+];
+
 const orderSchema = new mongoose.Schema(
   {
     user_id: {
@@ -54,6 +71,12 @@ const orderSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    status: {
+      type: String,
+      enum: ORDER_STATUS,
+      default: "pending",
+      trim: true,
+    },
     payment_method: {
       type: String,
       required: true,
@@ -62,6 +85,7 @@ const orderSchema = new mongoose.Schema(
     },
     payment_status: {
       type: String,
+      enum: PAYMENT_STATUS,
       default: "unpaid",
       trim: true,
     },
@@ -79,6 +103,8 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.index({ user_id: 1 });
 orderSchema.index({ shipping_method_id: 1 });
+orderSchema.index({ status: 1 });
 orderSchema.index({ payment_status: 1 });
+orderSchema.index({ created_at: -1 });
 
 module.exports = mongoose.model("Order", orderSchema, "orders");

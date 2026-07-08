@@ -2,8 +2,6 @@ const mongoose = require("mongoose");
 
 const User = require("./User.model");
 const Role = require("./Roles.model");
-const Permission = require("./Permission.model");
-const RolePermission = require("./RolePermission.model");
 const UserAddress = require("./UserAddress.model");
 
 const Category = require("./Category.model");
@@ -32,8 +30,6 @@ const db = {
   mongoose,
   User,
   Role,
-  Permission,
-  RolePermission,
   UserAddress,
   Category,
   Brand,

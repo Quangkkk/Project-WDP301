@@ -1,60 +1,82 @@
 [
   {
-    "_id": { "$oid": "665000000000000000000101" },
+    "_id": {
+      "$oid": "665000000000000000000101"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000001"
+    },
     "name": "Admin Demo",
     "email": "admin@example.com",
-    "passwordHash": "hashed_password_demo_only",
     "phone": "0900000001",
-    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-admin.png",
-    "roleId": { "$oid": "665000000000000000000001" },
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/admin.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
     "status": "active",
-    "addresses": [],
-    "emailVerified": true,
-    "verificationCode": null,
-    "verificationCodeExpires": null,
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000102" },
+    "_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000002"
+    },
     "name": "Customer Demo",
     "email": "customer@example.com",
-    "passwordHash": "hashed_password_demo_only",
     "phone": "0900000002",
-    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-customer.png",
-    "roleId": { "$oid": "665000000000000000000002" },
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/customer.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
     "status": "active",
-    "addresses": [
-      {
-        "fullName": "Customer Demo",
-        "phone": "0900000002",
-        "province": "Ha Noi",
-        "district": "Cau Giay",
-        "ward": "Dich Vong Hau",
-        "addressLine": "So 1 Xuan Thuy",
-        "isDefault": true
-      }
-    ],
-    "emailVerified": true,
-    "verificationCode": null,
-    "verificationCodeExpires": null,
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000103" },
+    "_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000003"
+    },
     "name": "Staff Demo",
     "email": "staff@example.com",
-    "passwordHash": "hashed_password_demo_only",
     "phone": "0900000003",
-    "avatarUrl": "https://res.cloudinary.com/demo/image/upload/v1/avatar-staff.png",
-    "roleId": { "$oid": "665000000000000000000003" },
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/staff.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
     "status": "active",
-    "addresses": [],
-    "emailVerified": true,
-    "verificationCode": null,
-    "verificationCodeExpires": null,
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000104"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000004"
+    },
+    "name": "Manager Demo",
+    "email": "manager@example.com",
+    "phone": "0900000004",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/manager.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]

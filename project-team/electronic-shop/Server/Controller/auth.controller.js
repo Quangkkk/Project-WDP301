@@ -6,6 +6,7 @@ const User = require("../models/User.model");
 const Role = require("../models/Roles.model");
 
 const safeSelect = "-hash_pass -__v";
+
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const buildToken = (user, role) => {
@@ -16,7 +17,9 @@ const buildToken = (user, role) => {
       role: role?.code ? role.code.toUpperCase() : undefined,
     },
     process.env.JWT_SECRET || "dev_secret_key",
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    }
   );
 };
 
@@ -27,6 +30,7 @@ const getCustomerRole = async () => {
     role = await Role.create({
       code: "customer",
       name: "Customer",
+      description: "Default customer role",
     });
   }
 
@@ -35,7 +39,7 @@ const getCustomerRole = async () => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, img_url, role_id } = req.body;
+    const { name, email, password, phone, img_url } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -45,25 +49,17 @@ const register = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
     const existedUser = await User.findOne({ email: normalizedEmail });
 
     if (existedUser) {
-      return res.status(409).json({ success: false, message: "Email already exists" });
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
     }
 
-    let role;
-    if (role_id) {
-      if (!isValidObjectId(role_id)) {
-        return res.status(400).json({ success: false, message: "Invalid role_id" });
-      }
-
-      role = await Role.findById(role_id);
-      if (!role) {
-        return res.status(404).json({ success: false, message: "Role not found" });
-      }
-    } else {
-      role = await getCustomerRole();
-    }
+    const role = await getCustomerRole();
 
     const hash_pass = await bcrypt.hash(password, 10);
 
@@ -77,7 +73,9 @@ const register = async (req, res) => {
       status: "unverified",
     });
 
-    const data = await User.findById(user._id).select(safeSelect).populate("role_id", "name code");
+    const data = await User.findById(user._id)
+      .select(safeSelect)
+      .populate("role_id", "name code");
 
     return res.status(201).json({
       success: true,
@@ -85,7 +83,11 @@ const register = async (req, res) => {
       data,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to register", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to register",
+      error: error.message,
+    });
   }
 };
 
@@ -94,31 +96,54 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "email and password are required" });
+      return res.status(400).json({
+        success: false,
+        message: "email and password are required",
+      });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail }).populate("role_id", "name code");
+
+    const user = await User.findOne({ email: normalizedEmail }).populate(
+      "role_id",
+      "name code"
+    );
 
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.hash_pass);
+
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
     if (user.status === "blocked") {
-      return res.status(403).json({ success: false, message: "Account has been blocked" });
+      return res.status(403).json({
+        success: false,
+        message: "Account has been blocked",
+      });
     }
 
     if (user.status === "unverified") {
-      return res.status(403).json({ success: false, message: "Account has not been verified" });
+      return res.status(403).json({
+        success: false,
+        message: "Account has not been verified",
+      });
     }
 
     const token = buildToken(user, user.role_id);
-    const data = await User.findById(user._id).select(safeSelect).populate("role_id", "name code");
+
+    const data = await User.findById(user._id)
+      .select(safeSelect)
+      .populate("role_id", "name code");
 
     return res.status(200).json({
       success: true,
@@ -128,7 +153,11 @@ const login = async (req, res) => {
       data,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to login", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to login",
+      error: error.message,
+    });
   }
 };
 
@@ -140,31 +169,53 @@ const verifyEmail = async (req, res) => {
 
     if (user_id) {
       if (!isValidObjectId(user_id)) {
-        return res.status(400).json({ success: false, message: "Invalid user_id" });
+        return res.status(400).json({
+          success: false,
+          message: "Invalid user_id",
+        });
       }
 
       filter._id = user_id;
     } else if (email) {
       filter.email = email.toLowerCase().trim();
     } else {
-      return res.status(400).json({ success: false, message: "email or user_id is required" });
+      return res.status(400).json({
+        success: false,
+        message: "email or user_id is required",
+      });
     }
 
     const user = await User.findOneAndUpdate(
       filter,
-      { status: "active" },
-      { new: true, runValidators: true }
+      {
+        status: "active",
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
     )
       .select(safeSelect)
       .populate("role_id", "name code");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    return res.status(200).json({ success: true, message: "Verify email successfully", data: user });
+    return res.status(200).json({
+      success: true,
+      message: "Verify email successfully",
+      data: user,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to verify email", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify email",
+      error: error.message,
+    });
   }
 };
 
@@ -173,25 +224,41 @@ const resendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ success: false, message: "email is required" });
+      return res.status(400).json({
+        success: false,
+        message: "email is required",
+      });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     if (user.status === "active") {
-      return res.status(200).json({ success: true, message: "Account is already active" });
+      return res.status(200).json({
+        success: true,
+        message: "Account is already active",
+      });
     }
 
     return res.status(200).json({
       success: true,
-      message: "No verification code is stored. Use /auth/verify-email to set status to active.",
+      message:
+        "No verification code is stored. Use /auth/verify-email to set status to active.",
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to resend verification code", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to resend verification code",
+      error: error.message,
+    });
   }
 };
 

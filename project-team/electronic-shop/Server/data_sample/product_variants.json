@@ -1,0 +1,244 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000601"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "sku": "IPHONE15-128-BLACK",
+    "variant_value": "128GB - Black",
+    "price": 19990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-black.png",
+    "attributes_json": {
+      "color": "Black",
+      "storage": "128GB",
+      "ram": "6GB"
+    },
+    "weight": 0.18,
+    "sale_price": 18990000,
+    "stock_quantity": 20,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000602"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "sku": "IPHONE15-256-BLUE",
+    "variant_value": "256GB - Blue",
+    "price": 22990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-blue.png",
+    "attributes_json": {
+      "color": "Blue",
+      "storage": "256GB",
+      "ram": "6GB"
+    },
+    "weight": 0.18,
+    "sale_price": 21990000,
+    "stock_quantity": 12,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000603"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "sku": "MACAIRM2-8-256-MIDNIGHT",
+    "variant_value": "8GB RAM - 256GB SSD - Midnight",
+    "price": 24990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2-midnight.png",
+    "attributes_json": {
+      "color": "Midnight",
+      "storage": "256GB SSD",
+      "ram": "8GB"
+    },
+    "weight": 1.24,
+    "sale_price": 23990000,
+    "stock_quantity": 8,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000604"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "sku": "MACAIRM2-16-512-STARLIGHT",
+    "variant_value": "16GB RAM - 512GB SSD - Starlight",
+    "price": 31990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2-starlight.png",
+    "attributes_json": {
+      "color": "Starlight",
+      "storage": "512GB SSD",
+      "ram": "16GB"
+    },
+    "weight": 1.24,
+    "sale_price": 30990000,
+    "stock_quantity": 5,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000605"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000503"
+    },
+    "sku": "S24ULTRA-12-256-GRAY",
+    "variant_value": "12GB RAM - 256GB - Titanium Gray",
+    "price": 28990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/s24-ultra-gray.png",
+    "attributes_json": {
+      "color": "Titanium Gray",
+      "storage": "256GB",
+      "ram": "12GB"
+    },
+    "weight": 0.23,
+    "sale_price": 27990000,
+    "stock_quantity": 15,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000606"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000504"
+    },
+    "sku": "DELLXPS13-16-512-SILVER",
+    "variant_value": "16GB RAM - 512GB SSD - Silver",
+    "price": 35990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/dell-xps-13-plus.png",
+    "attributes_json": {
+      "color": "Silver",
+      "storage": "512GB SSD",
+      "ram": "16GB"
+    },
+    "weight": 1.26,
+    "sale_price": 34990000,
+    "stock_quantity": 6,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000607"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000505"
+    },
+    "sku": "AIRPODSPRO2-WHITE",
+    "variant_value": "White - USB-C",
+    "price": 5990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/airpods-pro-2.png",
+    "attributes_json": {
+      "color": "White",
+      "connector": "USB-C"
+    },
+    "weight": 0.06,
+    "sale_price": 5390000,
+    "stock_quantity": 30,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000608"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "sku": "IPADAIRM2-128-BLUE",
+    "variant_value": "128GB - Blue",
+    "price": 16990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/ipad-air-m2-blue.png",
+    "attributes_json": {
+      "color": "Blue",
+      "storage": "128GB",
+      "connectivity": "Wi-Fi"
+    },
+    "weight": 0.46,
+    "sale_price": 15990000,
+    "stock_quantity": 10,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000609"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "sku": "IPADAIRM2-256-GRAY",
+    "variant_value": "256GB - Space Gray",
+    "price": 19990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/ipad-air-m2-gray.png",
+    "attributes_json": {
+      "color": "Space Gray",
+      "storage": "256GB",
+      "connectivity": "Wi-Fi"
+    },
+    "weight": 0.46,
+    "sale_price": 18990000,
+    "stock_quantity": 7,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

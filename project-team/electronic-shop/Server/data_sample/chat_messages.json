@@ -1,0 +1,53 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001211"
+    },
+    "conversation_id": {
+      "$oid": "665000000000000000001201"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Shop co iPhone 15 mau xanh khong?",
+    "attachments": [],
+    "is_read": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001212"
+    },
+    "conversation_id": {
+      "$oid": "665000000000000000001201"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "message": "Da, ben em con ban 256GB mau xanh a.",
+    "attachments": [],
+    "is_read": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001213"
+    },
+    "conversation_id": {
+      "$oid": "665000000000000000001201"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Cho em xin gia sale hien tai voi a.",
+    "attachments": [],
+    "is_read": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

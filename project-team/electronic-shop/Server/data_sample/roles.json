@@ -1,23 +1,58 @@
 [
   {
-    "_id": { "$oid": "665000000000000000000001" },
-    "name": "Admin",
+    "_id": {
+      "$oid": "665000000000000000000001"
+    },
     "code": "admin",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "name": "Admin",
+    "description": "Full system administration",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000002" },
-    "name": "Customer",
+    "_id": {
+      "$oid": "665000000000000000000002"
+    },
     "code": "customer",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "name": "Customer",
+    "description": "Shopping customer account",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   },
   {
-    "_id": { "$oid": "665000000000000000000003" },
-    "name": "Staff",
+    "_id": {
+      "$oid": "665000000000000000000003"
+    },
     "code": "staff",
-    "createdAt": { "$date": "2026-06-07T00:00:00.000Z" },
-    "updatedAt": { "$date": "2026-06-07T00:00:00.000Z" }
+    "name": "Staff",
+    "description": "Support and order handling staff",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000004"
+    },
+    "code": "manager",
+    "name": "Manager",
+    "description": "Shop manager account",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]
