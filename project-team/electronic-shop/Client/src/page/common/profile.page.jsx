@@ -13,7 +13,12 @@ import EmptyState from '../../components/atoms/EmptyState'
 import LoadingText from '../../components/atoms/LoadingText'
 import TextField from '../../components/atoms/TextField'
 import { getErrorMessage } from '../../services/api'
-import { getUserById, updateUser } from '../../services/user.service'
+import {
+  createAddress,
+  getUserById,
+  updateAddress,
+  updateUser,
+} from '../../services/user.service'
 import { getCurrentUser, getUserId, updateStoredUser } from '../../utils/authStorage'
 
 const initialAddressForm = {
@@ -27,7 +32,13 @@ const initialAddressForm = {
 }
 
 function getRoleLabel(user) {
-  const role = user?.role_id?.name || user?.role_id?.code || user?.role || user?.role_code || 'Customer'
+  const role =
+    user?.role_id?.name ||
+    user?.role_id?.code ||
+    user?.role ||
+    user?.role_code ||
+    'Customer'
+
   return String(role).toLowerCase() === 'customer' ? 'Khách hàng' : role
 }
 
@@ -35,8 +46,8 @@ function getInitial(name) {
   return String(name || 'U').trim().charAt(0).toUpperCase() || 'U'
 }
 
-function getAvatar(user, form) {
-  return form?.img_url || user?.img_url || user?.avatar || user?.avatar_url || ''
+function getAvatar(user, form, preview) {
+  return preview || form?.img_url || user?.img_url || user?.avatar || user?.avatar_url || ''
 }
 
 function getAddressId(address) {
@@ -52,7 +63,7 @@ function getReceiverPhone(address) {
 }
 
 function isDefaultAddress(address) {
-  return Boolean(address?.is_default || address?.isDefault || address?.default)
+  return Boolean(address?.is_default)
 }
 
 function formatAddress(address) {
@@ -64,6 +75,43 @@ function formatAddress(address) {
   ]
     .filter(Boolean)
     .join(', ')
+}
+
+function resizeImageToDataUrl(file, maxSize = 520, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const img = new Image()
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+
+        let { width, height } = img
+
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width)
+          width = maxSize
+        } else if (height >= width && height > maxSize) {
+          width = Math.round((width * maxSize) / height)
+          height = maxSize
+        }
+
+        canvas.width = width
+        canvas.height = height
+        context.drawImage(img, 0, 0, width, height)
+
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+
+      img.onerror = () => reject(new Error('Không đọc được ảnh.'))
+      img.src = reader.result
+    }
+
+    reader.onerror = () => reject(new Error('Không đọc được file ảnh.'))
+    reader.readAsDataURL(file)
+  })
 }
 
 function ProfilePage() {
@@ -82,43 +130,48 @@ function ProfilePage() {
   const [addresses, setAddresses] = useState([])
   const [addressForm, setAddressForm] = useState(initialAddressForm)
 
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const [avatarFileName, setAvatarFileName] = useState('')
+
   const [isEditing, setIsEditing] = useState(false)
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUpdatingAddress, setIsUpdatingAddress] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+
+  const loadProfile = async () => {
+    if (!currentUser) {
+      setIsLoading(false)
+      return
+    }
+
+    const response = await getUserById(getUserId(currentUser))
+    const data = response?.data || {}
+    const user = data.user || data
+
+    setProfile(user)
+    setAddresses(data.addresses || [])
+
+    setForm({
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      img_url: user?.img_url || '',
+    })
+  }
 
   useEffect(() => {
     let mounted = true
 
-    const loadProfile = async () => {
-      if (!currentUser) {
-        setIsLoading(false)
-        return
-      }
-
+    const init = async () => {
       try {
         setIsLoading(true)
         setError('')
         setMessage('')
 
-        const response = await getUserById(getUserId(currentUser))
-
-        if (!mounted) return
-
-        const data = response?.data || {}
-        const user = data.user || data
-
-        setProfile(user)
-        setAddresses(data.addresses || [])
-
-        setForm({
-          name: user?.name || '',
-          email: user?.email || '',
-          phone: user?.phone || '',
-          img_url: user?.img_url || '',
-        })
+        await loadProfile()
       } catch (error) {
         if (!mounted) return
         setError(getErrorMessage(error, 'Không tải được hồ sơ tài khoản.'))
@@ -127,7 +180,7 @@ function ProfilePage() {
       }
     }
 
-    loadProfile()
+    init()
 
     return () => {
       mounted = false
@@ -168,6 +221,8 @@ function ProfilePage() {
     setIsEditing(false)
     setError('')
     setMessage('')
+    setAvatarPreview('')
+    setAvatarFileName('')
 
     setForm({
       name: profile?.name || '',
@@ -182,7 +237,7 @@ function ProfilePage() {
     fileInputRef.current?.click()
   }
 
-  const handleAvatarImport = (event) => {
+  const handleAvatarImport = async (event) => {
     const file = event.target.files?.[0]
 
     if (!file) return
@@ -192,20 +247,24 @@ function ProfilePage() {
       return
     }
 
-    const reader = new FileReader()
+    try {
+      setError('')
+      setMessage('')
 
-    reader.onload = () => {
+      const compressedDataUrl = await resizeImageToDataUrl(file)
+
+      setAvatarPreview(compressedDataUrl)
+      setAvatarFileName(file.name)
+
       setForm((prev) => ({
         ...prev,
-        img_url: reader.result,
+        img_url: compressedDataUrl,
       }))
+    } catch (error) {
+      setError(error.message || 'Không đọc được file ảnh.')
+    } finally {
+      event.target.value = ''
     }
-
-    reader.onerror = () => {
-      setError('Không đọc được file ảnh.')
-    }
-
-    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async (event) => {
@@ -216,13 +275,17 @@ function ProfilePage() {
       setError('')
       setMessage('')
 
-      const response = await updateUser(getUserId(currentUser), {
+      const payload = {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        img_url: form.img_url,
-      })
+      }
 
+      if (form.img_url) {
+        payload.img_url = form.img_url
+      }
+
+      const response = await updateUser(getUserId(currentUser), payload)
       const updatedUser = response?.data || response?.user || response
 
       updateStoredUser(updatedUser)
@@ -235,6 +298,8 @@ function ProfilePage() {
         img_url: updatedUser?.img_url || '',
       })
 
+      setAvatarPreview('')
+      setAvatarFileName('')
       setIsEditing(false)
       setMessage('Cập nhật hồ sơ thành công.')
     } catch (error) {
@@ -256,7 +321,7 @@ function ProfilePage() {
     setAddressForm(initialAddressForm)
   }
 
-  const handleAddAddress = (event) => {
+  const handleAddAddress = async (event) => {
     event.preventDefault()
 
     if (!addressForm.receiver_name.trim()) {
@@ -269,64 +334,77 @@ function ProfilePage() {
       return
     }
 
+    if (!addressForm.province.trim()) {
+      setError('Vui lòng nhập tỉnh / thành phố.')
+      return
+    }
+
+    if (!addressForm.district.trim()) {
+      setError('Vui lòng nhập quận / huyện.')
+      return
+    }
+
+    if (!addressForm.ward.trim()) {
+      setError('Vui lòng nhập phường / xã.')
+      return
+    }
+
     if (!addressForm.address_line.trim()) {
       setError('Vui lòng nhập địa chỉ cụ thể.')
       return
     }
 
-    const shouldBeDefault = addressForm.is_default || addresses.length === 0
+    try {
+      setIsUpdatingAddress(true)
+      setError('')
+      setMessage('')
 
-    const newAddress = {
-      ...addressForm,
-      _id: `local-${Date.now()}`,
-      receiver_name: addressForm.receiver_name.trim(),
-      receiver_phone: addressForm.receiver_phone.trim(),
-      province: addressForm.province.trim(),
-      district: addressForm.district.trim(),
-      ward: addressForm.ward.trim(),
-      address_line: addressForm.address_line.trim(),
-      is_default: shouldBeDefault,
-      isDefault: shouldBeDefault,
-      default: shouldBeDefault,
+      await createAddress(getUserId(currentUser), {
+        receive_name: addressForm.receiver_name.trim(),
+        receive_phone: addressForm.receiver_phone.trim(),
+        receiver_name: addressForm.receiver_name.trim(),
+        receiver_phone: addressForm.receiver_phone.trim(),
+        province: addressForm.province.trim(),
+        district: addressForm.district.trim(),
+        ward: addressForm.ward.trim(),
+        address_line: addressForm.address_line.trim(),
+        is_default: addressForm.is_default || addresses.length === 0,
+      })
+
+      await loadProfile()
+
+      setMessage('Đã thêm địa chỉ vào danh sách.')
+      handleCloseAddressModal()
+    } catch (error) {
+      setError(getErrorMessage(error, 'Không thêm được địa chỉ.'))
+    } finally {
+      setIsUpdatingAddress(false)
     }
-
-    setAddresses((prev) => {
-      if (!shouldBeDefault) return [newAddress, ...prev]
-
-      return [
-        newAddress,
-        ...prev.map((item) => ({
-          ...item,
-          is_default: false,
-          isDefault: false,
-          default: false,
-        })),
-      ]
-    })
-
-    setMessage('Đã thêm địa chỉ vào danh sách.')
-    handleCloseAddressModal()
   }
 
-  const handleSetDefaultAddress = (targetKey) => {
-    setAddresses((prev) =>
-      prev.map((item, index) => {
-        const itemKey = getAddressId(item) || `address-${index}`
-        const isSelected = itemKey === targetKey
+  const handleSetDefaultAddress = async (addressId) => {
+    if (!addressId) return
 
-        return {
-          ...item,
-          is_default: isSelected,
-          isDefault: isSelected,
-          default: isSelected,
-        }
-      }),
-    )
+    try {
+      setIsUpdatingAddress(true)
+      setError('')
+      setMessage('')
 
-    setMessage('Đã cập nhật địa chỉ mặc định.')
+      await updateAddress(addressId, {
+        is_default: true,
+      })
+
+      await loadProfile()
+
+      setMessage('Đã cập nhật địa chỉ mặc định.')
+    } catch (error) {
+      setError(getErrorMessage(error, 'Không cập nhật được địa chỉ mặc định.'))
+    } finally {
+      setIsUpdatingAddress(false)
+    }
   }
 
-  const avatar = getAvatar(profile, form)
+  const avatar = getAvatar(profile, form, avatarPreview)
   const roleLabel = getRoleLabel(profile)
   const isActive = String(profile?.status || '').toLowerCase() === 'active'
 
@@ -386,11 +464,19 @@ function ProfilePage() {
                       type='button'
                       disabled={!isEditing}
                       onClick={handleChooseAvatar}
-                      className='mb-4 rounded-pill border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-orange-50 disabled:hover:text-orange-600'
+                      className='mb-3 rounded-pill border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-orange-50 disabled:hover:text-orange-600'
                     >
                       <i className='bi bi-image me-2' />
                       Import ảnh
                     </button>
+
+                    {avatarFileName && (
+                      <p className='mb-4 text-xs font-bold text-slate-500'>
+                        Đã chọn: {avatarFileName}
+                      </p>
+                    )}
+
+                    {!avatarFileName && <div className='mb-4' />}
 
                     <h2 className='mb-1 text-2xl font-black text-slate-950'>
                       {profile?.name || 'Người dùng'}
@@ -399,24 +485,6 @@ function ProfilePage() {
                     <p className='mb-3 text-slate-500'>
                       {profile?.email}
                     </p>
-
-                    <span
-                      className={`rounded-pill px-3 py-2 text-xs font-black ${
-                        isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {isActive ? 'Đang hoạt động' : profile?.status || 'Chưa xác định'}
-                    </span>
-
-                    <div className='mt-4 rounded-4 bg-slate-50 p-3 text-start'>
-                      <p className='mb-1 text-xs font-black uppercase text-slate-400'>
-                        Vai trò
-                      </p>
-
-                      <p className='mb-0 font-bold text-slate-700'>
-                        {roleLabel}
-                      </p>
-                    </div>
                   </Card.Body>
                 </Card>
               </Col>
@@ -488,15 +556,6 @@ function ProfilePage() {
                         </Col>
 
                         <Col md={6}>
-                          <Form.Group>
-                            <Form.Label className='mb-2 text-sm font-bold text-slate-700'>
-                              Ảnh đại diện
-                            </Form.Label>
-
-                            <div className='rounded-4 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 shadow-sm'>
-                              {avatar ? 'Đã chọn ảnh đại diện' : 'Chưa có ảnh đại diện'}
-                            </div>
-                          </Form.Group>
                         </Col>
                       </Row>
 
@@ -538,7 +597,11 @@ function ProfilePage() {
                           {addresses.length} địa chỉ
                         </span>
 
-                        <Button type='button' onClick={handleOpenAddressModal}>
+                        <Button
+                          type='button'
+                          onClick={handleOpenAddressModal}
+                          disabled={isUpdatingAddress}
+                        >
                           Thêm địa chỉ
                         </Button>
                       </div>
@@ -555,7 +618,8 @@ function ProfilePage() {
                     ) : (
                       <Row className='g-3'>
                         {addresses.map((address, index) => {
-                          const addressKey = getAddressId(address) || `address-${index}`
+                          const addressId = getAddressId(address)
+                          const addressKey = addressId || `address-${index}`
                           const isDefault = isDefaultAddress(address)
 
                           return (
@@ -568,7 +632,8 @@ function ProfilePage() {
                                 <div className='mb-3 d-flex align-items-start gap-3'>
                                   <button
                                     type='button'
-                                    onClick={() => handleSetDefaultAddress(addressKey)}
+                                    onClick={() => handleSetDefaultAddress(addressId)}
+                                    disabled={isUpdatingAddress || !addressId || isDefault}
                                     className={`d-flex align-items-center justify-content-center rounded-circle border shadow-sm transition ${
                                       isDefault
                                         ? 'border-emerald-500 bg-emerald-500 text-white'
@@ -728,12 +793,13 @@ function ProfilePage() {
             <button
               type='button'
               onClick={handleCloseAddressModal}
-              className='rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100'
+              disabled={isUpdatingAddress}
+              className='rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50'
             >
               Hủy
             </button>
 
-            <Button type='submit'>
+            <Button type='submit' isLoading={isUpdatingAddress}>
               Thêm địa chỉ
             </Button>
           </Modal.Footer>

@@ -15,9 +15,10 @@ import PriceText from '../../components/atoms/PriceText'
 import { addItemToCart } from '../../services/cart.service'
 import { getErrorMessage } from '../../services/api'
 import { getProductById } from '../../services/product.service'
+import { getReviews } from '../../services/review.service'
 import { getCurrentUser } from '../../utils/authStorage'
 import { getCartIdentity } from '../../utils/sessionCart'
-import { getId, pickData } from '../../utils/format'
+import { getId, pickArray, pickData } from '../../utils/format'
 import {
   getProductImage,
   getProductOriginalPrice,
@@ -27,6 +28,16 @@ import {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('vi-VN').format(Number(value || 0))
+}
+
+function formatReviewDate(value) {
+  if (!value) return ''
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value))
 }
 
 function getSoldCount(product, variant) {
@@ -108,6 +119,62 @@ function getBrandInfo(product) {
   }
 }
 
+function getReviewUser(review) {
+  return review?.user_id || review?.user || {}
+}
+
+function getReviewUserName(review) {
+  const user = getReviewUser(review)
+
+  return (
+    user?.name ||
+    user?.full_name ||
+    user?.fullName ||
+    user?.email ||
+    'Khách hàng'
+  )
+}
+
+function getReviewAvatar(review) {
+  const user = getReviewUser(review)
+  return user?.img_url || user?.avatar || user?.avatar_url || ''
+}
+
+function getReviewInitial(review) {
+  return String(getReviewUserName(review)).trim().charAt(0).toUpperCase() || 'U'
+}
+
+function getReviewComment(review) {
+  return review?.comment || review?.reviews || review?.content || ''
+}
+
+function getReviewImages(review) {
+  const images = review?.images
+
+  if (!images) return []
+  if (Array.isArray(images)) return images.filter(Boolean)
+  if (typeof images === 'string') return [images]
+
+  return []
+}
+
+function RatingStars({ rating = 0 }) {
+  const value = Number(rating || 0)
+
+  return (
+    <div className='d-flex align-items-center gap-1'>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={star <= value ? 'text-amber-500' : 'text-slate-300'}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function QuantityInput({ value, max, disabled, onChange }) {
   const safeMax = Number(max || 99)
 
@@ -186,6 +253,133 @@ function QuantityInput({ value, max, disabled, onChange }) {
   )
 }
 
+function ProductReviews({ reviews, isLoading, error }) {
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length
+      : 0
+
+  return (
+    <div className='mt-5'>
+      <Card className='overflow-hidden border-0 bg-white shadow-sm'>
+        <Card.Body className='p-0'>
+            
+
+          <div className='p-4 p-lg-5'>
+            <Alert type='warning'>{error}</Alert>
+
+            {isLoading ? (
+              <LoadingText />
+            ) : reviews.length === 0 ? (
+              <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
+                <div className='mb-3 text-4xl'>💬</div>
+
+                <h3 className='mb-2 text-xl font-black text-slate-900'>
+                  Chưa có đánh giá
+                </h3>
+
+                <p className='mb-0 text-slate-500'>
+                  Sản phẩm này hiện chưa có feedback từ khách hàng.
+                </p>
+              </div>
+            ) : (
+              <div className='d-flex flex-column gap-4'>
+                {reviews.map((review, index) => {
+                  const reviewImages = getReviewImages(review)
+                  const avatar = getReviewAvatar(review)
+
+                  return (
+                    <div
+                      key={getId(review) || `review-${index}`}
+                      className='rounded-4 border border-slate-200 bg-white p-4 shadow-sm'
+                    >
+                      <div className='mb-3 d-flex flex-wrap align-items-start justify-content-between gap-3'>
+                        <div className='d-flex align-items-center gap-3'>
+                          <span
+                            className='d-flex align-items-center justify-content-center rounded-circle bg-orange-500 font-black text-white'
+                            style={{
+                              width: 48,
+                              height: 48,
+                              overflow: 'hidden',
+                              minWidth: 48,
+                            }}
+                          >
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={getReviewUserName(review)}
+                                className='h-100 w-100 object-cover'
+                                onError={(event) => {
+                                  event.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            ) : (
+                              getReviewInitial(review)
+                            )}
+                          </span>
+
+                          <div>
+                            <h3 className='mb-1 text-base font-black text-slate-950'>
+                              {getReviewUserName(review)}
+                            </h3>
+
+                            <div className='d-flex flex-wrap align-items-center gap-2'>
+                              <RatingStars rating={review.rating} />
+
+                              <span className='text-sm font-bold text-slate-400'>
+                                {formatReviewDate(review.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className='rounded-pill bg-amber-50 px-3 py-2 text-xs font-black text-amber-700'>
+                          {Number(review.rating || 0).toFixed(1)} / 5
+                        </span>
+                      </div>
+
+                      <p className='mb-0 leading-8 text-slate-600'>
+                        {getReviewComment(review) || 'Khách hàng không để lại nội dung đánh giá.'}
+                      </p>
+
+                      {reviewImages.length > 0 && (
+                        <div className='mt-3 d-flex flex-wrap gap-2'>
+                          {reviewImages.map((item, imageIndex) => (
+                            <a
+                              key={`${item}-${imageIndex}`}
+                              href={item}
+                              target='_blank'
+                              rel='noreferrer'
+                              className='d-block overflow-hidden rounded-3 border border-slate-200 bg-slate-50'
+                              style={{
+                                width: 82,
+                                height: 82,
+                              }}
+                            >
+                              <img
+                                src={item}
+                                alt={`Review ${imageIndex + 1}`}
+                                className='h-100 w-100 object-cover'
+                                onError={(event) => {
+                                  event.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+    </div>
+  )
+}
+
 function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -194,10 +388,15 @@ function ProductDetailPage() {
   const [variants, setVariants] = useState([])
   const [variantId, setVariantId] = useState('')
   const [quantity, setQuantity] = useState(1)
+  const [reviews, setReviews] = useState([])
+
   const [isLoading, setIsLoading] = useState(true)
+  const [isReviewLoading, setIsReviewLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+
   const [error, setError] = useState('')
+  const [reviewError, setReviewError] = useState('')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -206,7 +405,9 @@ function ProductDetailPage() {
     const load = async () => {
       try {
         setIsLoading(true)
+        setIsReviewLoading(true)
         setError('')
+        setReviewError('')
         setMessage('')
 
         const response = await getProductById(id)
@@ -221,6 +422,7 @@ function ProductDetailPage() {
           setProduct(null)
           setVariants([])
           setVariantId('')
+          setReviews([])
           setError('Không tìm thấy sản phẩm từ backend.')
           return
         }
@@ -233,15 +435,35 @@ function ProductDetailPage() {
         setVariants(loadedVariants)
         setVariantId(getId(loadedVariants[0]) || '')
         setQuantity(1)
+
+        try {
+          const reviewResponse = await getReviews({
+            product_id: getId(loadedProduct),
+            status: 'visible',
+          })
+
+          if (!mounted) return
+
+          setReviews(pickArray(reviewResponse, []))
+        } catch (error) {
+          if (!mounted) return
+
+          setReviews([])
+          setReviewError(getErrorMessage(error, 'Không tải được đánh giá sản phẩm.'))
+        }
       } catch (error) {
         if (!mounted) return
 
         setProduct(null)
         setVariants([])
         setVariantId('')
+        setReviews([])
         setError(getErrorMessage(error, 'Không tải được chi tiết sản phẩm từ backend.'))
       } finally {
-        if (mounted) setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false)
+          setIsReviewLoading(false)
+        }
       }
     }
 
@@ -600,6 +822,17 @@ function ProductDetailPage() {
 
                           <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
+                              <i className='bi bi-chat-dots-fill text-orange-500' />
+                              Feedback
+                            </span>
+
+                            <span className='text-end font-black text-slate-900'>
+                              {formatNumber(reviews.length)} đánh giá
+                            </span>
+                          </div>
+
+                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                            <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-box-seam-fill text-orange-500' />
                               Kho hàng
                             </span>
@@ -622,6 +855,12 @@ function ProductDetailPage() {
               </Card.Body>
             </Card>
           </div>
+
+          <ProductReviews
+            reviews={reviews}
+            isLoading={isReviewLoading}
+            error={reviewError}
+          />
         </Container>
       </section>
     </MainLayout>

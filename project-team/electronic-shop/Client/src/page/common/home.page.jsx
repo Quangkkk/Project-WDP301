@@ -58,7 +58,6 @@ function HomePage() {
 
       <section className='page-section bg-white' id='categories'>
         <Container>
-          <SectionHeading eyebrow='Categories' title='Danh mục nổi bật' description='Dữ liệu category được lấy trực tiếp từ backend.' />
           <Alert type='danger'>{error}</Alert>
           {categories.length === 0 && !isLoading ? (
             <EmptyState icon='📂' title='Chưa có category từ backend' description='Hãy thêm category trong database hoặc tạo ở trang admin.' />
@@ -85,7 +84,6 @@ function HomePage() {
           <SectionHeading
             eyebrow='Featured products'
             title='Sản phẩm nổi bật'
-            description='Dữ liệu sản phẩm được lấy từ API /product?featured=true&status=active.'
             action={<Link to='/products'><Button variant='secondary'>View all</Button></Link>}
           />
           <ProductGrid products={products.slice(0, 6)} isLoading={isLoading} />
