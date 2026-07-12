@@ -6,12 +6,12 @@
     "user_id": {
       "$oid": "665000000000000000000102"
     },
-    "receive_name": "Customer Demo",
+    "receive_name": "Khách hàng Demo",
     "receive_phone": "0900000002",
-    "province": "Ha Noi",
-    "district": "Cau Giay",
-    "ward": "Dich Vong Hau",
-    "address_line": "So 1 Xuan Thuy",
+    "province": "Hà Nội",
+    "district": "Cầu Giấy",
+    "ward": "Dịch Vọng Hậu",
+    "address_line": "Số 1 Xuân Thủy",
     "is_default": true,
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
@@ -27,13 +27,55 @@
     "user_id": {
       "$oid": "665000000000000000000102"
     },
-    "receive_name": "Customer Demo",
+    "receive_name": "Khách hàng Demo",
     "receive_phone": "0900000002",
-    "province": "Ha Noi",
-    "district": "Nam Tu Liem",
-    "ward": "My Dinh 2",
-    "address_line": "Toa nha FPT, Pho Duy Tan",
+    "province": "Hà Nội",
+    "district": "Nam Từ Liêm",
+    "ward": "Mỹ Đình 2",
+    "address_line": "Tòa nhà FPT, phố Duy Tân",
     "is_default": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000803"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "receive_name": "Nguyễn Minh Anh",
+    "receive_phone": "0912345678",
+    "province": "TP. Hồ Chí Minh",
+    "district": "Quận 1",
+    "ward": "Bến Nghé",
+    "address_line": "12 Nguyễn Huệ",
+    "is_default": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000804"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000106"
+    },
+    "receive_name": "Trần Đức Huy",
+    "receive_phone": "0987654321",
+    "province": "Đà Nẵng",
+    "district": "Hải Châu",
+    "ward": "Hải Châu 1",
+    "address_line": "35 Bạch Đằng",
+    "is_default": true,
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     },

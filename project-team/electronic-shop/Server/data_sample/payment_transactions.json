@@ -1,0 +1,95 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000951"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000902"
+    },
+    "provider": "bank_transfer",
+    "amount": 26050000,
+    "status": "paid",
+    "payment_code": "DH00000902",
+    "transaction_ref": "DH00000902",
+    "provider_order_id": null,
+    "payment_url": null,
+    "qr_url": "https://img.vietqr.io/image/TPB-0123456789-compact2.png?amount=26050000&addInfo=DH00000902&accountName=ONLINE%20TECH%20SHOP",
+    "bank_code": "TPB",
+    "account_no": "0123456789",
+    "account_name": "ONLINE TECH SHOP",
+    "transfer_content": "DH00000902",
+    "paid_at": {
+      "$date": "2026-06-28T09:35:00.000Z"
+    },
+    "raw_response": {
+      "source": "sample_data"
+    },
+    "created_at": {
+      "$date": "2026-06-28T09:20:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000952"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000903"
+    },
+    "provider": "bank_transfer",
+    "amount": 7980000,
+    "status": "pending",
+    "payment_code": "DH00000903",
+    "transaction_ref": "DH00000903",
+    "provider_order_id": null,
+    "payment_url": null,
+    "qr_url": "https://img.vietqr.io/image/TPB-0123456789-compact2.png?amount=7980000&addInfo=DH00000903&accountName=ONLINE%20TECH%20SHOP",
+    "bank_code": "TPB",
+    "account_no": "0123456789",
+    "account_name": "ONLINE TECH SHOP",
+    "transfer_content": "DH00000903",
+    "paid_at": null,
+    "raw_response": {
+      "source": "sample_data"
+    },
+    "created_at": {
+      "$date": "2026-06-29T14:10:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000953"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000904"
+    },
+    "provider": "zalopay",
+    "amount": 31050000,
+    "status": "pending",
+    "payment_code": "260630_000000000904",
+    "transaction_ref": "260630_000000000904",
+    "provider_order_id": "260630_000000000904",
+    "payment_url": "https://sb-openapi.zalopay.vn/sample-payment-url",
+    "qr_url": null,
+    "bank_code": null,
+    "account_no": null,
+    "account_name": null,
+    "transfer_content": null,
+    "paid_at": null,
+    "raw_response": {
+      "source": "sample_data",
+      "return_code": 1
+    },
+    "created_at": {
+      "$date": "2026-06-30T08:30:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

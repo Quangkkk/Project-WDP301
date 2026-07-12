@@ -2,16 +2,17 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import ProtectedRoute from './components/templates/ProtectedRoute.jsx'
 
-import HomePage from './page/common/home.page.jsx'
-import LoginPage from './page/common/login.page.jsx'
-import RegisterPage from './page/common/register.page.jsx'
-import ProductListPage from './page/common/product-list.page.jsx'
-import ProductDetailPage from './page/common/product-detail.page.jsx'
-import CartPage from './page/common/cart.page.jsx'
-import CheckoutPage from './page/common/checkout.page.jsx'
-import OrderHistoryPage from './page/common/order-history.page.jsx'
-import ProfilePage from './page/common/profile.page.jsx'
-import SupportPage from './page/common/support.page.jsx'
+import HomePage from './page/customer/home.page.jsx'
+import LoginPage from './page/customer/login.page.jsx'
+import RegisterPage from './page/customer/register.page.jsx'
+import ProductListPage from './page/customer/product-list.page.jsx'
+import ProductDetailPage from './page/customer/product-detail.page.jsx'
+import CartPage from './page/customer/cart.page.jsx'
+import CheckoutPage from './page/customer/checkout.page.jsx'
+import PaymentResultPage from './page/customer/payment-result.page.jsx'
+import OrderHistoryPage from './page/customer/order-history.page.jsx'
+import ProfilePage from './page/customer/profile.page.jsx'
+import SupportPage from './page/customer/support.page.jsx'
 
 import AdminDashboardPage from './page/admin/admin-dashboard.page.jsx'
 import ProductManagementPage from './page/admin/product-management.page.jsx'
@@ -44,6 +45,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={customerOnly}>
               <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/payment-result/:orderId'
+          element={
+            <ProtectedRoute allowedRoles={customerOnly}>
+              <PaymentResultPage />
             </ProtectedRoute>
           }
         />

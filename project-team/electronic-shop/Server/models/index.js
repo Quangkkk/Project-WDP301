@@ -16,6 +16,7 @@ const Wishlist = require("./Wishlist.model");
 const ShippingMethod = require("./ShippingMethod.model");
 const Order = require("./Orders.model");
 const OrderItem = require("./OrderItem.model");
+const PaymentTransaction = require("./PaymentTransaction.model");
 
 const Review = require("./Review.model");
 const Coupon = require("./Coupon.model");
@@ -28,22 +29,29 @@ const TicketMessage = require("./TicketMessage.model");
 
 const db = {
   mongoose,
+
   User,
   Role,
   UserAddress,
+
   Category,
   Brand,
   Product,
   ProductVariant,
+
   Cart,
   CartItem,
   Wishlist,
+
   ShippingMethod,
   Order,
   OrderItem,
+  PaymentTransaction,
+
   Review,
   Coupon,
   CouponUsage,
+
   ChatConversation,
   ChatMessage,
   SupportTicket,

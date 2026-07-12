@@ -13,10 +13,8 @@ function HeroSection() {
           <Col lg={6}>
             <PageBadge>Online Technology Sale System</PageBadge>
             <h1 className='mb-4 text-5xl font-black tracking-tight text-slate-950 md:text-6xl'>Mua đồ công nghệ nhanh, rõ ràng và dễ quản lý.</h1>
-            <p className='mb-4 text-lg leading-8 text-slate-500'>Giao diện đồng bộ cho customer và dashboard quản trị: product, cart, checkout, order tracking, coupon, ticket support và user management.</p>
             <div className='d-flex flex-wrap gap-3'>
-              <Link to='/products'><Button>Shop now</Button></Link>
-              <Link to='/admin'><Button variant='secondary'>Open dashboard</Button></Link>
+              <Link to='/products'><Button>Mua Ngay</Button></Link>
             </div>
           </Col>
           <Col lg={6}>

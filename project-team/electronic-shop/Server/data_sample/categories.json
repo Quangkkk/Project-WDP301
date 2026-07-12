@@ -3,7 +3,7 @@
     "_id": {
       "$oid": "665000000000000000000201"
     },
-    "name": "Laptops",
+    "name": "Laptop",
     "status": "active",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
@@ -16,7 +16,7 @@
     "_id": {
       "$oid": "665000000000000000000202"
     },
-    "name": "Smartphones",
+    "name": "Điện thoại",
     "status": "active",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
@@ -29,7 +29,7 @@
     "_id": {
       "$oid": "665000000000000000000203"
     },
-    "name": "Accessories",
+    "name": "Phụ kiện",
     "status": "active",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
@@ -42,7 +42,59 @@
     "_id": {
       "$oid": "665000000000000000000204"
     },
-    "name": "Tablets",
+    "name": "Máy tính bảng",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000205"
+    },
+    "name": "Đồng hồ thông minh",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000206"
+    },
+    "name": "Màn hình",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000207"
+    },
+    "name": "Thiết bị mạng",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000208"
+    },
+    "name": "Máy chơi game",
     "status": "active",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"

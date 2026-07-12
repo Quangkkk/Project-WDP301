@@ -9,7 +9,7 @@
     "sender_id": {
       "$oid": "665000000000000000000102"
     },
-    "message": "Shop co iPhone 15 mau xanh khong?",
+    "message": "Shop có iPhone 15 màu xanh không?",
     "attachments": [],
     "is_read": true,
     "created_at": {
@@ -26,7 +26,7 @@
     "sender_id": {
       "$oid": "665000000000000000000103"
     },
-    "message": "Da, ben em con ban 256GB mau xanh a.",
+    "message": "Dạ, bên em còn bản 256GB màu xanh ạ.",
     "attachments": [],
     "is_read": true,
     "created_at": {
@@ -43,11 +43,45 @@
     "sender_id": {
       "$oid": "665000000000000000000102"
     },
-    "message": "Cho em xin gia sale hien tai voi a.",
+    "message": "Cho em xin giá sale hiện tại với ạ.",
     "attachments": [],
     "is_read": false,
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001214"
+    },
+    "conversation_id": {
+      "$oid": "665000000000000000001202"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "message": "Tai nghe Sony WH-1000XM5 còn màu bạc không shop?",
+    "attachments": [],
+    "is_read": true,
+    "created_at": {
+      "$date": "2026-06-29T14:05:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001215"
+    },
+    "conversation_id": {
+      "$oid": "665000000000000000001202"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "message": "Dạ còn ạ, hiện đang giảm còn 7.990.000đ.",
+    "attachments": [],
+    "is_read": false,
+    "created_at": {
+      "$date": "2026-06-29T14:07:00.000Z"
     }
   }
 ]

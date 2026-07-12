@@ -12,8 +12,8 @@
     "order_id": {
       "$oid": "665000000000000000000901"
     },
-    "subject": "Can kiem tra tinh trang giao hang",
-    "description": "Khach hang muon hoi thoi gian giao hang du kien cho don iPhone 15.",
+    "subject": "Cần kiểm tra tình trạng giao hàng",
+    "description": "Khách hàng muốn hỏi thời gian giao hàng dự kiến cho đơn iPhone 15.",
     "status": "open",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
@@ -31,11 +31,34 @@
     },
     "assigned_staff_id": null,
     "order_id": null,
-    "subject": "Tu van mua laptop",
-    "description": "Khach hang can tu van laptop hoc tap va lap trinh co ban.",
+    "subject": "Tư vấn mua laptop",
+    "description": "Khách hàng cần tư vấn laptop học tập và lập trình cơ bản.",
     "status": "pending",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001103"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "assigned_staff_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000903"
+    },
+    "subject": "Xác nhận chuyển khoản",
+    "description": "Khách hàng đã chuyển khoản và cần nhân viên kiểm tra thanh toán.",
+    "status": "open",
+    "created_at": {
+      "$date": "2026-06-29T14:20:00.000Z"
     },
     "updated_at": {
       "$date": "2026-06-30T00:00:00.000Z"

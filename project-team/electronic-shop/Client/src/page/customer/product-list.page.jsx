@@ -184,16 +184,6 @@ function ProductListPage() {
     <MainLayout>
       <section className='bg-slate-50 py-5'>
         <Container>
-          <div className='mb-4'>
-            <p className='mb-2 text-xs font-bold uppercase tracking-[0.35em] text-orange-600'>
-              Shopping
-            </p>
-
-            <h1 className='mb-0 text-4xl font-black tracking-tight text-slate-900'>
-              Product List
-            </h1>
-          </div>
-
           <Alert type='danger'>{error}</Alert>
 
           <Row className='g-4 align-items-start'>
@@ -301,9 +291,6 @@ function ProductListPage() {
             <Col xs={12} lg={9}>
               <div className='mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3'>
                 <div>
-                  <p className='mb-0 text-sm font-bold text-slate-500'>
-                    Showing {visibleProducts.length} products from backend
-                  </p>
 
                   {filters.keyword && (
                     <p className='mb-0 mt-1 text-sm text-slate-500'>

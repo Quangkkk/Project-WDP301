@@ -40,5 +40,47 @@
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000923"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000903"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000507"
+    },
+    "variant_id": {
+      "$oid": "665000000000000000000610"
+    },
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/sony-wh1000xm5-black.png",
+    "unit_price": 7890000,
+    "quantity": 1,
+    "subtotal": 7890000,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000924"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000904"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000517"
+    },
+    "variant_id": {
+      "$oid": "665000000000000000000624"
+    },
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-pro-max-natural.png",
+    "unit_price": 32990000,
+    "quantity": 1,
+    "subtotal": 32990000,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
   }
 ]

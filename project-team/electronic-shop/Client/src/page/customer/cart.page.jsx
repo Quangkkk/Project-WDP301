@@ -58,7 +58,6 @@ function CartPage() {
 
       const response = await getCart(identity)
       const data = response?.data || {}
-
       const nextItems = data.items || []
 
       setCart(data.cart || null)
@@ -167,9 +166,8 @@ function CartPage() {
 
   return (
     <MainLayout>
-      <section className='page-section pb-28'>
+      <section className='page-section pb-32'>
         <Container>
-
           <Alert type='danger'>{error}</Alert>
           <Alert type='success'>{message}</Alert>
 
@@ -179,8 +177,8 @@ function CartPage() {
             <EmptyState
               icon='🛒'
               title='Giỏ hàng đang trống'
-              description='Hãy thêm sản phẩm vào giỏ hàng trước khi checkout.'
-              actionLabel='Shop products'
+              description='Hãy thêm sản phẩm vào giỏ hàng trước khi thanh toán.'
+              actionLabel='Mua hàng'
               onAction={() => window.location.assign('/products')}
             />
           ) : (
@@ -198,9 +196,7 @@ function CartPage() {
                     }}
                   />
 
-                  <span>
-                    Chọn tất cả
-                  </span>
+                  <span>Chọn tất cả</span>
                 </label>
 
                 <span className='rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
@@ -234,54 +230,69 @@ function CartPage() {
       </section>
 
       {!isLoading && items.length > 0 && (
-        <div className='fixed-bottom border-top bg-white/95 shadow-lg backdrop-blur'>
+        <div
+          className='fixed-bottom pb-4'
+          style={{
+            pointerEvents: 'none',
+            zIndex: 1030,
+          }}
+        >
           <Container>
-            <div className='mx-auto d-flex flex-wrap align-items-center justify-content-between gap-3 py-3'>
-              <div className='d-flex flex-wrap align-items-center gap-3'>
-                <label className='d-flex align-items-center gap-3 font-bold text-slate-700'>
-                  <input
-                    type='checkbox'
-                    checked={isAllSelected}
-                    onChange={handleToggleAll}
-                    className='form-check-input m-0'
-                    style={{
-                      width: 20,
-                      height: 20,
-                    }}
-                  />
-
-                  <span>
-                    Chọn tất cả
-                  </span>
-                </label>
-
-                <span className='text-sm font-bold text-slate-500'>
-                  Đã chọn {selectedItemIds.length} sản phẩm
-                </span>
-              </div>
-
-              <div className='d-flex flex-wrap align-items-center gap-4'>
-                <div className='text-end'>
-                  <p className='mb-1 text-xs font-black uppercase text-slate-400'>
-                    Tổng thanh toán
-                  </p>
-
-                  <PriceText
-                    value={selectedTotal}
-                    className='text-2xl font-black text-orange-600'
-                  />
-                </div>
-
-                <Button
-                  type='button'
-                  disabled={!hasSelectedItems}
-                  onClick={handleCheckout}
-                  className='px-5 py-3'
+            <Row className='justify-content-center'>
+              <Col xs={11} md={10} lg={8}>
+                <div
+                  className='rounded-5 border border-orange-100 bg-white px-4 py-3 shadow-lg'
+                  style={{
+                    pointerEvents: 'auto',
+                  }}
                 >
-                  Thanh toán
-                </Button>
-              </div>
-            </div>
+                  <div className='d-flex flex-wrap align-items-center justify-content-between gap-3'>
+                    <div className='d-flex flex-wrap align-items-center gap-3'>
+                      <label className='d-flex align-items-center gap-3 font-bold text-slate-700'>
+                        <input
+                          type='checkbox'
+                          checked={isAllSelected}
+                          onChange={handleToggleAll}
+                          className='form-check-input m-0'
+                          style={{
+                            width: 20,
+                            height: 20,
+                          }}
+                        />
+
+                        <span>Chọn tất cả</span>
+                      </label>
+
+                      <span className='text-sm font-bold text-slate-500'>
+                        Đã chọn {selectedItemIds.length} sản phẩm
+                      </span>
+                    </div>
+
+                    <div className='d-flex flex-wrap align-items-center gap-4'>
+                      <div className='text-end'>
+                        <p className='mb-1 text-xs font-black uppercase text-slate-400'>
+                          Tổng thanh toán
+                        </p>
+
+                        <PriceText
+                          value={selectedTotal}
+                          className='text-2xl font-black text-orange-600'
+                        />
+                      </div>
+
+                      <Button
+                        type='button'
+                        disabled={!hasSelectedItems}
+                        onClick={handleCheckout}
+                        className='px-5 py-3'
+                      >
+                        Thanh toán
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
           </Container>
         </div>
       )}

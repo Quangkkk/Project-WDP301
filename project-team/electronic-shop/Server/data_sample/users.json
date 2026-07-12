@@ -6,7 +6,7 @@
     "role_id": {
       "$oid": "665000000000000000000001"
     },
-    "name": "Admin Demo",
+    "name": "Quản trị viên Demo",
     "email": "admin@example.com",
     "phone": "0900000001",
     "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/admin.png",
@@ -26,7 +26,7 @@
     "role_id": {
       "$oid": "665000000000000000000002"
     },
-    "name": "Customer Demo",
+    "name": "Khách hàng Demo",
     "email": "customer@example.com",
     "phone": "0900000002",
     "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/customer.png",
@@ -46,7 +46,7 @@
     "role_id": {
       "$oid": "665000000000000000000003"
     },
-    "name": "Staff Demo",
+    "name": "Nhân viên Demo",
     "email": "staff@example.com",
     "phone": "0900000003",
     "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/staff.png",
@@ -66,10 +66,50 @@
     "role_id": {
       "$oid": "665000000000000000000004"
     },
-    "name": "Manager Demo",
+    "name": "Quản lý Demo",
     "email": "manager@example.com",
     "phone": "0900000004",
     "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/manager.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000002"
+    },
+    "name": "Nguyễn Minh Anh",
+    "email": "minhanh@example.com",
+    "phone": "0912345678",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/customer-2.png",
+    "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000106"
+    },
+    "role_id": {
+      "$oid": "665000000000000000000002"
+    },
+    "name": "Trần Đức Huy",
+    "email": "duchuy@example.com",
+    "phone": "0987654321",
+    "img_url": "https://res.cloudinary.com/demo/image/upload/v1/avatars/customer-3.png",
     "hash_pass": "$2a$10$l5K703OmW4zz1bDljsnND.Anynip4woc8Io.b69BS40GYutzYKNRa",
     "status": "active",
     "created_at": {

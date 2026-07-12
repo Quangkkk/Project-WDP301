@@ -4,8 +4,8 @@
       "$oid": "665000000000000000000001"
     },
     "code": "admin",
-    "name": "Admin",
-    "description": "Full system administration",
+    "name": "Quản trị viên",
+    "description": "Quản trị toàn bộ hệ thống",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     },
@@ -18,8 +18,8 @@
       "$oid": "665000000000000000000002"
     },
     "code": "customer",
-    "name": "Customer",
-    "description": "Shopping customer account",
+    "name": "Khách hàng",
+    "description": "Tài khoản khách hàng mua sắm",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     },
@@ -32,8 +32,8 @@
       "$oid": "665000000000000000000003"
     },
     "code": "staff",
-    "name": "Staff",
-    "description": "Support and order handling staff",
+    "name": "Nhân viên",
+    "description": "Nhân viên hỗ trợ khách hàng và xử lý đơn hàng",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     },
@@ -46,8 +46,8 @@
       "$oid": "665000000000000000000004"
     },
     "code": "manager",
-    "name": "Manager",
-    "description": "Shop manager account",
+    "name": "Quản lý",
+    "description": "Tài khoản quản lý cửa hàng",
     "created_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     },

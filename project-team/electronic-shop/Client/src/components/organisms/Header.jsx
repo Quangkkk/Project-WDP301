@@ -55,7 +55,7 @@ function HeaderSearch({ className = '' }) {
           type='text'
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
-          placeholder='Search products...'
+          placeholder='Tìm sản phẩm...'
           className='border-0 bg-transparent p-0 text-sm shadow-none'
         />
 
