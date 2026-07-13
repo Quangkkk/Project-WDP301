@@ -1,0 +1,118 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000901"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000701"
+    },
+    "receiver_name": "Khách hàng Demo",
+    "receiver_phone": "0900000002",
+    "address_province": "Hà Nội",
+    "address_ward": "Dịch Vọng Hậu",
+    "address_district": "Cầu Giấy",
+    "address_address_line": "Số 1 Xuân Thủy",
+    "subtotal": 18990000,
+    "total_amount": 19020000,
+    "status": "pending",
+    "payment_method": "cod",
+    "payment_status": "unpaid",
+    "coupon_code": null,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000902"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000702"
+    },
+    "receiver_name": "Khách hàng Demo",
+    "receiver_phone": "0900000002",
+    "address_province": "Hà Nội",
+    "address_ward": "Mỹ Đình 2",
+    "address_district": "Nam Từ Liêm",
+    "address_address_line": "Tòa nhà FPT, phố Duy Tân",
+    "subtotal": 27990000,
+    "total_amount": 26050000,
+    "status": "completed",
+    "payment_method": "bank_transfer",
+    "payment_status": "paid",
+    "coupon_code": "SUMMER10",
+    "created_at": {
+      "$date": "2026-06-28T09:20:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000903"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000704"
+    },
+    "receiver_name": "Nguyễn Minh Anh",
+    "receiver_phone": "0912345678",
+    "address_province": "TP. Hồ Chí Minh",
+    "address_ward": "Bến Nghé",
+    "address_district": "Quận 1",
+    "address_address_line": "12 Nguyễn Huệ",
+    "subtotal": 7890000,
+    "total_amount": 7980000,
+    "status": "confirmed",
+    "payment_method": "bank_transfer",
+    "payment_status": "pending",
+    "coupon_code": null,
+    "created_at": {
+      "$date": "2026-06-29T14:10:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000904"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000106"
+    },
+    "shipping_method_id": {
+      "$oid": "665000000000000000000702"
+    },
+    "receiver_name": "Trần Đức Huy",
+    "receiver_phone": "0987654321",
+    "address_province": "Đà Nẵng",
+    "address_ward": "Hải Châu 1",
+    "address_district": "Hải Châu",
+    "address_address_line": "35 Bạch Đằng",
+    "subtotal": 32990000,
+    "total_amount": 31050000,
+    "status": "processing",
+    "payment_method": "zalopay",
+    "payment_status": "pending",
+    "coupon_code": "WELCOME500",
+    "created_at": {
+      "$date": "2026-06-30T08:30:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

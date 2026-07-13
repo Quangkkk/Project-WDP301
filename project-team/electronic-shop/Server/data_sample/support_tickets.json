@@ -1,0 +1,67 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "assigned_staff_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000901"
+    },
+    "subject": "Cần kiểm tra tình trạng giao hàng",
+    "description": "Khách hàng muốn hỏi thời gian giao hàng dự kiến cho đơn iPhone 15.",
+    "status": "open",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001102"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "assigned_staff_id": null,
+    "order_id": null,
+    "subject": "Tư vấn mua laptop",
+    "description": "Khách hàng cần tư vấn laptop học tập và lập trình cơ bản.",
+    "status": "pending",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001103"
+    },
+    "user_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "assigned_staff_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "order_id": {
+      "$oid": "665000000000000000000903"
+    },
+    "subject": "Xác nhận chuyển khoản",
+    "description": "Khách hàng đã chuyển khoản và cần nhân viên kiểm tra thanh toán.",
+    "status": "open",
+    "created_at": {
+      "$date": "2026-06-29T14:20:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

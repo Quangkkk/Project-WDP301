@@ -1,0 +1,58 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000001"
+    },
+    "code": "admin",
+    "name": "Quản trị viên",
+    "description": "Quản trị toàn bộ hệ thống",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000002"
+    },
+    "code": "customer",
+    "name": "Khách hàng",
+    "description": "Tài khoản khách hàng mua sắm",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000003"
+    },
+    "code": "staff",
+    "name": "Nhân viên",
+    "description": "Nhân viên hỗ trợ khách hàng và xử lý đơn hàng",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000004"
+    },
+    "code": "manager",
+    "name": "Quản lý",
+    "description": "Tài khoản quản lý cửa hàng",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

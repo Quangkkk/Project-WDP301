@@ -1,0 +1,142 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "name": "Apple",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/apple.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000302"
+    },
+    "name": "Samsung",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/samsung.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000303"
+    },
+    "name": "Dell",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/dell.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000304"
+    },
+    "name": "Sony",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/sony.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000305"
+    },
+    "name": "Xiaomi",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/xiaomi.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000306"
+    },
+    "name": "ASUS",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/asus.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000307"
+    },
+    "name": "Lenovo",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/lenovo.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000308"
+    },
+    "name": "HP",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/hp.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000309"
+    },
+    "name": "Logitech",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/logitech.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000310"
+    },
+    "name": "TP-Link",
+    "logo_img": "https://res.cloudinary.com/demo/image/upload/v1/brands/tplink.png",
+    "status": "active",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

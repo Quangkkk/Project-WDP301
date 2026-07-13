@@ -1,0 +1,62 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001121"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Shop cho em hỏi đơn hàng khi nào giao ạ?",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001122"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001101"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000103"
+    },
+    "message": "Đơn hàng đang được xử lý và dự kiến giao trong 3 ngày.",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001123"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001102"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000102"
+    },
+    "message": "Em cần laptop cho sinh viên IT, ngân sách khoảng 25 triệu.",
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001124"
+    },
+    "ticket_id": {
+      "$oid": "665000000000000000001103"
+    },
+    "sender_id": {
+      "$oid": "665000000000000000000105"
+    },
+    "message": "Em đã chuyển khoản theo mã QR, shop kiểm tra giúp em với ạ.",
+    "created_at": {
+      "$date": "2026-06-29T14:30:00.000Z"
+    }
+  }
+]

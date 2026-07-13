@@ -1,0 +1,502 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
+    "name": "iPhone 15",
+    "sku": "IPHONE15",
+    "description": "Apple iPhone 15 chính hãng, camera đẹp, hiệu năng ổn định, phù hợp sử dụng hằng ngày.",
+    "total_review": 2,
+    "average_rating": 5.0,
+    "rating_count": 2,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "MacBook Air M2 13 inch",
+    "sku": "MACBOOK-AIR-M2-13",
+    "description": "Laptop mỏng nhẹ, pin tốt, phù hợp học tập, văn phòng và lập trình cơ bản.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000503"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000302"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
+    "name": "Samsung Galaxy S24 Ultra",
+    "sku": "GALAXY-S24-ULTRA",
+    "description": "Điện thoại Samsung cao cấp với camera zoom, màn hình lớn và bút S Pen tiện dụng.",
+    "total_review": 2,
+    "average_rating": 4.5,
+    "rating_count": 2,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000504"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000303"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "Dell XPS 13 Plus",
+    "sku": "DELL-XPS-13-PLUS",
+    "description": "Laptop Dell cao cấp, thiết kế gọn, màn hình sắc nét, phù hợp làm việc di động.",
+    "total_review": 1,
+    "average_rating": 4.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000505"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000203"
+    },
+    "name": "AirPods Pro 2",
+    "sku": "AIRPODS-PRO-2",
+    "description": "Tai nghe Apple chống ồn chủ động, hộp sạc USB-C, âm thanh trong và tiện dùng với iPhone.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000204"
+    },
+    "name": "iPad Air M2",
+    "sku": "IPAD-AIR-M2",
+    "description": "Máy tính bảng Apple iPad Air chip M2, hỗ trợ Apple Pencil Pro, phù hợp học tập và sáng tạo.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000507"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000304"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000203"
+    },
+    "name": "Sony WH-1000XM5",
+    "sku": "SONY-WH1000XM5",
+    "description": "Tai nghe chống ồn cao cấp, pin lâu, đeo thoải mái khi làm việc hoặc di chuyển.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000508"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000205"
+    },
+    "name": "Apple Watch Series 9",
+    "sku": "APPLE-WATCH-S9",
+    "description": "Đồng hồ thông minh Apple, theo dõi sức khỏe, nhận thông báo và hỗ trợ luyện tập.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000509"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000305"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000205"
+    },
+    "name": "Xiaomi Redmi Watch 4",
+    "sku": "XIAOMI-REDMI-WATCH-4",
+    "description": "Đồng hồ thông minh giá tốt, màn hình lớn, pin lâu và nhiều chế độ luyện tập.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000510"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000306"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "ASUS ROG Zephyrus G14",
+    "sku": "ASUS-ROG-G14",
+    "description": "Laptop gaming gọn nhẹ, hiệu năng mạnh, phù hợp chơi game, đồ họa và lập trình nặng.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000511"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000307"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "Lenovo ThinkPad X1 Carbon Gen 11",
+    "sku": "THINKPAD-X1-CARBON-G11",
+    "description": "Laptop doanh nhân bền, bàn phím tốt, nhẹ và ổn định cho công việc văn phòng.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000512"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000308"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000201"
+    },
+    "name": "HP Pavilion 15",
+    "sku": "HP-PAVILION-15",
+    "description": "Laptop phổ thông cho học tập, văn phòng, họp online và giải trí cơ bản.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000513"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000309"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000203"
+    },
+    "name": "Logitech MX Master 3S",
+    "sku": "LOGITECH-MX-MASTER-3S",
+    "description": "Chuột không dây cao cấp, cuộn êm, nhiều nút tùy chỉnh, phù hợp làm việc văn phòng.",
+    "total_review": 1,
+    "average_rating": 5.0,
+    "rating_count": 1,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000514"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000310"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000207"
+    },
+    "name": "TP-Link Archer AX55",
+    "sku": "TPLINK-ARCHER-AX55",
+    "description": "Router Wi-Fi 6 tốc độ cao, phù hợp căn hộ, văn phòng nhỏ và nhu cầu nhiều thiết bị.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000515"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000302"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000204"
+    },
+    "name": "Samsung Galaxy Tab S9",
+    "sku": "GALAXY-TAB-S9",
+    "description": "Máy tính bảng Samsung màn hình đẹp, kèm S Pen, phù hợp ghi chú và giải trí.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000516"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000304"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000208"
+    },
+    "name": "Sony PlayStation 5 Slim",
+    "sku": "PS5-SLIM",
+    "description": "Máy chơi game PlayStation 5 Slim, hiệu năng mạnh, hỗ trợ nhiều tựa game độc quyền.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000517"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000301"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
+    "name": "iPhone 15 Pro Max",
+    "sku": "IPHONE15-PRO-MAX",
+    "description": "iPhone màn hình lớn, chip mạnh, camera chuyên nghiệp, phù hợp quay chụp và làm việc.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000518"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000305"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000202"
+    },
+    "name": "Xiaomi 14T Pro",
+    "sku": "XIAOMI-14T-PRO",
+    "description": "Điện thoại Xiaomi hiệu năng cao, sạc nhanh, màn hình đẹp trong tầm giá.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000519"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000303"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000206"
+    },
+    "name": "Dell UltraSharp U2723QE",
+    "sku": "DELL-U2723QE",
+    "description": "Màn hình 27 inch 4K, màu sắc chính xác, phù hợp thiết kế, văn phòng và lập trình.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000520"
+    },
+    "brand_id": {
+      "$oid": "665000000000000000000302"
+    },
+    "category_id": {
+      "$oid": "665000000000000000000206"
+    },
+    "name": "Samsung Smart Monitor M8",
+    "sku": "SAMSUNG-M8",
+    "description": "Màn hình thông minh 32 inch, có ứng dụng giải trí, phù hợp làm việc và xem phim.",
+    "total_review": 0,
+    "average_rating": 0,
+    "rating_count": 0,
+    "status": "active",
+    "is_featured": false,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000701"
+    },
+    "name": "Giao hàng tiêu chuẩn",
+    "base_fee": 30000,
+    "estimate_days": 3,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000702"
+    },
+    "name": "Giao hàng nhanh",
+    "base_fee": 60000,
+    "estimate_days": 1,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000703"
+    },
+    "name": "Nhận tại cửa hàng",
+    "base_fee": 0,
+    "estimate_days": 0,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000704"
+    },
+    "name": "Giao hỏa tốc nội thành",
+    "base_fee": 90000,
+    "estimate_days": 1,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

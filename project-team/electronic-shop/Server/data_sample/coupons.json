@@ -1,0 +1,132 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000001301"
+    },
+    "code": "SUMMER10",
+    "name": "Giảm 10% mùa hè",
+    "description": "Giảm 10% tối đa 2.000.000đ cho đơn từ 5.000.000đ.",
+    "discount_type": "percent",
+    "discount_value": 10,
+    "min_order_amount": 5000000,
+    "max_discount": 2000000,
+    "usage_limit": 100,
+    "usage_limit_per_user": 2,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001302"
+    },
+    "code": "FREESHIP",
+    "name": "Miễn phí vận chuyển",
+    "description": "Giảm 30.000đ phí vận chuyển cho đơn từ 1.000.000đ.",
+    "discount_type": "fixed",
+    "discount_value": 30000,
+    "min_order_amount": 1000000,
+    "max_discount": 30000,
+    "usage_limit": 300,
+    "usage_limit_per_user": 5,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001303"
+    },
+    "code": "WELCOME500",
+    "name": "Chào mừng khách mới",
+    "description": "Giảm 500.000đ cho khách hàng mới với đơn từ 10.000.000đ.",
+    "discount_type": "fixed",
+    "discount_value": 500000,
+    "min_order_amount": 10000000,
+    "max_discount": 500000,
+    "usage_limit": 50,
+    "usage_limit_per_user": 1,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001304"
+    },
+    "code": "TECHSALE15",
+    "name": "Tech Sale 15%",
+    "description": "Giảm 15% tối đa 3.000.000đ cho laptop, điện thoại và máy tính bảng.",
+    "discount_type": "percent",
+    "discount_value": 15,
+    "min_order_amount": 15000000,
+    "max_discount": 3000000,
+    "usage_limit": 80,
+    "usage_limit_per_user": 1,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000001305"
+    },
+    "code": "ACCESSORY100",
+    "name": "Giảm phụ kiện 100K",
+    "description": "Giảm 100.000đ cho đơn phụ kiện từ 1.500.000đ.",
+    "discount_type": "fixed",
+    "discount_value": 100000,
+    "min_order_amount": 1500000,
+    "max_discount": 100000,
+    "usage_limit": 200,
+    "usage_limit_per_user": 3,
+    "start_at": {
+      "$date": "2026-06-01T00:00:00.000Z"
+    },
+    "expired_at": {
+      "$date": "2026-12-31T23:59:59.000Z"
+    },
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]

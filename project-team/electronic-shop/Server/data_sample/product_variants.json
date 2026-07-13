@@ -1,0 +1,754 @@
+[
+  {
+    "_id": {
+      "$oid": "665000000000000000000601"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "sku": "IPHONE15-128-BLACK",
+    "variant_value": "128GB - Đen",
+    "price": 19990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-black.png",
+    "attributes_json": {
+      "color": "Đen",
+      "storage": "128GB",
+      "ram": "6GB"
+    },
+    "weight": 0.18,
+    "sale_price": 18990000,
+    "stock_quantity": 20,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000602"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000501"
+    },
+    "sku": "IPHONE15-256-BLUE",
+    "variant_value": "256GB - Xanh dương",
+    "price": 22990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-blue.png",
+    "attributes_json": {
+      "color": "Xanh dương",
+      "storage": "256GB",
+      "ram": "6GB"
+    },
+    "weight": 0.18,
+    "sale_price": 21990000,
+    "stock_quantity": 12,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000603"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "sku": "MACAIRM2-8-256-MIDNIGHT",
+    "variant_value": "8GB RAM - 256GB SSD - Midnight",
+    "price": 24990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2-midnight.png",
+    "attributes_json": {
+      "color": "Midnight",
+      "storage": "256GB SSD",
+      "ram": "8GB"
+    },
+    "weight": 1.24,
+    "sale_price": 23990000,
+    "stock_quantity": 8,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000604"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000502"
+    },
+    "sku": "MACAIRM2-16-512-STARLIGHT",
+    "variant_value": "16GB RAM - 512GB SSD - Starlight",
+    "price": 31990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/macbook-air-m2-starlight.png",
+    "attributes_json": {
+      "color": "Starlight",
+      "storage": "512GB SSD",
+      "ram": "16GB"
+    },
+    "weight": 1.24,
+    "sale_price": 30990000,
+    "stock_quantity": 5,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000605"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000503"
+    },
+    "sku": "S24ULTRA-12-256-GRAY",
+    "variant_value": "12GB RAM - 256GB - Xám Titan",
+    "price": 28990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/s24-ultra-gray.png",
+    "attributes_json": {
+      "color": "Xám Titan",
+      "storage": "256GB",
+      "ram": "12GB"
+    },
+    "weight": 0.23,
+    "sale_price": 27990000,
+    "stock_quantity": 15,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000606"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000504"
+    },
+    "sku": "DELLXPS13-16-512-SILVER",
+    "variant_value": "16GB RAM - 512GB SSD - Bạc",
+    "price": 35990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/dell-xps-13-plus.png",
+    "attributes_json": {
+      "color": "Bạc",
+      "storage": "512GB SSD",
+      "ram": "16GB"
+    },
+    "weight": 1.26,
+    "sale_price": 34990000,
+    "stock_quantity": 6,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000607"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000505"
+    },
+    "sku": "AIRPODSPRO2-WHITE",
+    "variant_value": "Trắng - USB-C",
+    "price": 5990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/airpods-pro-2.png",
+    "attributes_json": {
+      "color": "Trắng",
+      "connector": "USB-C"
+    },
+    "weight": 0.06,
+    "sale_price": 5390000,
+    "stock_quantity": 30,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000608"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "sku": "IPADAIRM2-128-BLUE",
+    "variant_value": "128GB - Xanh dương - Wi-Fi",
+    "price": 16990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/ipad-air-m2-blue.png",
+    "attributes_json": {
+      "color": "Xanh dương",
+      "storage": "128GB",
+      "connectivity": "Wi-Fi"
+    },
+    "weight": 0.46,
+    "sale_price": 15990000,
+    "stock_quantity": 10,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000609"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000506"
+    },
+    "sku": "IPADAIRM2-256-GRAY",
+    "variant_value": "256GB - Xám không gian - Wi-Fi",
+    "price": 19990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/ipad-air-m2-gray.png",
+    "attributes_json": {
+      "color": "Xám không gian",
+      "storage": "256GB",
+      "connectivity": "Wi-Fi"
+    },
+    "weight": 0.46,
+    "sale_price": 18990000,
+    "stock_quantity": 7,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000610"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000507"
+    },
+    "sku": "SONY-WH1000XM5-BLACK",
+    "variant_value": "Đen",
+    "price": 8990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/sony-wh1000xm5-black.png",
+    "attributes_json": {
+      "color": "Đen",
+      "battery": "30 giờ"
+    },
+    "weight": 0.25,
+    "sale_price": 7890000,
+    "stock_quantity": 18,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000611"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000507"
+    },
+    "sku": "SONY-WH1000XM5-SILVER",
+    "variant_value": "Bạc",
+    "price": 8990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/sony-wh1000xm5-silver.png",
+    "attributes_json": {
+      "color": "Bạc",
+      "battery": "30 giờ"
+    },
+    "weight": 0.25,
+    "sale_price": 7990000,
+    "stock_quantity": 9,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000612"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000508"
+    },
+    "sku": "APPLEWATCHS9-41-PINK",
+    "variant_value": "41mm - Hồng - GPS",
+    "price": 10990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/apple-watch-s9-pink.png",
+    "attributes_json": {
+      "color": "Hồng",
+      "size": "41mm",
+      "connectivity": "GPS"
+    },
+    "weight": 0.04,
+    "sale_price": 9990000,
+    "stock_quantity": 11,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000613"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000508"
+    },
+    "sku": "APPLEWATCHS9-45-MIDNIGHT",
+    "variant_value": "45mm - Midnight - GPS",
+    "price": 11990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/apple-watch-s9-midnight.png",
+    "attributes_json": {
+      "color": "Midnight",
+      "size": "45mm",
+      "connectivity": "GPS"
+    },
+    "weight": 0.04,
+    "sale_price": 10990000,
+    "stock_quantity": 8,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000614"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000509"
+    },
+    "sku": "REDMIWATCH4-BLACK",
+    "variant_value": "Đen",
+    "price": 2490000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/redmi-watch-4-black.png",
+    "attributes_json": {
+      "color": "Đen",
+      "screen": "1.97 inch"
+    },
+    "weight": 0.05,
+    "sale_price": 2190000,
+    "stock_quantity": 25,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000615"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000510"
+    },
+    "sku": "ROGG14-R9-16-1TB-WHITE",
+    "variant_value": "Ryzen 9 - 16GB RAM - 1TB SSD - Trắng",
+    "price": 45990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/asus-rog-g14-white.png",
+    "attributes_json": {
+      "color": "Trắng",
+      "storage": "1TB SSD",
+      "ram": "16GB",
+      "cpu": "Ryzen 9"
+    },
+    "weight": 1.65,
+    "sale_price": 43990000,
+    "stock_quantity": 4,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000616"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000510"
+    },
+    "sku": "ROGG14-R9-32-1TB-GRAY",
+    "variant_value": "Ryzen 9 - 32GB RAM - 1TB SSD - Xám",
+    "price": 52990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/asus-rog-g14-gray.png",
+    "attributes_json": {
+      "color": "Xám",
+      "storage": "1TB SSD",
+      "ram": "32GB",
+      "cpu": "Ryzen 9"
+    },
+    "weight": 1.65,
+    "sale_price": 50990000,
+    "stock_quantity": 3,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000617"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000511"
+    },
+    "sku": "X1CARBON-I7-16-512-BLACK",
+    "variant_value": "Core i7 - 16GB RAM - 512GB SSD - Đen",
+    "price": 42990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/thinkpad-x1-carbon.png",
+    "attributes_json": {
+      "color": "Đen",
+      "storage": "512GB SSD",
+      "ram": "16GB",
+      "cpu": "Core i7"
+    },
+    "weight": 1.12,
+    "sale_price": 40990000,
+    "stock_quantity": 5,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000618"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000512"
+    },
+    "sku": "HPPAV15-I5-16-512-SILVER",
+    "variant_value": "Core i5 - 16GB RAM - 512GB SSD - Bạc",
+    "price": 17990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/hp-pavilion-15.png",
+    "attributes_json": {
+      "color": "Bạc",
+      "storage": "512GB SSD",
+      "ram": "16GB",
+      "cpu": "Core i5"
+    },
+    "weight": 1.75,
+    "sale_price": 16490000,
+    "stock_quantity": 14,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000619"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000513"
+    },
+    "sku": "MXMASTER3S-GRAPHITE",
+    "variant_value": "Graphite",
+    "price": 2490000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/mx-master-3s-graphite.png",
+    "attributes_json": {
+      "color": "Graphite",
+      "connection": "Bluetooth/USB Receiver"
+    },
+    "weight": 0.14,
+    "sale_price": 2190000,
+    "stock_quantity": 40,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000620"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000513"
+    },
+    "sku": "MXMASTER3S-PALE-GRAY",
+    "variant_value": "Xám nhạt",
+    "price": 2490000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/mx-master-3s-gray.png",
+    "attributes_json": {
+      "color": "Xám nhạt",
+      "connection": "Bluetooth/USB Receiver"
+    },
+    "weight": 0.14,
+    "sale_price": 2190000,
+    "stock_quantity": 22,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000621"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000514"
+    },
+    "sku": "ARCHER-AX55",
+    "variant_value": "AX3000 Wi-Fi 6",
+    "price": 2290000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/tplink-archer-ax55.png",
+    "attributes_json": {
+      "speed": "AX3000",
+      "standard": "Wi-Fi 6"
+    },
+    "weight": 0.5,
+    "sale_price": 1990000,
+    "stock_quantity": 17,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000622"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000515"
+    },
+    "sku": "TABS9-128-GRAPHITE",
+    "variant_value": "128GB - Graphite - Wi-Fi",
+    "price": 19990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/galaxy-tab-s9-graphite.png",
+    "attributes_json": {
+      "color": "Graphite",
+      "storage": "128GB",
+      "connectivity": "Wi-Fi"
+    },
+    "weight": 0.5,
+    "sale_price": 18490000,
+    "stock_quantity": 8,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000623"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000516"
+    },
+    "sku": "PS5-SLIM-DISC",
+    "variant_value": "Bản ổ đĩa",
+    "price": 13990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/ps5-slim-disc.png",
+    "attributes_json": {
+      "version": "Bản ổ đĩa",
+      "storage": "1TB"
+    },
+    "weight": 3.2,
+    "sale_price": 12990000,
+    "stock_quantity": 6,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000624"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000517"
+    },
+    "sku": "IPHONE15PM-256-NATURAL",
+    "variant_value": "256GB - Titan tự nhiên",
+    "price": 34990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-pro-max-natural.png",
+    "attributes_json": {
+      "color": "Titan tự nhiên",
+      "storage": "256GB",
+      "ram": "8GB"
+    },
+    "weight": 0.22,
+    "sale_price": 32990000,
+    "stock_quantity": 9,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000625"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000517"
+    },
+    "sku": "IPHONE15PM-512-BLUE",
+    "variant_value": "512GB - Titan xanh",
+    "price": 40990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/iphone-15-pro-max-blue.png",
+    "attributes_json": {
+      "color": "Titan xanh",
+      "storage": "512GB",
+      "ram": "8GB"
+    },
+    "weight": 0.22,
+    "sale_price": 38990000,
+    "stock_quantity": 4,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000626"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000518"
+    },
+    "sku": "XIAOMI14TPRO-12-512-BLACK",
+    "variant_value": "12GB RAM - 512GB - Đen",
+    "price": 17990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/xiaomi-14t-pro-black.png",
+    "attributes_json": {
+      "color": "Đen",
+      "storage": "512GB",
+      "ram": "12GB"
+    },
+    "weight": 0.21,
+    "sale_price": 16490000,
+    "stock_quantity": 18,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000627"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000519"
+    },
+    "sku": "DELL-U2723QE-27-4K",
+    "variant_value": "27 inch - 4K - USB-C Hub",
+    "price": 13990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/dell-u2723qe.png",
+    "attributes_json": {
+      "size": "27 inch",
+      "resolution": "4K",
+      "panel": "IPS Black"
+    },
+    "weight": 6.6,
+    "sale_price": 12990000,
+    "stock_quantity": 7,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "665000000000000000000628"
+    },
+    "product_id": {
+      "$oid": "665000000000000000000520"
+    },
+    "sku": "SAMSUNG-M8-32-4K-WHITE",
+    "variant_value": "32 inch - 4K - Trắng",
+    "price": 15990000,
+    "image": "https://res.cloudinary.com/demo/image/upload/v1/products/samsung-m8-white.png",
+    "attributes_json": {
+      "color": "Trắng",
+      "size": "32 inch",
+      "resolution": "4K"
+    },
+    "weight": 6.7,
+    "sale_price": 14490000,
+    "stock_quantity": 5,
+    "is_active": true,
+    "created_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2026-06-30T00:00:00.000Z"
+    }
+  }
+]
