@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import Container from 'react-bootstrap/Container'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 
 import MainLayout from '../../components/templates/MainLayout'
-import Alert from '../../components/atoms/Alert'
 import Button from '../../components/atoms/Button'
 import EmptyState from '../../components/atoms/EmptyState'
 import LoadingText from '../../components/atoms/LoadingText'
 
-import { getErrorMessage } from '../../services/api'
+import { API_BASE_URL, getErrorMessage } from '../../services/api'
 import {
   getConversationById,
   markConversationAsRead,
@@ -48,21 +49,68 @@ function getSenderAvatar(message) {
   return sender.img_url || sender.avatar || sender.avatar_url || ''
 }
 
+function getMessageKey(message) {
+  return getId(message) || `${message?.sender_id}-${message?.created_at}-${message?.message}`
+}
+
+function mergeMessages(currentMessages, nextMessage) {
+  if (!nextMessage) return currentMessages
+
+  const map = new Map()
+
+  for (const item of currentMessages) {
+    map.set(getMessageKey(item), item)
+  }
+
+  map.set(getMessageKey(nextMessage), nextMessage)
+
+  return Array.from(map.values()).sort((a, b) => {
+    const timeA = new Date(a?.created_at || 0).getTime()
+    const timeB = new Date(b?.created_at || 0).getTime()
+
+    return timeA - timeB
+  })
+}
+
+function ChatNotice({ type = 'info', children }) {
+  if (!children) return null
+
+  const className =
+    type === 'danger'
+      ? 'border-red-100 bg-red-50 text-red-600'
+      : 'border-emerald-100 bg-emerald-50 text-emerald-700'
+
+  return (
+    <div className={`mb-3 rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}>
+      {children}
+    </div>
+  )
+}
+
 function ChatPage() {
   const user = getCurrentUser()
   const currentUserId = getUserId(user)
+  const location = useLocation()
+  const navigate = useNavigate()
   const messagesEndRef = useRef(null)
+  const socketRef = useRef(null)
+  const autoSendRef = useRef(false)
 
   const [conversation, setConversation] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [isSocketConnected, setIsSocketConnected] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
   const conversationId = getId(conversation)
   const isClosed = conversation?.status === 'closed'
+  const prefillMessage = location.state?.prefillMessage || ''
+  const shouldAutoSendMessage = Boolean(
+    location.state?.autoSendMessage && prefillMessage,
+  )
 
   const loadConversation = async (targetConversationId = conversationId) => {
     if (!targetConversationId) return
@@ -82,6 +130,72 @@ function ChatPage() {
     }
   }
 
+  const sendSocketMessage = async (targetConversationId, text) => {
+    const socket = socketRef.current
+
+    if (!socket || !socket.connected) {
+      throw new Error('SOCKET_NOT_CONNECTED')
+    }
+
+    return new Promise((resolve, reject) => {
+      socket.timeout(8000).emit(
+        'chat:sendMessage',
+        {
+          conversation_id: targetConversationId,
+          sender_id: currentUserId,
+          message: text,
+        },
+        (timeoutError, response) => {
+          if (timeoutError) {
+            reject(new Error('Không gửi được tin nhắn qua socket.'))
+            return
+          }
+
+          if (!response?.success) {
+            reject(new Error(response?.message || 'Không gửi được tin nhắn.'))
+            return
+          }
+
+          resolve(response)
+        },
+      )
+    })
+  }
+
+  const sendMessageRealtime = async (targetConversationId, text) => {
+    try {
+      const response = await sendSocketMessage(targetConversationId, text)
+
+      setMessages((prev) => mergeMessages(prev, response?.data))
+      return response
+    } catch {
+      const response = await sendChatMessage(targetConversationId, {
+        sender_id: currentUserId,
+        message: text,
+      })
+
+      setMessages((prev) => mergeMessages(prev, response?.data))
+      return response
+    }
+  }
+
+  const sendInitialProductMessage = async (targetConversationId) => {
+    if (!targetConversationId || !shouldAutoSendMessage || autoSendRef.current) {
+      return false
+    }
+
+    autoSendRef.current = true
+
+    await sendMessageRealtime(targetConversationId, prefillMessage)
+
+    navigate('/chat', {
+      replace: true,
+      state: {},
+    })
+
+    return true
+  }
+
   const initConversation = async () => {
     if (!user) {
       setIsLoading(false)
@@ -98,11 +212,18 @@ function ChatPage() {
       })
 
       const openedConversation = response?.data || null
-
       setConversation(openedConversation)
 
       if (openedConversation) {
-        await loadConversation(getId(openedConversation))
+        const targetConversationId = getId(openedConversation)
+
+        await loadConversation(targetConversationId)
+
+        const didAutoSend = await sendInitialProductMessage(targetConversationId)
+
+        if (didAutoSend) {
+          setMessage('Đã gửi thông tin sản phẩm vào chat.')
+        }
       }
     } catch (error) {
       setError(getErrorMessage(error, 'Không mở được cuộc trò chuyện.'))
@@ -116,16 +237,64 @@ function ChatPage() {
   }, [])
 
   useEffect(() => {
-    if (!conversationId || isClosed) return undefined
+    if (!conversationId || !currentUserId) return undefined
 
-    const intervalId = window.setInterval(() => {
-      loadConversation(conversationId)
-    }, 4000)
+    const socket = io(API_BASE_URL, {
+      transports: ['websocket', 'polling'],
+      auth: {
+        user_id: currentUserId,
+      },
+    })
+
+    socketRef.current = socket
+
+    const joinConversation = () => {
+      setIsSocketConnected(true)
+      socket.emit('chat:join', conversationId)
+    }
+
+    const handleDisconnect = () => {
+      setIsSocketConnected(false)
+    }
+
+    const handleNewMessage = (payload = {}) => {
+      if (String(payload.conversationId) !== String(conversationId)) return
+
+      if (payload.conversation) {
+        setConversation(payload.conversation)
+      }
+
+      setMessages((prev) => mergeMessages(prev, payload.message))
+
+      markConversationAsRead(conversationId, {
+        user_id: currentUserId,
+      }).catch(() => {})
+    }
+
+    const handleConversationUpdated = (payload = {}) => {
+      if (String(payload.conversationId) !== String(conversationId)) return
+
+      if (payload.conversation) {
+        setConversation(payload.conversation)
+      }
+    }
+
+    socket.on('connect', joinConversation)
+    socket.on('disconnect', handleDisconnect)
+    socket.on('chat:newMessage', handleNewMessage)
+    socket.on('chat:conversationUpdated', handleConversationUpdated)
 
     return () => {
-      window.clearInterval(intervalId)
+      socket.emit('chat:leave', conversationId)
+      socket.off('connect', joinConversation)
+      socket.off('disconnect', handleDisconnect)
+      socket.off('chat:newMessage', handleNewMessage)
+      socket.off('chat:conversationUpdated', handleConversationUpdated)
+      socket.disconnect()
+      socketRef.current = null
+      setIsSocketConnected(false)
     }
-  }, [conversationId, isClosed])
+  }, [conversationId, currentUserId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -152,13 +321,9 @@ function ChatPage() {
       setError('')
       setMessage('')
 
-      await sendChatMessage(conversationId, {
-        sender_id: currentUserId,
-        message: newMessage.trim(),
-      })
+      await sendMessageRealtime(conversationId, newMessage.trim())
 
       setNewMessage('')
-      await loadConversation(conversationId)
     } catch (error) {
       setError(getErrorMessage(error, 'Không gửi được tin nhắn.'))
     } finally {
@@ -180,8 +345,8 @@ function ChatPage() {
             </h1>
           </div>
 
-          <Alert type='danger'>{error}</Alert>
-          <Alert type='success'>{message}</Alert>
+          <ChatNotice type='danger'>{error}</ChatNotice>
+          <ChatNotice>{message}</ChatNotice>
 
           {isLoading ? (
             <LoadingText />
@@ -208,7 +373,7 @@ function ChatPage() {
                     </h2>
 
                     <p className='mb-0 text-sm text-slate-500'>
-                      Gửi câu hỏi nhanh cho đội hỗ trợ. Tin nhắn sẽ tự làm mới sau vài giây.
+                      Tin nhắn được cập nhật realtime bằng Socket.IO.
                     </p>
                   </div>
 
@@ -216,10 +381,16 @@ function ChatPage() {
                     className={`rounded-pill px-3 py-2 text-xs font-bold ${
                       isClosed
                         ? 'bg-slate-100 text-slate-600'
-                        : 'bg-emerald-50 text-emerald-700'
+                        : isSocketConnected
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-amber-50 text-amber-700'
                     }`}
                   >
-                    {isClosed ? 'Đã đóng' : 'Đang mở'}
+                    {isClosed
+                      ? 'Đã đóng'
+                      : isSocketConnected
+                        ? 'Đang mở · Online'
+                        : 'Đang mở · Kết nối lại'}
                   </span>
                 </div>
               </div>
@@ -246,7 +417,7 @@ function ChatPage() {
 
                       return (
                         <div
-                          key={getId(item)}
+                          key={getMessageKey(item)}
                           className={`d-flex gap-2 ${
                             isMine ? 'justify-content-end' : 'justify-content-start'
                           }`}

@@ -1,6 +1,10 @@
 const express = require("express");
+const http = require("http");
 const path = require("path");
 const dotenv = require("dotenv");
+const { Server } = require("socket.io");
+
+const chatController = require("./controller/chat.controller");
 
 dotenv.config({
   path: path.join(__dirname, ".env"),
@@ -10,6 +14,7 @@ const { connectDB } = require("./models");
 const routers = require("./routes");
 
 const app = express();
+const httpServer = http.createServer(app);
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -19,6 +24,17 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
 ].filter(Boolean);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+chatController.registerChatSocket(io);
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -81,6 +97,7 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log("Socket.IO chat is enabled");
 });

@@ -5,6 +5,14 @@ const ChatMessage = require("../models/ChatMessage.model");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const getConversationRoom = (conversationId) => `conversation:${conversationId}`;
+
+const createHttpError = (statusCode, message) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
 const populateConversation = (query) => {
   return query
     .populate("customer_id", "name email phone img_url")
@@ -13,9 +21,7 @@ const populateConversation = (query) => {
 };
 
 const populateMessage = (query) => {
-  return query
-    .populate("sender_id", "name email img_url role_id")
-    .select("-__v");
+  return query.populate("sender_id", "name email img_url role_id").select("-__v");
 };
 
 const normalizeConversationData = (body) => {
@@ -24,6 +30,68 @@ const normalizeConversationData = (body) => {
     staff_id: body.staff_id || body.assigned_staff_id || null,
     title: body.title || body.subject || "Hỗ trợ khách hàng",
     status: body.status || "open",
+  };
+};
+
+const emitToConversation = (io, conversationId, eventName, payload) => {
+  if (!io || !conversationId) return;
+
+  io.to(getConversationRoom(conversationId)).emit(eventName, payload);
+};
+
+const createChatMessageRecord = async ({ conversation_id, sender_id, message }) => {
+  if (!conversation_id || !sender_id || !message) {
+    throw createHttpError(400, "Vui lòng nhập nội dung tin nhắn.");
+  }
+
+  if (!isValidObjectId(conversation_id) || !isValidObjectId(sender_id)) {
+    throw createHttpError(
+      400,
+      "Mã cuộc trò chuyện hoặc người gửi không hợp lệ."
+    );
+  }
+
+  const conversation = await ChatConversation.findById(conversation_id);
+
+  if (!conversation) {
+    throw createHttpError(404, "Không tìm thấy cuộc trò chuyện.");
+  }
+
+  if (conversation.status === "closed") {
+    throw createHttpError(
+      400,
+      "Cuộc trò chuyện đã đóng, không thể gửi thêm tin nhắn."
+    );
+  }
+
+  const cleanMessage = String(message || "").trim();
+
+  if (!cleanMessage) {
+    throw createHttpError(400, "Vui lòng nhập nội dung tin nhắn.");
+  }
+
+  const createdMessage = await ChatMessage.create({
+    conversation_id,
+    sender_id,
+    message: cleanMessage,
+    is_read: false,
+  });
+
+  conversation.last_message = cleanMessage;
+  conversation.updated_at = new Date();
+  await conversation.save();
+
+  const populatedMessage = await populateMessage(
+    ChatMessage.findById(createdMessage._id)
+  ).lean();
+
+  const populatedConversation = await populateConversation(
+    ChatConversation.findById(conversation_id)
+  ).lean();
+
+  return {
+    conversation: populatedConversation,
+    message: populatedMessage,
   };
 };
 
@@ -59,7 +127,7 @@ const getOrCreateConversation = async (req, res) => {
     }
 
     const data = await populateConversation(
-      ChatConversation.findById(conversation._id),
+      ChatConversation.findById(conversation._id)
     ).lean();
 
     return res.status(200).json({
@@ -97,7 +165,7 @@ const createConversation = async (req, res) => {
     const conversation = await ChatConversation.create(data);
 
     const populated = await populateConversation(
-      ChatConversation.findById(conversation._id),
+      ChatConversation.findById(conversation._id)
     ).lean();
 
     return res.status(201).json({
@@ -119,7 +187,6 @@ const getConversations = async (req, res) => {
     const { customer_id, user_id, staff_id, status } = req.query;
 
     const filter = {};
-
     const finalCustomerId = customer_id || user_id;
 
     if (finalCustomerId) {
@@ -181,7 +248,7 @@ const getConversationById = async (req, res) => {
     }
 
     const conversation = await populateConversation(
-      ChatConversation.findById(id),
+      ChatConversation.findById(id)
     ).lean();
 
     if (!conversation) {
@@ -196,7 +263,7 @@ const getConversationById = async (req, res) => {
         conversation_id: id,
       }).sort({
         created_at: 1,
-      }),
+      })
     ).lean();
 
     return res.status(200).json({
@@ -255,7 +322,7 @@ const updateConversation = async (req, res) => {
       ChatConversation.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
-      }),
+      })
     ).lean();
 
     if (!data) {
@@ -264,6 +331,11 @@ const updateConversation = async (req, res) => {
         message: "Không tìm thấy cuộc trò chuyện.",
       });
     }
+
+    emitToConversation(req.app.get("io"), id, "chat:conversationUpdated", {
+      conversationId: id,
+      conversation: data,
+    });
 
     return res.status(200).json({
       success: true,
@@ -284,58 +356,27 @@ const sendMessage = async (req, res) => {
     const conversation_id = req.params.conversationId || req.body.conversation_id;
     const { sender_id, message } = req.body;
 
-    if (!conversation_id || !sender_id || !message) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng nhập nội dung tin nhắn.",
-      });
-    }
-
-    if (!isValidObjectId(conversation_id) || !isValidObjectId(sender_id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Mã cuộc trò chuyện hoặc người gửi không hợp lệ.",
-      });
-    }
-
-    const conversation = await ChatConversation.findById(conversation_id);
-
-    if (!conversation) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy cuộc trò chuyện.",
-      });
-    }
-
-    if (conversation.status === "closed") {
-      return res.status(400).json({
-        success: false,
-        message: "Cuộc trò chuyện đã đóng, không thể gửi thêm tin nhắn.",
-      });
-    }
-
-    const createdMessage = await ChatMessage.create({
+    const result = await createChatMessageRecord({
       conversation_id,
       sender_id,
-      message: message.trim(),
-      is_read: false,
+      message,
     });
 
-    conversation.last_message = message.trim();
-    conversation.updated_at = new Date();
-    await conversation.save();
-
-    const data = await populateMessage(ChatMessage.findById(createdMessage._id)).lean();
+    emitToConversation(req.app.get("io"), conversation_id, "chat:newMessage", {
+      conversationId: conversation_id,
+      message: result.message,
+      conversation: result.conversation,
+    });
 
     return res.status(201).json({
       success: true,
       message: "Đã gửi tin nhắn.",
-      data,
+      data: result.message,
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
-      message: "Không gửi được tin nhắn.",
+      message: error.statusCode ? error.message : "Không gửi được tin nhắn.",
       error: error.message,
     });
   }
@@ -369,6 +410,11 @@ const markMessagesAsRead = async (req, res) => {
       read_at: new Date(),
     });
 
+    emitToConversation(req.app.get("io"), conversationId, "chat:messagesRead", {
+      conversationId,
+      user_id,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Đã đánh dấu đã đọc.",
@@ -382,6 +428,65 @@ const markMessagesAsRead = async (req, res) => {
   }
 };
 
+const registerChatSocket = (io) => {
+  io.on("connection", (socket) => {
+    socket.on("chat:join", (conversationId) => {
+      if (!conversationId || !isValidObjectId(conversationId)) return;
+      socket.join(getConversationRoom(conversationId));
+    });
+
+    socket.on("chat:leave", (conversationId) => {
+      if (!conversationId || !isValidObjectId(conversationId)) return;
+      socket.leave(getConversationRoom(conversationId));
+    });
+
+    socket.on("chat:typing", ({ conversationId, userId }) => {
+      if (!conversationId || !isValidObjectId(conversationId)) return;
+
+      socket.to(getConversationRoom(conversationId)).emit("chat:typing", {
+        conversationId,
+        userId,
+      });
+    });
+
+    socket.on("chat:sendMessage", async (payload = {}, callback) => {
+      try {
+        const conversation_id =
+          payload.conversation_id || payload.conversationId || payload.id;
+        const sender_id = payload.sender_id || payload.senderId || payload.user_id;
+        const message = payload.message;
+
+        const result = await createChatMessageRecord({
+          conversation_id,
+          sender_id,
+          message,
+        });
+
+        emitToConversation(io, conversation_id, "chat:newMessage", {
+          conversationId: conversation_id,
+          message: result.message,
+          conversation: result.conversation,
+        });
+
+        if (typeof callback === "function") {
+          callback({
+            success: true,
+            message: "Đã gửi tin nhắn.",
+            data: result.message,
+          });
+        }
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback({
+            success: false,
+            message: error.message || "Không gửi được tin nhắn.",
+          });
+        }
+      }
+    });
+  });
+};
+
 module.exports = {
   getOrCreateConversation,
   createConversation,
@@ -390,4 +495,5 @@ module.exports = {
   updateConversation,
   sendMessage,
   markMessagesAsRead,
+  registerChatSocket,
 };

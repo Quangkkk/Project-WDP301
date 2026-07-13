@@ -60,7 +60,7 @@ function HomePage() {
         <Container>
           <Alert type='danger'>{error}</Alert>
           {categories.length === 0 && !isLoading ? (
-            <EmptyState icon='📂' title='Chưa có category từ backend' description='Hãy thêm category trong database hoặc tạo ở trang admin.' />
+            <EmptyState icon='📂' title='Chưa có danh mục nào' />
           ) : (
             <Row className='g-4'>
               {categories.slice(0, 4).map((category, index) => (

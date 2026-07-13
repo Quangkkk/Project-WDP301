@@ -157,6 +157,25 @@ function getWishlistProductId(item) {
   return getId(product) || item?.product_id || item?.productId || ''
 }
 
+function getWishlistUserId(item) {
+  const user = item?.user_id || item?.user || item?.userId
+
+  if (typeof user === 'string') return user
+
+  return getId(user) || item?.user_id || item?.userId || ''
+}
+
+function isAlreadyWishlistMessage(value) {
+  const message = String(value || '').toLowerCase()
+
+  return (
+    message.includes('duplicate') ||
+    message.includes('already') ||
+    message.includes('exist') ||
+    message.includes('đã')
+  )
+}
+
 function getReviewUser(review) {
   return review?.user_id || review?.user || {}
 }
@@ -456,23 +475,32 @@ function ProductDetailPage() {
   const currentUserId = getUserId(user)
 
   const loadWishlistStatus = async (productId) => {
-    if (!currentUserId || !productId) {
+    if (!productId) {
       setIsWishlisted(false)
+      setWishlistCount(0)
       return
     }
 
     try {
       const response = await getWishlist({
-        user_id: currentUserId,
+        product_id: productId,
       })
 
       const wishlistItems = pickArray(response, [])
-      const existed = wishlistItems.some(
-        (item) => String(getWishlistProductId(item)) === String(productId),
+      const totalCount = Number(
+        response?.count ?? response?.data?.count ?? wishlistItems.length ?? 0,
       )
 
+      const existed = currentUserId
+        ? wishlistItems.some(
+            (item) => String(getWishlistUserId(item)) === String(currentUserId),
+          )
+        : false
+
+      setWishlistCount(totalCount)
       setIsWishlisted(existed)
     } catch {
+      setWishlistCount(0)
       setIsWishlisted(false)
     }
   }
@@ -512,7 +540,6 @@ function ProductDetailPage() {
           variants: loadedVariants,
         })
 
-        setWishlistCount(getProductWishlistCount(loadedProduct))
         setVariants(loadedVariants)
         setVariantId(getId(loadedVariants[0]) || '')
         setQuantity(1)
@@ -632,7 +659,9 @@ function ProductDetailPage() {
       return
     }
 
-    if (!getId(product)) {
+    const productId = getId(product)
+
+    if (!productId) {
       setMessage('')
       setError('Không tìm thấy sản phẩm để thêm vào yêu thích.')
       return
@@ -647,13 +676,20 @@ function ProductDetailPage() {
       setMessage('')
       setError('')
 
-      await addToWishlist({
+      const response = await addToWishlist({
         user_id: currentUserId,
-        product_id: getId(product),
+        product_id: productId,
       })
 
+      const alreadyExists = isAlreadyWishlistMessage(response?.message)
+
       setIsWishlisted(true)
-      setWishlistCount((prev) => prev + 1)
+
+      if (alreadyExists) {
+        await loadWishlistStatus(productId)
+      } else {
+        setWishlistCount((prev) => prev + 1)
+      }
     } catch (error) {
       const rawMessage =
         error?.response?.data?.message ||
@@ -661,13 +697,9 @@ function ProductDetailPage() {
         error?.message ||
         ''
 
-      if (
-        String(rawMessage).toLowerCase().includes('duplicate') ||
-        String(rawMessage).toLowerCase().includes('already') ||
-        String(rawMessage).toLowerCase().includes('exist') ||
-        String(rawMessage).includes('đã')
-      ) {
+      if (isAlreadyWishlistMessage(rawMessage)) {
         setIsWishlisted(true)
+        await loadWishlistStatus(productId)
         return
       }
 
@@ -796,7 +828,7 @@ function ProductDetailPage() {
                     onClick={handleAddToWishlist}
                     disabled={isAddingWishlist}
                     title='Thêm vào yêu thích'
-                    className='d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-red-500 disabled:opacity-60'
+                    className='mx-auto d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-red-500 disabled:opacity-60'
                     style={{
                       lineHeight: 1.2,
                     }}
@@ -823,7 +855,7 @@ function ProductDetailPage() {
                     type='button'
                     onClick={handleChatWithShop}
                     title='Chat với shop'
-                    className='d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-orange-600'
+                    className='mx-auto d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-orange-600'
                     style={{
                       lineHeight: 1.2,
                     }}

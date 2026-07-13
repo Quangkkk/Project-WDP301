@@ -5,21 +5,37 @@ export const getWishlist = async (params = {}) => {
   return response.data
 }
 
+export const checkWishlist = async (params = {}) => {
+  const response = await api.get('/wishlist/check', { params })
+  return response.data
+}
+
 export const addToWishlist = async (payload) => {
   const body = {
     user_id: payload.user_id,
     product_id: payload.product_id,
   }
 
-  try {
-    const response = await api.post('/wishlist', body)
-    return response.data
-  } catch (error) {
-    if (error?.response?.status === 404) {
-      const response = await api.post('/wishlist/item', body)
-      return response.data
-    }
+  const response = await api.post('/wishlist', body)
+  return response.data
+}
 
-    throw error
+export const toggleWishlist = async (payload) => {
+  const body = {
+    user_id: payload.user_id,
+    product_id: payload.product_id,
   }
+
+  const response = await api.post('/wishlist/toggle', body)
+  return response.data
+}
+
+export const removeWishlistByUserAndProduct = async (userId, productId) => {
+  const response = await api.delete(`/wishlist/user/${userId}/product/${productId}`)
+  return response.data
+}
+
+export const removeWishlistById = async (id) => {
+  const response = await api.delete(`/wishlist/${id}`)
+  return response.data
 }
