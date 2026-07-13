@@ -5,14 +5,18 @@ import ProtectedRoute from './components/templates/ProtectedRoute.jsx'
 import HomePage from './page/customer/home.page.jsx'
 import LoginPage from './page/customer/login.page.jsx'
 import RegisterPage from './page/customer/register.page.jsx'
+import ForgotPasswordPage from './page/customer/forgot-password.page.jsx'
+import ResetPasswordPage from './page/customer/reset-password.page.jsx'
 import ProductListPage from './page/customer/product-list.page.jsx'
 import ProductDetailPage from './page/customer/product-detail.page.jsx'
 import CartPage from './page/customer/cart.page.jsx'
 import CheckoutPage from './page/customer/checkout.page.jsx'
 import PaymentResultPage from './page/customer/payment-result.page.jsx'
 import OrderHistoryPage from './page/customer/order-history.page.jsx'
+import OrderDetailPage from './page/customer/order-detail.page.jsx'
 import ProfilePage from './page/customer/profile.page.jsx'
 import SupportPage from './page/customer/support.page.jsx'
+import ChatPage from './page/customer/chat.page.jsx'
 
 import AdminDashboardPage from './page/admin/admin-dashboard.page.jsx'
 import ProductManagementPage from './page/admin/product-management.page.jsx'
@@ -35,6 +39,8 @@ function App() {
         <Route path='/' element={<HomePage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
+        <Route path='/forgot-password' element={<ForgotPasswordPage />} />
+        <Route path='/reset-password/:token' element={<ResetPasswordPage />} />
         <Route path='/products' element={<ProductListPage />} />
         <Route path='/products/:id' element={<ProductDetailPage />} />
         <Route path='/product' element={<Navigate to='/products' replace />} />
@@ -68,6 +74,15 @@ function App() {
         />
 
         <Route
+          path='/orders/:orderId'
+          element={
+            <ProtectedRoute allowedRoles={customerOnly}>
+              <OrderDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path='/profile'
           element={
             <ProtectedRoute>
@@ -81,6 +96,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={customerOnly}>
               <SupportPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/chat'
+          element={
+            <ProtectedRoute allowedRoles={customerOnly}>
+              <ChatPage />
             </ProtectedRoute>
           }
         />

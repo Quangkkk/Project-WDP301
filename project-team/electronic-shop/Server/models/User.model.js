@@ -35,8 +35,17 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: "unverified",
+      default: "active",
       trim: true,
+    },
+    reset_password_token: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    reset_password_expires: {
+      type: Date,
+      default: null,
     },
   },
   {

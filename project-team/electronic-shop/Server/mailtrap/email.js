@@ -1,78 +1,55 @@
-const { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE } = require("./emailTemplates.js");
+const {
+  PASSWORD_RESET_REQUEST_TEMPLATE,
+  PASSWORD_RESET_SUCCESS_TEMPLATE,
+  VERIFICATION_EMAIL_TEMPLATE,
+} = require("./emailTemplates.js");
 const { transporter, sender } = require("./mailtrap.config.js");
 
-// Send verification email
 const sendVerificationEmail = async (email, verificationToken) => {
-  try {
-    console.log("co vao day 1", sender);
-    console.log("co vao day 2", email);
+  const response = await transporter.sendMail({
+    from: sender,
+    to: email,
+    subject: "Xác thực tài khoản",
+    html: VERIFICATION_EMAIL_TEMPLATE.replace(
+      "{verificationCode}",
+      verificationToken
+    ),
+  });
 
-    const response = await transporter.sendMail({
-      from: sender,
-      to: email,
-      subject: "Verify your email",
-      html: VERIFICATION_EMAIL_TEMPLATE.replace(
-        "{verificationCode}",
-        verificationToken
-      ),
-    });
-
-    console.log("Verification email sent:", response.messageId);
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-    throw new Error("Error sending verification email");
-  }
+  console.log("Verification email sent:", response.messageId);
 };
 
-// Send welcome email
 const sendWelcomeEmail = async (email, name) => {
-  try {
-    const response = await transporter.sendMail({
-      from: sender,
-      to: email,
-      subject: "Welcome to Our Service!",
-      html: `<p>Hello ${name}, welcome to our service!</p>`,
-    });
+  const response = await transporter.sendMail({
+    from: sender,
+    to: email,
+    subject: "Chào mừng đến với Online Tech Shop",
+    html: `<p>Xin chào ${name}, chào mừng bạn đến với Online Tech Shop.</p>`,
+  });
 
-    console.log("Welcome email sent:", response.messageId);
-  } catch (error) {
-    console.error("Error sending welcome email:", error);
-    throw new Error("Error sending welcome email");
-  }
+  console.log("Welcome email sent:", response.messageId);
 };
 
-// Send forgot password email
 const sendForgotPasswordEmail = async (email, resetURL) => {
-  try {
-    const response = await transporter.sendMail({
-      from: sender,
-      to: email,
-      subject: "Password Reset Request",
-      html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
-    });
+  const response = await transporter.sendMail({
+    from: sender,
+    to: email,
+    subject: "Đặt lại mật khẩu",
+    html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetURL),
+  });
 
-    console.log("Password reset request email sent:", response.messageId);
-  } catch (error) {
-    console.error("Error sending password reset email:", error);
-    throw new Error("Error sending password reset email");
-  }
+  console.log("Password reset request email sent:", response.messageId);
 };
 
-// Send password reset success email
 const sendResetSuccessEmail = async (email) => {
-  try {
-    const response = await transporter.sendMail({
-      from: sender,
-      to: email,
-      subject: "Password Reset Successful",
-      html: PASSWORD_RESET_SUCCESS_TEMPLATE,
-    });
+  const response = await transporter.sendMail({
+    from: sender,
+    to: email,
+    subject: "Mật khẩu đã được đặt lại",
+    html: PASSWORD_RESET_SUCCESS_TEMPLATE,
+  });
 
-    console.log("Password reset success email sent:", response.messageId);
-  } catch (error) {
-    console.error("Error sending password reset success email:", error);
-    throw new Error("Error sending password reset success email");
-  }
+  console.log("Password reset success email sent:", response.messageId);
 };
 
 module.exports = {

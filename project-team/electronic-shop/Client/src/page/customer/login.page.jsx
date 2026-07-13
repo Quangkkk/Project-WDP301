@@ -79,17 +79,19 @@ function LoginPage() {
       const user = response?.data
 
       if (!token || !user) {
-        throw new Error('Login response is missing token or user data')
+        throw new Error('Phản hồi đăng nhập thiếu token hoặc thông tin người dùng.')
       }
 
       saveAuth({ token, user })
 
       const role = getUserRole(user)
-      const fallbackPath = ['ADMIN', 'MANAGER', 'STAFF'].includes(role) ? '/admin' : '/'
+      const fallbackPath = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
+        ? '/admin'
+        : '/'
 
       navigate(redirectPath || fallbackPath, { replace: true })
     } catch (error) {
-      setMessage(getErrorMessage(error, 'Đăng nhập thất bại'))
+      setMessage(getErrorMessage(error, 'Đăng nhập thất bại.'))
     } finally {
       setIsLoading(false)
     }
@@ -100,8 +102,8 @@ function LoginPage() {
       <section className='page-section'>
         <Container className='max-w-xl'>
           <AuthPanel
-            title='Welcome back'
-            subtitle='Đăng nhập để mua hàng và quản lý đơn hàng.'
+            title='Đăng nhập'
+            subtitle='Đăng nhập để mua hàng và quản lý đơn hàng của bạn.'
           >
             <Alert type='danger'>{message}</Alert>
 
@@ -119,7 +121,7 @@ function LoginPage() {
               />
 
               <TextField
-                label='Password'
+                label='Mật khẩu'
                 id='password'
                 name='password'
                 type='password'
@@ -132,10 +134,15 @@ function LoginPage() {
 
               <div className='mb-4 d-flex justify-content-between gap-3 text-sm'>
                 <label className='d-flex align-items-center gap-2 text-slate-600'>
-                  <input type='checkbox' /> Remember me
+                  <input type='checkbox' /> Ghi nhớ đăng nhập
                 </label>
 
-                <span className='font-bold text-blue-600'>Forgot password?</span>
+                <Link
+                  to='/forgot-password'
+                  className='font-bold text-orange-600 text-decoration-none hover:text-orange-700'
+                >
+                  Quên mật khẩu?
+                </Link>
               </div>
 
               <Button
@@ -144,14 +151,14 @@ function LoginPage() {
                 isLoading={isLoading}
                 disabled={isDisabled}
               >
-                Login
+                Đăng nhập
               </Button>
             </Form>
 
             <p className='mt-4 mb-0 text-center text-sm text-slate-500'>
-              Don't have an account?{' '}
-              <Link to='/register' className='font-bold text-blue-600'>
-                Register now
+              Chưa có tài khoản?{' '}
+              <Link to='/register' className='font-bold text-orange-600'>
+                Đăng ký ngay
               </Link>
             </p>
           </AuthPanel>
