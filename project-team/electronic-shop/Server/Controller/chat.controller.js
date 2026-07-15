@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
 const mongoose = require("mongoose");
 
 const ChatConversation = require("../models/ChatConversation.model");
@@ -7,10 +10,132 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const getConversationRoom = (conversationId) => `conversation:${conversationId}`;
 
+const CHAT_UPLOAD_DIR = path.join(__dirname, "../uploads/chat");
+
+fs.mkdirSync(CHAT_UPLOAD_DIR, {
+  recursive: true,
+});
+
+const allowedMimeTypes = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/zip",
+  "application/x-zip-compressed",
+];
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, CHAT_UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "");
+    const safeExt = ext || "";
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+
+    cb(null, filename);
+  },
+});
+
+const multerUploader = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 5,
+  },
+  fileFilter: (req, file, cb) => {
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      cb(new Error("Định dạng file không được hỗ trợ."));
+      return;
+    }
+
+    cb(null, true);
+  },
+}).array("files", 5);
+
+const uploadChatFiles = (req, res, next) => {
+  multerUploader(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.code === "LIMIT_FILE_SIZE"
+            ? "File không được vượt quá 10MB."
+            : error.message || "Không tải được file lên.",
+      });
+    }
+
+    return next();
+  });
+};
+
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+};
+
+const getServerBaseUrl = (req) => {
+  const envUrl = process.env.SERVER_URL || process.env.API_URL;
+
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  return `${req.protocol}://${req.get("host")}`;
+};
+
+const normalizeUploadedFile = (req, file) => {
+  const isImage = String(file.mimetype || "").startsWith("image/");
+  const baseUrl = getServerBaseUrl(req);
+
+  return {
+    original_name: file.originalname || file.filename,
+    filename: file.filename,
+    mime_type: file.mimetype,
+    size: file.size,
+    url: `${baseUrl}/uploads/chat/${file.filename}`,
+    type: isImage ? "image" : "file",
+  };
+};
+
+const normalizeAttachments = (attachments = []) => {
+  if (!attachments) return [];
+
+  if (typeof attachments === "string") {
+    try {
+      return normalizeAttachments(JSON.parse(attachments));
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(attachments)) return [];
+
+  return attachments
+    .map((item) => {
+      const mimeType = item.mime_type || item.mimeType || item.type || "";
+      const isImage =
+        item.type === "image" || String(mimeType).startsWith("image/");
+
+      return {
+        original_name: item.original_name || item.originalName || item.name || "",
+        filename: item.filename || "",
+        mime_type: mimeType,
+        size: Number(item.size || 0),
+        url: item.url || "",
+        type: isImage ? "image" : "file",
+      };
+    })
+    .filter((item) => item.url);
 };
 
 const populateConversation = (query) => {
@@ -21,7 +146,9 @@ const populateConversation = (query) => {
 };
 
 const populateMessage = (query) => {
-  return query.populate("sender_id", "name email img_url role_id").select("-__v");
+  return query
+    .populate("sender_id", "name email img_url role_id")
+    .select("-__v");
 };
 
 const normalizeConversationData = (body) => {
@@ -39,9 +166,33 @@ const emitToConversation = (io, conversationId, eventName, payload) => {
   io.to(getConversationRoom(conversationId)).emit(eventName, payload);
 };
 
-const createChatMessageRecord = async ({ conversation_id, sender_id, message }) => {
-  if (!conversation_id || !sender_id || !message) {
-    throw createHttpError(400, "Vui lòng nhập nội dung tin nhắn.");
+const uploadChatAttachments = async (req, res) => {
+  try {
+    const files = req.files || [];
+    const attachments = files.map((file) => normalizeUploadedFile(req, file));
+
+    return res.status(201).json({
+      success: true,
+      message: "Đã tải file lên.",
+      data: attachments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Không tải được file lên.",
+      error: error.message,
+    });
+  }
+};
+
+const createChatMessageRecord = async ({
+  conversation_id,
+  sender_id,
+  message,
+  attachments = [],
+}) => {
+  if (!conversation_id || !sender_id) {
+    throw createHttpError(400, "Vui lòng nhập cuộc trò chuyện và người gửi.");
   }
 
   if (!isValidObjectId(conversation_id) || !isValidObjectId(sender_id)) {
@@ -49,6 +200,13 @@ const createChatMessageRecord = async ({ conversation_id, sender_id, message }) 
       400,
       "Mã cuộc trò chuyện hoặc người gửi không hợp lệ."
     );
+  }
+
+  const cleanMessage = String(message || "").trim();
+  const cleanAttachments = normalizeAttachments(attachments);
+
+  if (!cleanMessage && cleanAttachments.length === 0) {
+    throw createHttpError(400, "Vui lòng nhập tin nhắn hoặc chọn file.");
   }
 
   const conversation = await ChatConversation.findById(conversation_id);
@@ -64,20 +222,18 @@ const createChatMessageRecord = async ({ conversation_id, sender_id, message }) 
     );
   }
 
-  const cleanMessage = String(message || "").trim();
-
-  if (!cleanMessage) {
-    throw createHttpError(400, "Vui lòng nhập nội dung tin nhắn.");
-  }
-
   const createdMessage = await ChatMessage.create({
     conversation_id,
     sender_id,
     message: cleanMessage,
+    attachments: cleanAttachments,
     is_read: false,
   });
 
-  conversation.last_message = cleanMessage;
+  conversation.last_message =
+    cleanMessage ||
+    (cleanAttachments.length > 0 ? `[${cleanAttachments.length} file]` : "");
+
   conversation.updated_at = new Date();
   await conversation.save();
 
@@ -354,12 +510,13 @@ const updateConversation = async (req, res) => {
 const sendMessage = async (req, res) => {
   try {
     const conversation_id = req.params.conversationId || req.body.conversation_id;
-    const { sender_id, message } = req.body;
+    const { sender_id, message, attachments } = req.body;
 
     const result = await createChatMessageRecord({
       conversation_id,
       sender_id,
       message,
+      attachments,
     });
 
     emitToConversation(req.app.get("io"), conversation_id, "chat:newMessage", {
@@ -432,11 +589,13 @@ const registerChatSocket = (io) => {
   io.on("connection", (socket) => {
     socket.on("chat:join", (conversationId) => {
       if (!conversationId || !isValidObjectId(conversationId)) return;
+
       socket.join(getConversationRoom(conversationId));
     });
 
     socket.on("chat:leave", (conversationId) => {
       if (!conversationId || !isValidObjectId(conversationId)) return;
+
       socket.leave(getConversationRoom(conversationId));
     });
 
@@ -453,13 +612,16 @@ const registerChatSocket = (io) => {
       try {
         const conversation_id =
           payload.conversation_id || payload.conversationId || payload.id;
-        const sender_id = payload.sender_id || payload.senderId || payload.user_id;
+        const sender_id =
+          payload.sender_id || payload.senderId || payload.user_id;
         const message = payload.message;
+        const attachments = payload.attachments || [];
 
         const result = await createChatMessageRecord({
           conversation_id,
           sender_id,
           message,
+          attachments,
         });
 
         emitToConversation(io, conversation_id, "chat:newMessage", {
@@ -488,6 +650,8 @@ const registerChatSocket = (io) => {
 };
 
 module.exports = {
+  uploadChatFiles,
+  uploadChatAttachments,
   getOrCreateConversation,
   createConversation,
   getConversations,

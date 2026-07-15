@@ -42,3 +42,19 @@ export const markConversationAsRead = async (conversationId, payload) => {
 
   return response.data
 }
+
+export const uploadChatFiles = async (files = []) => {
+  const formData = new FormData()
+
+  files.forEach((file) => {
+    formData.append('files', file)
+  })
+
+  const response = await api.post('/chat/uploads', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return response.data
+}

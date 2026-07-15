@@ -327,10 +327,6 @@ function SupportPage() {
               <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
                 Hỗ trợ khách hàng
               </p>
-
-              <h1 className='mb-0 text-3xl font-black text-slate-950'>
-                Ticket support
-              </h1>
             </div>
 
             <Button
@@ -360,36 +356,33 @@ function SupportPage() {
                 <Card className='card-surface overflow-hidden'>
                   <Card.Body className='p-0'>
                     <div className='border-bottom bg-white p-3'>
-                      <div className='d-flex flex-wrap gap-2'>
-                        {ticketTabs.map((tab) => {
-                          const isActive = activeTab === tab.key
+                      <Form.Group>
+                        <Form.Label className='mb-2 d-flex align-items-center gap-2 text-sm font-black text-slate-700'>
+                          <span
+                            className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
+                            style={{
+                              width: 28,
+                              height: 28,
+                            }}
+                          >
+                            <i className='bi bi-funnel-fill' />
+                          </span>
 
-                          return (
-                            <button
-                              key={tab.key}
-                              type='button'
-                              onClick={() => setActiveTab(tab.key)}
-                              className={`rounded-4 border px-3 py-2 text-sm font-bold transition ${
-                                isActive
-                                  ? 'border-orange-500 bg-orange-500 text-white'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
-                              }`}
-                            >
-                              {tab.label}
+                          Lọc theo trạng thái
+                        </Form.Label>
 
-                              <span
-                                className={`ms-2 rounded-3 px-2 py-1 text-xs ${
-                                  isActive
-                                    ? 'bg-white text-orange-600'
-                                    : 'bg-slate-100 text-slate-500'
-                                }`}
-                              >
-                                {ticketCounts[tab.key] || 0}
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
+                        <Form.Select
+                          value={activeTab}
+                          onChange={(event) => setActiveTab(event.target.value)}
+                          className='rounded-4 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm'
+                        >
+                          {ticketTabs.map((tab) => (
+                            <option key={tab.key} value={tab.key}>
+                              {tab.label} ({ticketCounts[tab.key] || 0})
+                            </option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
                     </div>
 
                     {filteredTickets.length === 0 ? (
@@ -416,16 +409,15 @@ function SupportPage() {
                               key={ticketId}
                               type='button'
                               onClick={() => loadTicketDetail(ticketId)}
-                              className={`border-0 border-bottom p-3 text-start transition ${
-                                isActive
+                              className={`border-0 border-bottom p-3 text-start transition ${isActive
                                   ? 'bg-orange-50'
                                   : 'bg-white hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <div className='mb-2 d-flex align-items-start justify-content-between gap-2'>
-                                <h3 className='mb-0 text-base font-semibold text-slate-950'>
+                                <h4 className='mb-0 text-base font-semibold text-slate-950'>
                                   {ticket.subject}
-                                </h3>
+                                </h4>
 
                                 <StatusPill status={ticket.status} />
                               </div>
@@ -467,9 +459,9 @@ function SupportPage() {
                         <div className='d-flex flex-wrap align-items-start justify-content-between gap-3'>
                           <div>
                             <div className='mb-2 d-flex flex-wrap align-items-center gap-2'>
-                              <h2 className='mb-0 text-2xl font-semibold text-slate-950'>
+                              <h3 className='mb-0 text-2xl font-semibold text-slate-950'>
                                 {selectedTicket.subject}
-                              </h2>
+                              </h3>
 
                               <StatusPill status={selectedTicket.status} />
                             </div>
@@ -517,11 +509,10 @@ function SupportPage() {
                               return (
                                 <div
                                   key={getId(item)}
-                                  className={`d-flex gap-2 ${
-                                    isMine
+                                  className={`d-flex gap-2 ${isMine
                                       ? 'justify-content-end'
                                       : 'justify-content-start'
-                                  }`}
+                                    }`}
                                 >
                                   {!isMine && (
                                     <div
@@ -545,19 +536,17 @@ function SupportPage() {
                                   )}
 
                                   <div
-                                    className={`rounded-4 px-3 py-2 shadow-sm ${
-                                      isMine
+                                    className={`rounded-4 px-3 py-2 shadow-sm ${isMine
                                         ? 'bg-orange-500 text-white'
                                         : 'bg-white text-slate-800'
-                                    }`}
+                                      }`}
                                     style={{
                                       maxWidth: '74%',
                                     }}
                                   >
                                     <p
-                                      className={`mb-1 text-xs ${
-                                        isMine ? 'text-orange-100' : 'text-slate-400'
-                                      }`}
+                                      className={`mb-1 text-xs ${isMine ? 'text-orange-100' : 'text-slate-400'
+                                        }`}
                                     >
                                       {isMine ? 'Bạn' : getSenderName(item)} ·{' '}
                                       {formatDateTime(item.created_at)}

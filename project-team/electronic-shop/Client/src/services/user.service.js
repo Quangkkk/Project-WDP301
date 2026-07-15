@@ -39,3 +39,8 @@ export const deleteAddress = async (addressId) => {
   const response = await api.delete(`/user/address/${addressId}`)
   return response.data
 }
+
+export const changePassword = async (id, payload) => {
+  const response = await api.patch(`/user/${id}/change-password`, payload)
+  return response.data
+}

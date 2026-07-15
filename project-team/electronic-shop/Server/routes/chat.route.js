@@ -3,6 +3,8 @@ const chat = require("../controller/chat.controller");
 
 const router = express.Router();
 
+router.post("/uploads", chat.uploadChatFiles, chat.uploadChatAttachments);
+
 router.post("/conversations/open", chat.getOrCreateConversation);
 router.post("/conversations", chat.createConversation);
 router.get("/conversations", chat.getConversations);

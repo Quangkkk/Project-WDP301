@@ -15,8 +15,10 @@ import PaymentResultPage from './page/customer/payment-result.page.jsx'
 import OrderHistoryPage from './page/customer/order-history.page.jsx'
 import OrderDetailPage from './page/customer/order-detail.page.jsx'
 import ProfilePage from './page/customer/profile.page.jsx'
+import WishlistPage from './page/customer/wishlist.page.jsx'
 import SupportPage from './page/customer/support.page.jsx'
 import ChatPage from './page/customer/chat.page.jsx'
+import ChangePasswordPage from './page/customer/change-password.page.jsx'
 
 import AdminDashboardPage from './page/admin/admin-dashboard.page.jsx'
 import ProductManagementPage from './page/admin/product-management.page.jsx'
@@ -83,10 +85,28 @@ function App() {
         />
 
         <Route
+          path='/wishlist'
+          element={
+            <ProtectedRoute allowedRoles={customerOnly}>
+              <WishlistPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path='/profile'
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/profile/change-password'
+          element={
+            <ProtectedRoute>
+              <ChangePasswordPage />
             </ProtectedRoute>
           }
         />

@@ -91,9 +91,7 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
         </span>
 
         <span className='d-none d-xl-flex flex-column align-items-start lh-sm'>
-          <span className='font-black text-slate-900'>
-            {name}
-          </span>
+          <span className='font-black text-slate-900'>{name}</span>
 
           <span className='text-xs font-bold uppercase text-orange-600'>
             {roleLabel}
@@ -127,15 +125,9 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
             </span>
 
             <div>
-              <div className='font-black text-slate-900'>
-                {name}
-              </div>
+              <div className='font-black text-slate-900'>{name}</div>
 
-              {email && (
-                <div className='text-sm text-slate-500'>
-                  {email}
-                </div>
-              )}
+              {email && <div className='text-sm text-slate-500'>{email}</div>}
             </div>
           </div>
         </div>
@@ -156,8 +148,35 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
           to='/orders'
           className='rounded-3 px-3 py-2 font-bold text-slate-700'
         >
-          <i className='bi bi-receipt me-2 text-orange-500' />
+          <i className='bi bi-bag-check me-2 text-orange-500' />
           Đơn hàng
+        </Dropdown.Item>
+
+        <Dropdown.Item
+          as={Link}
+          to='/wishlist'
+          className='rounded-3 px-3 py-2 font-bold text-slate-700'
+        >
+          <i className='bi bi-heart me-2 text-red-500' />
+          Yêu thích
+        </Dropdown.Item>
+
+        <Dropdown.Item
+          as={Link}
+          to='/chat'
+          className='rounded-3 px-3 py-2 font-bold text-slate-700'
+        >
+          <i className='bi bi-chat-dots me-2 text-orange-500' />
+          Nhắn tin
+        </Dropdown.Item>
+
+        <Dropdown.Item
+          as={Link}
+          to='/support'
+          className='rounded-3 px-3 py-2 font-bold text-slate-700'
+        >
+          <i className='bi bi-headset me-2 text-orange-500' />
+          Hỗ trợ
         </Dropdown.Item>
 
         <Dropdown.Divider />

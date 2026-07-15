@@ -30,12 +30,29 @@ export const toggleWishlist = async (payload) => {
   return response.data
 }
 
-export const removeWishlistByUserAndProduct = async (userId, productId) => {
-  const response = await api.delete(`/wishlist/user/${userId}/product/${productId}`)
+export const removeWishlistById = async (id) => {
+  const response = await api.delete(`/wishlist/${id}`)
   return response.data
 }
 
-export const removeWishlistById = async (id) => {
-  const response = await api.delete(`/wishlist/${id}`)
+export const removeFromWishlist = async (id) => {
+  return removeWishlistById(id)
+}
+
+export const removeWishlistByUserAndProduct = async (payloadOrUserId, productIdArg) => {
+  const userId =
+    typeof payloadOrUserId === 'object'
+      ? payloadOrUserId.user_id
+      : payloadOrUserId
+
+  const productId =
+    typeof payloadOrUserId === 'object'
+      ? payloadOrUserId.product_id
+      : productIdArg
+
+  const response = await api.delete(
+    `/wishlist/user/${userId}/product/${productId}`,
+  )
+
   return response.data
 }

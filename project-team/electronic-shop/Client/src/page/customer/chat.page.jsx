@@ -16,6 +16,7 @@ import {
   markConversationAsRead,
   openConversation,
   sendChatMessage,
+  uploadChatFiles,
 } from '../../services/chat.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import { getId } from '../../utils/format'
@@ -29,6 +30,15 @@ function formatDateTime(value) {
     day: '2-digit',
     month: '2-digit',
   }).format(new Date(value))
+}
+
+function formatFileSize(size) {
+  const numberSize = Number(size || 0)
+
+  if (numberSize < 1024) return `${numberSize} B`
+  if (numberSize < 1024 * 1024) return `${(numberSize / 1024).toFixed(1)} KB`
+
+  return `${(numberSize / 1024 / 1024).toFixed(1)} MB`
 }
 
 function getSenderName(message) {
@@ -50,7 +60,10 @@ function getSenderAvatar(message) {
 }
 
 function getMessageKey(message) {
-  return getId(message) || `${message?.sender_id}-${message?.created_at}-${message?.message}`
+  return (
+    getId(message) ||
+    `${message?.sender_id}-${message?.created_at}-${message?.message}`
+  )
 }
 
 function mergeMessages(currentMessages, nextMessage) {
@@ -81,8 +94,76 @@ function ChatNotice({ type = 'info', children }) {
       : 'border-emerald-100 bg-emerald-50 text-emerald-700'
 
   return (
-    <div className={`mb-3 rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}>
+    <div
+      className={`mb-3 rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}
+    >
       {children}
+    </div>
+  )
+}
+
+function MessageAttachments({ attachments = [], isMine }) {
+  if (!attachments.length) return null
+
+  return (
+    <div className='mt-2 d-flex flex-column gap-2'>
+      {attachments.map((item, index) => {
+        const isImage =
+          item.type === 'image' ||
+          String(item.mime_type || '').startsWith('image/')
+
+        if (isImage) {
+          return (
+            <a
+              key={`${item.url}-${index}`}
+              href={item.url}
+              target='_blank'
+              rel='noreferrer'
+              className='d-block overflow-hidden rounded-3 border bg-white'
+              style={{
+                width: 190,
+                maxWidth: '100%',
+              }}
+            >
+              <img
+                src={item.url}
+                alt={item.original_name || 'Ảnh chat'}
+                className='w-100 object-fit-cover'
+                style={{
+                  maxHeight: 190,
+                }}
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none'
+                }}
+              />
+            </a>
+          )
+        }
+
+        return (
+          <a
+            key={`${item.url}-${index}`}
+            href={item.url}
+            target='_blank'
+            rel='noreferrer'
+            className={`d-flex align-items-center gap-2 rounded-3 border px-3 py-2 text-decoration-none ${
+              isMine
+                ? 'border-white bg-white text-slate-700'
+                : 'border-slate-200 bg-slate-50 text-slate-700'
+            }`}
+          >
+            <i className='bi bi-paperclip' />
+
+            <span className='text-sm'>
+              {item.original_name || 'File đính kèm'}
+
+              <small className='ms-2 opacity-75'>
+                {formatFileSize(item.size)}
+              </small>
+            </span>
+          </a>
+        )
+      })}
     </div>
   )
 }
@@ -92,16 +173,22 @@ function ChatPage() {
   const currentUserId = getUserId(user)
   const location = useLocation()
   const navigate = useNavigate()
+
   const messagesEndRef = useRef(null)
   const socketRef = useRef(null)
   const autoSendRef = useRef(false)
+  const fileInputRef = useRef(null)
 
   const [conversation, setConversation] = useState(null)
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState([])
+
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [isSocketConnected, setIsSocketConnected] = useState(false)
+
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
@@ -130,7 +217,11 @@ function ChatPage() {
     }
   }
 
-  const sendSocketMessage = async (targetConversationId, text) => {
+  const sendSocketMessage = async (
+    targetConversationId,
+    text,
+    attachments = [],
+  ) => {
     const socket = socketRef.current
 
     if (!socket || !socket.connected) {
@@ -144,6 +235,7 @@ function ChatPage() {
           conversation_id: targetConversationId,
           sender_id: currentUserId,
           message: text,
+          attachments,
         },
         (timeoutError, response) => {
           if (timeoutError) {
@@ -162,19 +254,30 @@ function ChatPage() {
     })
   }
 
-  const sendMessageRealtime = async (targetConversationId, text) => {
+  const sendMessageRealtime = async (
+    targetConversationId,
+    text,
+    attachments = [],
+  ) => {
     try {
-      const response = await sendSocketMessage(targetConversationId, text)
+      const response = await sendSocketMessage(
+        targetConversationId,
+        text,
+        attachments,
+      )
 
       setMessages((prev) => mergeMessages(prev, response?.data))
+
       return response
     } catch {
       const response = await sendChatMessage(targetConversationId, {
         sender_id: currentUserId,
         message: text,
+        attachments,
       })
 
       setMessages((prev) => mergeMessages(prev, response?.data))
+
       return response
     }
   }
@@ -212,6 +315,7 @@ function ChatPage() {
       })
 
       const openedConversation = response?.data || null
+
       setConversation(openedConversation)
 
       if (openedConversation) {
@@ -303,6 +407,24 @@ function ChatPage() {
     })
   }, [messages])
 
+  const handleSelectFiles = (event) => {
+    const files = Array.from(event.target.files || [])
+
+    if (!files.length) return
+
+    const validFiles = files.slice(0, 5)
+
+    setSelectedFiles((prev) => [...prev, ...validFiles].slice(0, 5))
+
+    event.target.value = ''
+    setError('')
+    setMessage('')
+  }
+
+  const handleRemoveFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const handleSendMessage = async (event) => {
     event.preventDefault()
 
@@ -311,23 +433,37 @@ function ChatPage() {
       return
     }
 
-    if (!newMessage.trim()) {
-      setError('Vui lòng nhập nội dung tin nhắn.')
+    if (!newMessage.trim() && selectedFiles.length === 0) {
+      setError('Vui lòng nhập tin nhắn hoặc chọn file.')
       return
     }
 
     try {
       setIsSending(true)
+      setIsUploading(selectedFiles.length > 0)
       setError('')
       setMessage('')
 
-      await sendMessageRealtime(conversationId, newMessage.trim())
+      let uploadedAttachments = []
+
+      if (selectedFiles.length > 0) {
+        const uploadResponse = await uploadChatFiles(selectedFiles)
+        uploadedAttachments = uploadResponse?.data || []
+      }
+
+      await sendMessageRealtime(
+        conversationId,
+        newMessage.trim(),
+        uploadedAttachments,
+      )
 
       setNewMessage('')
+      setSelectedFiles([])
     } catch (error) {
       setError(getErrorMessage(error, 'Không gửi được tin nhắn.'))
     } finally {
       setIsSending(false)
+      setIsUploading(false)
     }
   }
 
@@ -373,7 +509,7 @@ function ChatPage() {
                     </h2>
 
                     <p className='mb-0 text-sm text-slate-500'>
-                      Tin nhắn được cập nhật realtime bằng Socket.IO.
+                      Bạn có thể gửi tin nhắn, ảnh hoặc file cho bộ phận hỗ trợ.
                     </p>
                   </div>
 
@@ -462,9 +598,16 @@ function ChatPage() {
                               {formatDateTime(item.created_at)}
                             </p>
 
-                            <p className='mb-0 whitespace-pre-line text-sm'>
-                              {item.message}
-                            </p>
+                            {item.message && (
+                              <p className='mb-0 whitespace-pre-line text-sm'>
+                                {item.message}
+                              </p>
+                            )}
+
+                            <MessageAttachments
+                              attachments={item.attachments || []}
+                              isMine={isMine}
+                            />
                           </div>
                         </div>
                       )
@@ -482,7 +625,60 @@ function ChatPage() {
                   </div>
                 ) : (
                   <Form onSubmit={handleSendMessage}>
+                    {selectedFiles.length > 0 && (
+                      <div className='mb-2 d-flex flex-wrap gap-2'>
+                        {selectedFiles.map((file, index) => (
+                          <div
+                            key={`${file.name}-${index}`}
+                            className='d-flex align-items-center gap-2 rounded-pill border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
+                          >
+                            <i
+                              className={
+                                file.type.startsWith('image/')
+                                  ? 'bi bi-image'
+                                  : 'bi bi-paperclip'
+                              }
+                            />
+
+                            <span>{file.name}</span>
+
+                            <button
+                              type='button'
+                              onClick={() => handleRemoveFile(index)}
+                              className='border-0 bg-transparent p-0 text-red-500'
+                              title='Bỏ file'
+                            >
+                              <i className='bi bi-x-lg' />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type='file'
+                      multiple
+                      accept='image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip'
+                      onChange={handleSelectFiles}
+                      className='d-none'
+                    />
+
                     <div className='d-flex align-items-end gap-2'>
+                      <button
+                        type='button'
+                        onClick={() => fileInputRef.current?.click()}
+                        className='d-flex align-items-center justify-content-center rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                        style={{
+                          width: 46,
+                          height: 46,
+                          minWidth: 46,
+                        }}
+                        title='Đính kèm ảnh/file'
+                      >
+                        <i className='bi bi-paperclip fs-5' />
+                      </button>
+
                       <Form.Control
                         as='textarea'
                         rows={2}
@@ -501,10 +697,10 @@ function ChatPage() {
 
                       <Button
                         type='submit'
-                        isLoading={isSending}
+                        isLoading={isSending || isUploading}
                         className='px-4'
                       >
-                        Gửi
+                        {isUploading ? 'Đang tải' : 'Gửi'}
                       </Button>
                     </div>
                   </Form>

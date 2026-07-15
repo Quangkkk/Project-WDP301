@@ -5,6 +5,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
+import { Link } from 'react-router-dom'
 
 import MainLayout from '../../components/templates/MainLayout'
 import Alert from '../../components/atoms/Alert'
@@ -505,9 +506,20 @@ function ProfilePage() {
 
                       <div className='d-flex flex-wrap gap-2'>
                         {!isEditing && (
-                          <Button onClick={handleStartEdit}>
-                            Chỉnh sửa hồ sơ
-                          </Button>
+                          <>
+                            <Button
+                              as={Link}
+                              to='/profile/change-password'
+                              variant='secondary'
+                            >
+                              <i className='bi bi-shield-lock me-2' />
+                              Đổi mật khẩu
+                            </Button>
+
+                            <Button onClick={handleStartEdit}>
+                              Chỉnh sửa hồ sơ
+                            </Button>
+                          </>
                         )}
 
                         {isEditing && (
@@ -625,20 +637,18 @@ function ProfilePage() {
                           return (
                             <Col md={6} key={addressKey}>
                               <div
-                                className={`h-100 rounded-4 border bg-white p-4 shadow-sm transition ${
-                                  isDefault ? 'border-emerald-300' : 'border-slate-200'
-                                }`}
+                                className={`h-100 rounded-4 border bg-white p-4 shadow-sm transition ${isDefault ? 'border-emerald-300' : 'border-slate-200'
+                                  }`}
                               >
                                 <div className='mb-3 d-flex align-items-start gap-3'>
                                   <button
                                     type='button'
                                     onClick={() => handleSetDefaultAddress(addressId)}
                                     disabled={isUpdatingAddress || !addressId || isDefault}
-                                    className={`d-flex align-items-center justify-content-center rounded-circle border shadow-sm transition ${
-                                      isDefault
+                                    className={`d-flex align-items-center justify-content-center rounded-circle border shadow-sm transition ${isDefault
                                         ? 'border-emerald-500 bg-emerald-500 text-white'
                                         : 'border-slate-200 bg-white text-transparent hover:border-orange-500 hover:bg-orange-50'
-                                    }`}
+                                      }`}
                                     style={{
                                       width: 24,
                                       height: 24,
