@@ -175,6 +175,10 @@ function CheckoutPage() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [locations, setLocations] = useState([])
+  const [districtOptions, setDistrictOptions] = useState([])
+  const [wardOptions, setWardOptions] = useState([])
+  const [locationsError, setLocationsError] = useState('')
 
   const selectedAddress = useMemo(() => {
     return addresses.find((address) => getAddressId(address) === selectedAddressId) || null
@@ -272,12 +276,71 @@ function CheckoutPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const response = await fetch('https://provinces.open-api.vn/api/?depth=3')
+        const data = await response.json()
+
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid location data')
+        }
+
+        setLocations(data)
+        setLocationsError('')
+      } catch (error) {
+        setLocations([])
+        setDistrictOptions([])
+        setWardOptions([])
+        setLocationsError('Không tải được danh sách địa chỉ. Vui lòng thử lại sau.')
+      }
+    }
+
+    loadLocations()
+  }, [])
+
+  useEffect(() => {
+    const province = locations.find((item) => item.name === form.address_province)
+    const districtList = province?.districts || []
+
+    setDistrictOptions(
+      districtList.map((district) => ({
+        value: district.name,
+        label: district.name,
+      })),
+    )
+
+    setWardOptions([])
+  }, [form.address_province, locations])
+
+  useEffect(() => {
+    const province = locations.find((item) => item.name === form.address_province)
+    const district = province?.districts?.find((item) => item.name === form.address_district)
+    const wardList = district?.wards || []
+
+    setWardOptions(
+      wardList.map((ward) => ({
+        value: ward.name,
+        label: ward.name,
+      })),
+    )
+  }, [form.address_province, form.address_district, locations])
+
+  const buildLocationOptions = (options, placeholder) => [
+    { value: '', label: placeholder },
+    ...options,
+  ]
+
   const handleChange = (event) => {
     const { name, value } = event.target
 
     setForm((prev) => ({
       ...prev,
       [name]: value,
+      ...(name === 'address_province'
+        ? { address_district: '', address_ward: '' }
+        : {}),
+      ...(name === 'address_district' ? { address_ward: '' } : {}),
     }))
 
     if (name === 'coupon_code') {
@@ -658,29 +721,54 @@ function CheckoutPage() {
                           </Col>
 
                           <Col md={4}>
-                            <TextField
+                            <SelectField
                               label='Tỉnh / Thành phố'
                               name='address_province'
                               value={form.address_province}
                               onChange={handleChange}
+                              options={buildLocationOptions(
+                                locations.map((province) => ({
+                                  value: province.name,
+                                  label: province.name,
+                                })),
+                                locations.length ? 'Chọn tỉnh / thành phố' : 'Đang tải tỉnh / thành phố...',
+                              )}
                             />
                           </Col>
 
                           <Col md={4}>
-                            <TextField
+                            <SelectField
                               label='Quận / Huyện'
                               name='address_district'
                               value={form.address_district}
                               onChange={handleChange}
+                              options={buildLocationOptions(
+                                districtOptions,
+                                form.address_province
+                                  ? districtOptions.length
+                                    ? 'Chọn quận / huyện'
+                                    : 'Không có quận / huyện'
+                                  : 'Chọn tỉnh / thành phố trước',
+                              )}
+                              disabled={!form.address_province || districtOptions.length === 0}
                             />
                           </Col>
 
                           <Col md={4}>
-                            <TextField
+                            <SelectField
                               label='Phường / Xã'
                               name='address_ward'
                               value={form.address_ward}
                               onChange={handleChange}
+                              options={buildLocationOptions(
+                                wardOptions,
+                                form.address_district
+                                  ? wardOptions.length
+                                    ? 'Chọn phường / xã'
+                                    : 'Không có phường / xã'
+                                  : 'Chọn quận / huyện trước',
+                              )}
+                              disabled={!form.address_district || wardOptions.length === 0}
                             />
                           </Col>
 

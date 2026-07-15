@@ -25,7 +25,7 @@ import SupportManagementPage from './page/admin/support-management.page.jsx'
 
 const customerOnly = ['CUSTOMER']
 const backOfficeRoles = ['ADMIN', 'MANAGER', 'STAFF']
-const managerRoles = ['ADMIN', 'MANAGER']
+const managerOnly = ['MANAGER']
 const adminOnly = ['ADMIN']
 
 function App() {
@@ -97,7 +97,7 @@ function App() {
         <Route
           path='/admin/products'
           element={
-            <ProtectedRoute allowedRoles={managerRoles}>
+            <ProtectedRoute allowedRoles={managerOnly}>
               <ProductManagementPage />
             </ProtectedRoute>
           }
@@ -106,7 +106,7 @@ function App() {
         <Route
           path='/admin/categories'
           element={
-            <ProtectedRoute allowedRoles={managerRoles}>
+            <ProtectedRoute allowedRoles={managerOnly}>
               <CategoryManagementPage />
             </ProtectedRoute>
           }
@@ -115,7 +115,7 @@ function App() {
         <Route
           path='/admin/brands'
           element={
-            <ProtectedRoute allowedRoles={managerRoles}>
+            <ProtectedRoute allowedRoles={managerOnly}>
               <BrandManagementPage />
             </ProtectedRoute>
           }
@@ -124,7 +124,7 @@ function App() {
         <Route
           path='/admin/coupons'
           element={
-            <ProtectedRoute allowedRoles={managerRoles}>
+            <ProtectedRoute allowedRoles={managerOnly}>
               <CouponManagementPage />
             </ProtectedRoute>
           }

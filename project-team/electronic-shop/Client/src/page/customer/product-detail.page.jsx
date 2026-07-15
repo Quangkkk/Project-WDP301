@@ -695,9 +695,7 @@ function ProductDetailPage() {
                           </div>
 
                           <div className='mt-1 text-xs text-slate-500'>
-                            {variantStock > 0
-                              ? `Còn ${formatNumber(variantStock)} sản phẩm`
-                              : 'Hết hàng'}
+                            {variantStock > 0 ? 'Còn hàng' : 'Hết hàng'}
                           </div>
                         </button>
                       )
@@ -723,7 +721,7 @@ function ProductDetailPage() {
                     </span>
                   ) : (
                     <span className='text-sm font-bold text-slate-500'>
-                      Còn {formatNumber(stock)} sản phẩm
+                      Còn hàng
                     </span>
                   )}
                 </div>
@@ -842,9 +840,7 @@ function ProductDetailPage() {
                                 isOutOfStock ? 'text-red-500' : 'text-emerald-600'
                               }`}
                             >
-                              {isOutOfStock
-                                ? 'Hết hàng'
-                                : `Còn ${formatNumber(stock)} sản phẩm`}
+                              {isOutOfStock ? 'Hết hàng' : 'Còn hàng'}
                             </span>
                           </div>
                         </div>

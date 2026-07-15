@@ -1,13 +1,30 @@
 const express = require("express");
 const support = require("../controller/support.controller");
+const verifyToken = require("../middleware/verifyToken");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
 
-router.post("/tickets", support.createTicket);
-router.get("/tickets", support.getAllTickets);
-router.get("/tickets/:id", support.getTicketById);
-router.put("/tickets/:id", support.updateTicketById);
-router.delete("/tickets/:id", support.deleteTicketById);
-router.post("/tickets/:ticketId/messages", support.createTicketMessage);
+router.post("/tickets", verifyToken, support.createTicket);
+router.get("/tickets", verifyToken, support.getAllTickets);
+router.get("/tickets/:id", verifyToken, support.getTicketById);
+router.put(
+  "/tickets/:id",
+  verifyToken,
+  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  support.updateTicketById
+);
+router.delete(
+  "/tickets/:id",
+  verifyToken,
+  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  support.deleteTicketById
+);
+router.post(
+  "/tickets/:ticketId/messages",
+  verifyToken,
+  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  support.createTicketMessage
+);
 
 module.exports = router;
