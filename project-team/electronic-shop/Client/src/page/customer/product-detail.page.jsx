@@ -474,6 +474,7 @@ function ProductDetailPage() {
     }
   }, [id])
 
+  // Su dung useMemo de tim phien ban variant dang chon hien tai dua tren variantId
   const selectedVariant = useMemo(() => {
     return variants.find((item) => getId(item) === variantId) || variants[0] || null
   }, [variants, variantId])
@@ -482,6 +483,7 @@ function ProductDetailPage() {
   const brandInfo = useMemo(() => getBrandInfo(product), [product])
   const brandName = brandInfo.name
 
+  // Cac thuoc tinh nhu gia, anh, ton kho va luot ban se tu dong thay doi dynamic theo variant duoc chon
   const price = getProductPrice(product, selectedVariant)
   const original = getProductOriginalPrice(product, selectedVariant)
   const image = getProductImage(product, selectedVariant)

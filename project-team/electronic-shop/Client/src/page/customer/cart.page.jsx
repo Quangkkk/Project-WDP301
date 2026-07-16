@@ -148,19 +148,23 @@ function CartPage() {
 
   const handleCheckout = () => {
     if (!hasSelectedItems) {
-      setError('Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.')
+      setError('Vui lòng chọn ít nhất một sản phẩm để thanh toán.')
       return
     }
 
-    const checkoutPayload = {
-      cartId: cart?._id || cart?.id || '',
-      selectedItemIds,
-    }
+    // Luu danh sach items duoc chon thanh toan vao sessionStorage de Checkout page lay duoc du lieu
+    sessionStorage.setItem(
+      CHECKOUT_SELECTED_ITEMS_KEY,
+      JSON.stringify({
+        selectedItemIds,
+      }),
+    )
 
-    sessionStorage.setItem(CHECKOUT_SELECTED_ITEMS_KEY, JSON.stringify(checkoutPayload))
-
+    // Chuyen huong qua trang Checkout kem theo state luu tru item IDs
     navigate('/checkout', {
-      state: checkoutPayload,
+      state: {
+        selectedItemIds,
+      },
     })
   }
 

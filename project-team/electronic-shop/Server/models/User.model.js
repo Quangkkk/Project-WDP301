@@ -38,6 +38,15 @@ const userSchema = new mongoose.Schema(
       default: "unverified",
       trim: true,
     },
+    email_otp: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    email_otp_expires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

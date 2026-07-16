@@ -501,8 +501,10 @@ function CheckoutPage() {
         throw new Error('Không lấy được mã đơn hàng sau khi tạo đơn.')
       }
 
+      // Xoa sach selected items trong sessionStorage sau khi da dat hang thanh cong
       sessionStorage.removeItem(CHECKOUT_SELECTED_ITEMS_KEY)
 
+      // Neu thanh toan bang chuyen khoan (VietQR)
       if (form.payment_method === 'bank_transfer') {
         const paymentResponse = await createBankTransferPayment(orderId)
         const paymentData = paymentResponse?.data || {}
@@ -518,6 +520,7 @@ function CheckoutPage() {
         return
       }
 
+      // Neu thanh toan bang ZaloPay
       if (form.payment_method === 'zalopay') {
         const paymentResponse = await createZaloPayPayment(orderId)
         const paymentData = paymentResponse?.data || {}

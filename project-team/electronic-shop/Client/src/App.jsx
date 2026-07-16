@@ -22,6 +22,8 @@ import CouponManagementPage from './page/admin/coupon-management.page.jsx'
 import OrderManagementPage from './page/admin/order-management.page.jsx'
 import UserManagementPage from './page/admin/user-management.page.jsx'
 import SupportManagementPage from './page/admin/support-management.page.jsx'
+import ChatManagementPage from './page/admin/chat-management.page.jsx'
+import RolePermissionManagementPage from './page/admin/role-permission-management.page.jsx'
 
 const customerOnly = ['CUSTOMER']
 const backOfficeRoles = ['ADMIN', 'MANAGER', 'STAFF']
@@ -149,10 +151,28 @@ function App() {
         />
 
         <Route
+          path='/admin/roles'
+          element={
+            <ProtectedRoute allowedRoles={adminOnly}>
+              <RolePermissionManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path='/admin/support'
           element={
             <ProtectedRoute allowedRoles={backOfficeRoles}>
               <SupportManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/admin/chat'
+          element={
+            <ProtectedRoute allowedRoles={backOfficeRoles}>
+              <ChatManagementPage />
             </ProtectedRoute>
           }
         />

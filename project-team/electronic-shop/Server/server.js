@@ -71,6 +71,8 @@ app.use("/support", routers.support);
 app.use("/chat", routers.chat);
 app.use("/wishlist", routers.wishlist);
 app.use("/payment", routers.payment);
+app.use("/admin", routers.rbac);
+app.use("/manager", routers.manager);
 
 app.use((req, res) => {
   return res.status(404).json({
@@ -79,8 +81,15 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 8080;
+const http = require("http");
+const { initChatSocket } = require("./socket/chatSocket");
 
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 8080;
+const server = http.createServer(app);
+
+// Khoi tao socket server tich hop real-time
+initChatSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -1,42 +1,10 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const authService = require("../services/auth.service");
 
-const User = require("../models/User.model");
-const Role = require("../models/Roles.model");
-
-const safeSelect = "-hash_pass -__v";
-
+// Helper check ObjectId hop le
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-const buildToken = (user, role) => {
-  return jwt.sign(
-    {
-      user_id: user._id,
-      role_id: user.role_id,
-      role: role?.code ? role.code.toUpperCase() : undefined,
-    },
-    process.env.JWT_SECRET || "dev_secret_key",
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    }
-  );
-};
-
-const getCustomerRole = async () => {
-  let role = await Role.findOne({ code: "customer" });
-
-  if (!role) {
-    role = await Role.create({
-      code: "customer",
-      name: "Customer",
-      description: "Default customer role",
-    });
-  }
-
-  return role;
-};
-
+// Controller dang ky tai khoan
 const register = async (req, res) => {
   try {
     const { name, email, password, phone, img_url } = req.body;
@@ -48,34 +16,7 @@ const register = async (req, res) => {
       });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-
-    const existedUser = await User.findOne({ email: normalizedEmail });
-
-    if (existedUser) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const role = await getCustomerRole();
-
-    const hash_pass = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      role_id: role._id,
-      name,
-      email: normalizedEmail,
-      hash_pass,
-      phone: phone || null,
-      img_url: img_url || null,
-      status: "unverified",
-    });
-
-    const data = await User.findById(user._id)
-      .select(safeSelect)
-      .populate("role_id", "name code");
+    const data = await authService.register({ name, email, password, phone, img_url });
 
     return res.status(201).json({
       success: true,
@@ -83,14 +24,19 @@ const register = async (req, res) => {
       data,
     });
   } catch (error) {
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "Email already exists") {
+      statusCode = 409;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to register",
+      message: error.message || "Failed to register",
       error: error.message,
     });
   }
 };
 
+// Controller dang nhap
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,108 +48,43 @@ const login = async (req, res) => {
       });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-
-    const user = await User.findOne({ email: normalizedEmail }).populate(
-      "role_id",
-      "name code"
-    );
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.hash_pass);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    if (user.status === "blocked") {
-      return res.status(403).json({
-        success: false,
-        message: "Account has been blocked",
-      });
-    }
-
-    if (user.status === "unverified") {
-      return res.status(403).json({
-        success: false,
-        message: "Account has not been verified",
-      });
-    }
-
-    const token = buildToken(user, user.role_id);
-
-    const data = await User.findById(user._id)
-      .select(safeSelect)
-      .populate("role_id", "name code");
+    const { token, data } = await authService.login({ email, password });
 
     return res.status(200).json({
       success: true,
       message: "Login successfully",
       token,
-      accessToken: token,
+      accessToken: token, // Truong hop client dung accessToken
       data,
     });
   } catch (error) {
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "Invalid email or password") {
+      statusCode = 401;
+    } else if (error.message === "Account has been blocked" || error.message === "Account has not been verified") {
+      statusCode = 403;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to login",
+      message: error.message || "Failed to login",
       error: error.message,
     });
   }
 };
 
+// Controller xac thuc email
 const verifyEmail = async (req, res) => {
   try {
-    const { email, user_id } = req.body;
+    const { email, otp } = req.body;
 
-    const filter = {};
-
-    if (user_id) {
-      if (!isValidObjectId(user_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid user_id",
-        });
-      }
-
-      filter._id = user_id;
-    } else if (email) {
-      filter.email = email.toLowerCase().trim();
-    } else {
+    if (!email || !otp) {
       return res.status(400).json({
         success: false,
-        message: "email or user_id is required",
+        message: "email and otp are required",
       });
     }
 
-    const user = await User.findOneAndUpdate(
-      filter,
-      {
-        status: "active",
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
-      .select(safeSelect)
-      .populate("role_id", "name code");
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    const user = await authService.verifyEmail({ email, otp });
 
     return res.status(200).json({
       success: true,
@@ -211,14 +92,21 @@ const verifyEmail = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "User not found") {
+      statusCode = 404;
+    } else if (error.message.includes("Invalid or expired") || error.message.includes("required")) {
+      statusCode = 400;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to verify email",
+      message: error.message || "Failed to verify email",
       error: error.message,
     });
   }
 };
 
+// Controller gui lai ma xac nhan
 const resendVerificationCode = async (req, res) => {
   try {
     const { email } = req.body;
@@ -230,33 +118,20 @@ const resendVerificationCode = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      email: email.toLowerCase().trim(),
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    if (user.status === "active") {
-      return res.status(200).json({
-        success: true,
-        message: "Account is already active",
-      });
-    }
+    const message = await authService.resendVerificationCode(email);
 
     return res.status(200).json({
       success: true,
-      message:
-        "No verification code is stored. Use /auth/verify-email to set status to active.",
+      message,
     });
   } catch (error) {
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "User not found") {
+      statusCode = 404;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Failed to resend verification code",
+      message: error.message || "Failed to resend verification code",
       error: error.message,
     });
   }

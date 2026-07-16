@@ -1,5 +1,6 @@
-import Dropdown from 'react-bootstrap/Dropdown'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { User, Receipt, LogOut } from 'lucide-react'
 
 function getRoleLabel(role) {
   const value = String(role || '').toUpperCase()
@@ -37,19 +38,33 @@ function getInitial(user) {
 }
 
 function HeaderActions({ loggedIn, user, role, onLogout }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Dong menu khi click ra ngoai
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   if (!loggedIn) {
     return (
-      <div className='d-flex align-items-center gap-3'>
+      <div className='flex items-center gap-4'>
         <Link
           to='/register'
-          className='font-bold text-orange-600 text-decoration-none'
+          className='font-bold text-orange-600 hover:text-orange-700 transition-colors'
         >
           Đăng ký
         </Link>
 
         <Link
           to='/login'
-          className='rounded-pill bg-orange-500 px-4 py-2 font-bold text-white shadow-sm text-decoration-none hover:bg-orange-600'
+          className='rounded-md bg-orange-600 px-5 py-2 font-bold text-white shadow-sm hover:bg-orange-700 transition-colors'
         >
           Đăng nhập
         </Link>
@@ -63,24 +78,17 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
   const roleLabel = getRoleLabel(role || user?.role || user?.role_code)
 
   return (
-    <Dropdown align='end'>
-      <Dropdown.Toggle
-        variant='light'
-        className='d-flex align-items-center gap-2 rounded-pill border-0 bg-slate-100 px-2 py-2 shadow-sm'
+    <div className='relative' ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className='flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 p-1 pr-3 shadow-sm hover:bg-slate-100 transition-colors'
       >
-        <span
-          className='d-flex align-items-center justify-content-center rounded-circle bg-orange-500 font-black text-white'
-          style={{
-            width: 36,
-            height: 36,
-            overflow: 'hidden',
-          }}
-        >
+        <span className='flex items-center justify-center rounded-full bg-orange-600 font-black text-white w-9 h-9 overflow-hidden'>
           {avatar ? (
             <img
               src={avatar}
               alt={name}
-              className='h-100 w-100 object-cover'
+              className='h-full w-full object-cover'
               onError={(event) => {
                 event.currentTarget.style.display = 'none'
               }}
@@ -90,87 +98,83 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
           )}
         </span>
 
-        <span className='d-none d-xl-flex flex-column align-items-start lh-sm'>
-          <span className='font-black text-slate-900'>
+        <span className='hidden xl:flex flex-col items-start leading-tight'>
+          <span className='text-sm font-bold text-slate-900'>
             {name}
           </span>
-
-          <span className='text-xs font-bold uppercase text-orange-600'>
+          <span className='text-[10px] font-black uppercase text-orange-600'>
             {roleLabel}
           </span>
         </span>
-      </Dropdown.Toggle>
+      </button>
 
-      <Dropdown.Menu className='mt-2 rounded-4 border-0 p-2 shadow-lg'>
-        <div className='px-3 py-3'>
-          <div className='d-flex align-items-center gap-3'>
-            <span
-              className='d-flex align-items-center justify-content-center rounded-circle bg-orange-500 font-black text-white'
-              style={{
-                width: 44,
-                height: 44,
-                overflow: 'hidden',
-              }}
-            >
-              {avatar ? (
-                <img
-                  src={avatar}
-                  alt={name}
-                  className='h-100 w-100 object-cover'
-                  onError={(event) => {
-                    event.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : (
-                getInitial(user)
-              )}
-            </span>
+      {isOpen && (
+        <div className='absolute right-0 mt-2 w-64 rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-2'>
+          <div className='px-4 py-3 border-b border-slate-100'>
+            <div className='flex items-center gap-3'>
+              <span className='flex items-center justify-center rounded-full bg-orange-600 font-black text-white w-10 h-10 overflow-hidden shrink-0'>
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={name}
+                    className='h-full w-full object-cover'
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  getInitial(user)
+                )}
+              </span>
 
-            <div>
-              <div className='font-black text-slate-900'>
-                {name}
-              </div>
-
-              {email && (
-                <div className='text-sm text-slate-500'>
-                  {email}
+              <div className='min-w-0'>
+                <div className='text-sm font-bold text-slate-900 truncate'>
+                  {name}
                 </div>
-              )}
+                {email && (
+                  <div className='text-xs text-slate-500 truncate'>
+                    {email}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          <div className='py-1'>
+            <Link
+              to='/profile'
+              onClick={() => setIsOpen(false)}
+              className='flex items-center px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600'
+            >
+              <User className='w-4 h-4 mr-3 text-slate-400' />
+              Hồ sơ của tôi
+            </Link>
+
+            <Link
+              to='/orders'
+              onClick={() => setIsOpen(false)}
+              className='flex items-center px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600'
+            >
+              <Receipt className='w-4 h-4 mr-3 text-slate-400' />
+              Đơn mua
+            </Link>
+          </div>
+
+          <div className='border-t border-slate-100 py-1'>
+            <button
+              onClick={() => {
+                setIsOpen(false)
+                onLogout()
+              }}
+              className='flex w-full items-center px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50'
+            >
+              <LogOut className='w-4 h-4 mr-3' />
+              Đăng xuất
+            </button>
+          </div>
         </div>
-
-        <Dropdown.Divider />
-
-        <Dropdown.Item
-          as={Link}
-          to='/profile'
-          className='rounded-3 px-3 py-2 font-bold text-slate-700'
-        >
-          <i className='bi bi-person-circle me-2 text-orange-500' />
-          Hồ sơ
-        </Dropdown.Item>
-
-        <Dropdown.Item
-          as={Link}
-          to='/orders'
-          className='rounded-3 px-3 py-2 font-bold text-slate-700'
-        >
-          <i className='bi bi-receipt me-2 text-orange-500' />
-          Đơn hàng
-        </Dropdown.Item>
-
-        <Dropdown.Divider />
-
-        <Dropdown.Item
-          onClick={onLogout}
-          className='rounded-3 px-3 py-2 font-bold text-red-600'
-        >
-          <i className='bi bi-box-arrow-right me-2' />
-          Đăng xuất
-        </Dropdown.Item>
-      </Dropdown.Menu>
-    </Dropdown>
+      )}
+    </div>
   )
 }
 

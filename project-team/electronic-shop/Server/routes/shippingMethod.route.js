@@ -1,5 +1,5 @@
 const express = require("express");
-const shippingMethod = require("../controller/shippingMethod.controller");
+const shippingMethod = require("../Controller/shippingMethod.controller");
 const verifyToken = require("../middleware/verifyToken");
 const authorizeRoles = require("../middleware/authorizeRoles");
 

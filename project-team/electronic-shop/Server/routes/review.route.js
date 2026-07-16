@@ -1,12 +1,17 @@
 const express = require("express");
-const review = require("../controller/review.controller");
+const review = require("../Controller/review.controller");
+const verifyToken = require("../middleware/verifyToken");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
 
-router.post("/", review.createReview);
-router.get("/", review.getAllReviews);
-router.get("/:id", review.getReviewById);
-router.put("/:id", review.updateReviewById);
-router.delete("/:id", review.deleteReviewById);
+// Tao review moi (Chi danh cho Customer)
+router.post("/", verifyToken, authorizeRoles("Customer"), review.createReview);
+
+// Sua review ca nhan (Chi danh cho Customer)
+router.put("/:id", verifyToken, authorizeRoles("Customer"), review.updateReview);
+
+// An review vi pham (Danh cho Admin, Manager, Staff)
+router.patch("/admin/reviews/:id/hide", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), review.hideReview);
 
 module.exports = router;

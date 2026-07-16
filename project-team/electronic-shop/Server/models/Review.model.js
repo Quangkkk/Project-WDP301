@@ -37,6 +37,11 @@ const reviewSchema = new mongoose.Schema(
       default: "visible",
       trim: true,
     },
+    hidden_reason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

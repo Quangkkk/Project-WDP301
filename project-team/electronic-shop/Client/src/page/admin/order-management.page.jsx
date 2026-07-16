@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
+import Modal from 'react-bootstrap/Modal'
+import Form from 'react-bootstrap/Form'
 
 import DashboardLayout from '../../components/templates/DashboardLayout'
 import Alert from '../../components/atoms/Alert'
@@ -10,7 +12,7 @@ import SelectField from '../../components/atoms/SelectField'
 import StatusBadge from '../../components/atoms/StatusBadge'
 
 import { getErrorMessage } from '../../services/api'
-import { getOrders, updateOrder } from '../../services/order.service'
+import { getOrders, updateOrder, cancelOrder } from '../../services/order.service'
 import { confirmBankTransferPayment } from '../../services/payment.service'
 import { formatDate, getId, pickArray } from '../../utils/format'
 
@@ -49,6 +51,11 @@ function OrderManagementPage() {
   const [error, setError] = useState('')
   const [loadingId, setLoadingId] = useState('')
 
+  // Cancel Modal State
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelOrderId, setCancelOrderId] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
+
   const load = async () => {
     try {
       setError('')
@@ -77,6 +84,13 @@ function OrderManagementPage() {
   }, [])
 
   const handleSave = async (orderId) => {
+    const originalOrder = orders.find(o => getId(o) === orderId)
+    if (statusDraft[orderId] === 'cancelled' && originalOrder?.status !== 'cancelled') {
+      setCancelOrderId(orderId)
+      setShowCancelModal(true)
+      return
+    }
+
     try {
       setLoadingId(orderId)
       setError('')
@@ -91,6 +105,31 @@ function OrderManagementPage() {
       await load()
     } catch (error) {
       setError(getErrorMessage(error, 'Không cập nhật được trạng thái'))
+    } finally {
+      setLoadingId('')
+    }
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason.trim()) {
+      setError('Vui lòng nhập lý do hủy đơn')
+      setShowCancelModal(false)
+      return
+    }
+
+    try {
+      setLoadingId(cancelOrderId)
+      setError('')
+      setMessage('')
+      setShowCancelModal(false)
+
+      await cancelOrder(cancelOrderId, cancelReason.trim())
+
+      setMessage('Đã hủy đơn hàng và gửi email thông báo cho khách.')
+      setCancelReason('')
+      await load()
+    } catch (error) {
+      setError(getErrorMessage(error, 'Không hủy được đơn hàng'))
     } finally {
       setLoadingId('')
     }
@@ -237,6 +276,36 @@ function OrderManagementPage() {
           </Table>
         </Card.Body>
       </Card>
+
+      {/* Cancel Order Modal */}
+      <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} centered>
+        <Modal.Header closeButton className='border-0 pb-0'>
+          <Modal.Title className='h5 font-black text-slate-900'>Xác nhận hủy đơn hàng</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className='text-sm text-slate-600 mb-3'>
+            Vui lòng nhập lý do hủy đơn (bắt buộc). Lý do này sẽ được lưu lại và gửi email thông báo cho khách hàng.
+          </p>
+          <Form.Group>
+            <Form.Control
+              as='textarea'
+              rows={3}
+              placeholder='Nhập lý do hủy...'
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className='shadow-none'
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer className='border-0 pt-0'>
+          <Button variant='light' onClick={() => setShowCancelModal(false)}>
+            Đóng
+          </Button>
+          <Button variant='danger' onClick={handleConfirmCancel} disabled={!cancelReason.trim()}>
+            Xác nhận Hủy
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </DashboardLayout>
   )
 }

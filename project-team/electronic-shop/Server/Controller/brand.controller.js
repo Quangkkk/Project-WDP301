@@ -1,72 +1,97 @@
 const mongoose = require("mongoose");
-const Brand = require("../models/Brand.model");
+const brandService = require("../services/brand.service");
 
+// Helper check ObjectId hop le
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+// Controller them thuong hieu moi (Admin/Manager)
 const addBrand = async (req, res) => {
   try {
     const { name, logo_img, img_url, status } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: "name is required" });
+    if (!name) {
+      return res.status(400).json({ success: false, message: "name is required" });
+    }
 
-    const data = await Brand.create({ name, logo_img: logo_img || img_url || null, status });
+    const data = await brandService.addBrand({ name, logo_img, img_url, status });
     return res.status(201).json({ success: true, message: "Create brand successfully", data });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to create brand", error: error.message });
   }
 };
 
+// Controller lay danh sach thuong hieu
 const getAllBrand = async (req, res) => {
   try {
-    const filter = req.query.status ? { status: req.query.status } : {};
-    const data = await Brand.find(filter).select("-__v").sort({ name: 1 });
+    const data = await brandService.getAllBrand(req.query);
     return res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to get brands", error: error.message });
   }
 };
 
+// Controller lay chi tiet thuong hieu theo ID
 const getBrandById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid brand id" });
-    const data = await Brand.findById(id).select("-__v");
-    if (!data) return res.status(404).json({ success: false, message: "Brand not found" });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid brand id" });
+    }
+
+    const data = await brandService.getBrandById(id);
     return res.status(200).json({ success: true, data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to get brand", error: error.message });
+    let statusCode = 500;
+    if (error.message === "Brand not found") {
+      statusCode = 404;
+    }
+    return res.status(statusCode).json({ success: false, message: error.message || "Failed to get brand", error: error.message });
   }
 };
 
+// Controller cap nhat thuong hieu theo ID (Admin/Manager)
 const updateBrandById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid brand id" });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid brand id" });
+    }
 
-    const updateData = {};
-    if (req.body.name !== undefined) updateData.name = req.body.name;
-    if (req.body.logo_img !== undefined || req.body.img_url !== undefined) updateData.logo_img = req.body.logo_img || req.body.img_url;
-    if (req.body.status !== undefined) updateData.status = req.body.status;
-
-    if (Object.keys(updateData).length === 0) return res.status(400).json({ success: false, message: "No data to update" });
-
-    const data = await Brand.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).select("-__v");
-    if (!data) return res.status(404).json({ success: false, message: "Brand not found" });
+    const data = await brandService.updateBrandById(id, req.body);
     return res.status(200).json({ success: true, message: "Update brand successfully", data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to update brand", error: error.message });
+    let statusCode = 500;
+    if (error.message === "Brand not found") {
+      statusCode = 404;
+    } else if (error.message === "No data to update") {
+      statusCode = 400;
+    }
+    return res.status(statusCode).json({ success: false, message: error.message || "Failed to update brand", error: error.message });
   }
 };
 
+// Controller xoa thuong hieu theo ID (Admin/Manager)
 const deleteBrandById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid brand id" });
-    const data = await Brand.findByIdAndDelete(id).select("-__v");
-    if (!data) return res.status(404).json({ success: false, message: "Brand not found" });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid brand id" });
+    }
+
+    const data = await brandService.deleteBrandById(id);
     return res.status(200).json({ success: true, message: "Delete brand successfully", data });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to delete brand", error: error.message });
+    let statusCode = 500;
+    if (error.message === "Brand not found") {
+      statusCode = 404;
+    }
+    return res.status(statusCode).json({ success: false, message: error.message || "Failed to delete brand", error: error.message });
   }
 };
 
-module.exports = { addBrand, getAllBrand, getBrandById, updateBrandById, deleteBrandById };
+module.exports = {
+  addBrand,
+  getAllBrand,
+  getBrandById,
+  updateBrandById,
+  deleteBrandById,
+};

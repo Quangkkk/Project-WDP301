@@ -117,6 +117,8 @@ function ProductListPage() {
         setIsLoading(true)
         setError('')
 
+        // Map cac bo loc tren UI (tu khoa q, danh muc category_id, thuong hieu brand_id)
+        // de gui query request len Backend API
         const params = { status: 'active' }
 
         if (filters.keyword.trim()) {

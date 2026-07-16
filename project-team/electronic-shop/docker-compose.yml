@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: electronic_shop_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: electronic_shop_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MONGO_URI=mongodb://mongodb:27017/electronic_shop
+      - JWT_SECRET=production_secret_key_123_abc
+      - JWT_EXPIRES_IN=7d
+      - EMAIL_USER=test@gmail.com
+      - EMAIL_PASS=gmail_password
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    container_name: electronic_shop_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
+
+networks:
+  app-network:
+    driver: bridge

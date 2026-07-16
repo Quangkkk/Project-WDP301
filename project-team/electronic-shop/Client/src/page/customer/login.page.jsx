@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react'
-import Container from 'react-bootstrap/Container'
-import Form from 'react-bootstrap/Form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AuthPanel from '../../components/organisms/AuthPanel'
 import MainLayout from '../../components/templates/MainLayout'
@@ -97,15 +95,19 @@ function LoginPage() {
 
   return (
     <MainLayout>
-      <section className='page-section'>
-        <Container className='max-w-xl'>
+      <section className='py-12 md:py-20'>
+        <div className='container mx-auto px-4 max-w-lg'>
           <AuthPanel
-            title='Welcome back'
-            subtitle='Đăng nhập để mua hàng và quản lý đơn hàng.'
+            title='Đăng Nhập'
+            subtitle='Chào mừng trở lại. Đăng nhập để tiếp tục mua sắm.'
           >
-            <Alert type='danger'>{message}</Alert>
+            {message && (
+              <div className="mb-6">
+                <Alert type='danger'>{message}</Alert>
+              </div>
+            )}
 
-            <Form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
               <TextField
                 label='Email'
                 id='email'
@@ -115,11 +117,11 @@ function LoginPage() {
                 value={form.email}
                 error={errors.email}
                 onChange={handleChange}
-                className='mb-3'
+                className='mb-5'
               />
 
               <TextField
-                label='Password'
+                label='Mật khẩu'
                 id='password'
                 name='password'
                 type='password'
@@ -127,35 +129,38 @@ function LoginPage() {
                 value={form.password}
                 error={errors.password}
                 onChange={handleChange}
-                className='mb-3'
+                className='mb-5'
               />
 
-              <div className='mb-4 d-flex justify-content-between gap-3 text-sm'>
-                <label className='d-flex align-items-center gap-2 text-slate-600'>
-                  <input type='checkbox' /> Remember me
+              <div className='mb-8 flex items-center justify-between text-sm'>
+                <label className='flex items-center gap-2 text-slate-600 cursor-pointer'>
+                  <input type='checkbox' className='rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4' /> 
+                  <span className='font-medium'>Ghi nhớ tài khoản</span>
                 </label>
 
-                <span className='font-bold text-blue-600'>Forgot password?</span>
+                <a href='#' className='font-bold text-blue-600 hover:text-blue-700 transition-colors'>
+                  Quên mật khẩu?
+                </a>
               </div>
 
               <Button
                 type='submit'
-                className='w-100 py-3'
+                className='w-full py-3 text-lg'
                 isLoading={isLoading}
                 disabled={isDisabled}
               >
-                Login
+                Đăng Nhập
               </Button>
-            </Form>
+            </form>
 
-            <p className='mt-4 mb-0 text-center text-sm text-slate-500'>
-              Don't have an account?{' '}
-              <Link to='/register' className='font-bold text-blue-600'>
-                Register now
+            <p className='mt-8 text-center text-slate-500'>
+              Bạn chưa có tài khoản?{' '}
+              <Link to='/register' className='font-bold text-blue-600 hover:text-blue-700 transition-colors'>
+                Đăng ký ngay
               </Link>
             </p>
           </AuthPanel>
-        </Container>
+        </div>
       </section>
     </MainLayout>
   )
