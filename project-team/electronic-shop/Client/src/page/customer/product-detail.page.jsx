@@ -586,6 +586,7 @@ function ProductDetailPage() {
     }
   }, [id])
 
+  // Su dung useMemo de tim phien ban variant dang chon hien tai dua tren variantId
   const selectedVariant = useMemo(() => {
     return variants.find((item) => getId(item) === variantId) || variants[0] || null
   }, [variants, variantId])
@@ -594,6 +595,7 @@ function ProductDetailPage() {
   const brandInfo = useMemo(() => getBrandInfo(product), [product])
   const brandName = brandInfo.name
 
+  // Cac thuoc tinh nhu gia, anh, ton kho va luot ban se tu dong thay doi dynamic theo variant duoc chon
   const price = getProductPrice(product, selectedVariant)
   const original = getProductOriginalPrice(product, selectedVariant)
   const image = getProductImage(product, selectedVariant)
@@ -932,9 +934,7 @@ function ProductDetailPage() {
                           </div>
 
                           <div className='mt-1 text-xs text-slate-500'>
-                            {variantStock > 0
-                              ? `Còn ${formatNumber(variantStock)} sản phẩm`
-                              : 'Hết hàng'}
+                            {variantStock > 0 ? 'Còn hàng' : 'Hết hàng'}
                           </div>
                         </button>
                       )
@@ -960,7 +960,7 @@ function ProductDetailPage() {
                     </span>
                   ) : (
                     <span className='text-sm font-bold text-slate-500'>
-                      Còn {formatNumber(stock)} sản phẩm
+                      Còn hàng
                     </span>
                   )}
                 </div>
@@ -1079,9 +1079,7 @@ function ProductDetailPage() {
                                 isOutOfStock ? 'text-red-500' : 'text-emerald-600'
                               }`}
                             >
-                              {isOutOfStock
-                                ? 'Hết hàng'
-                                : `Còn ${formatNumber(stock)} sản phẩm`}
+                              {isOutOfStock ? 'Hết hàng' : 'Còn hàng'}
                             </span>
                           </div>
                         </div>

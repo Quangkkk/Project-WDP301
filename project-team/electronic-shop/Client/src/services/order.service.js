@@ -20,7 +20,12 @@ export const updateOrder = async (id, payload) => {
   return response.data
 }
 
-export const cancelOrder = async (id) => {
-  const response = await api.patch(`/order/${id}/cancel`)
+export const cancelOrder = async (id, cancel_reason) => {
+  const response = await api.patch(`/order/${id}/cancel`, { cancel_reason })
+  return response.data
+}
+
+export const trackOrder = async (payload) => {
+  const response = await api.post('/order/track', payload)
   return response.data
 }

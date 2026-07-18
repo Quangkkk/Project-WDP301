@@ -1,14 +1,19 @@
 const express = require("express");
-const coupon = require("../controller/coupon.controller");
+const coupon = require("../Controller/coupon.controller");
+const verifyToken = require("../middleware/verifyToken");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
 
-router.post("/", coupon.createCoupon);
-router.post("/validate", coupon.validateCoupon);
-router.get("/", coupon.getAllCoupons);
-router.get("/usages", coupon.getCouponUsages);
-router.get("/:id", coupon.getCouponById);
-router.put("/:id", coupon.updateCouponById);
-router.delete("/:id", coupon.deleteCouponById);
+// Route validate yeu cau verifyToken de lay duoc req.user_id check so luot dung cua user do
+router.post("/validate", verifyToken, coupon.validateCoupon);
+
+// Cac route quan tri coupon chi danh cho ADMIN va MANAGER
+router.post("/", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.createCoupon);
+router.get("/", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.getAllCoupons);
+router.get("/usages", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.getCouponUsages);
+router.get("/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.getCouponById);
+router.put("/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.updateCouponById);
+router.delete("/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), coupon.deleteCouponById);
 
 module.exports = router;

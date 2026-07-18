@@ -27,6 +27,9 @@ const ChatMessage = require("./ChatMessage.model");
 const SupportTicket = require("./SupportTicket.model");
 const TicketMessage = require("./TicketMessage.model");
 
+const Permission = require("./Permission.model");
+const RolePermission = require("./RolePermission.model");
+
 const db = {
   mongoose,
 
@@ -56,6 +59,9 @@ const db = {
   ChatMessage,
   SupportTicket,
   TicketMessage,
+
+  Permission,
+  RolePermission,
 };
 
 db.connectDB = async () => {

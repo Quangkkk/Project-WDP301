@@ -31,8 +31,13 @@ export const resetPassword = async ({ token, password, confirmPassword }) => {
   return response.data
 }
 
-export const verifyEmail = async ({ email, user_id }) => {
-  const response = await api.post('/auth/verify-email', { email, user_id })
+export const verifyEmail = async ({ email, otp }) => {
+  const response = await api.post('/auth/verify-email', { email, otp })
+  return response.data
+}
+
+export const resendOTP = async ({ email }) => {
+  const response = await api.post('/auth/resend-otp', { email })
   return response.data
 }
 

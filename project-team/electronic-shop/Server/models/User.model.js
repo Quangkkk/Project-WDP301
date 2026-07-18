@@ -38,6 +38,15 @@ const userSchema = new mongoose.Schema(
       default: "active",
       trim: true,
     },
+    email_otp: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    email_otp_expires: {
+      type: Date,
+      default: null,
+    },
     reset_password_token: {
       type: String,
       default: null,

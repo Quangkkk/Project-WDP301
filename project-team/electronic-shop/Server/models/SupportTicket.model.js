@@ -32,6 +32,10 @@ const supportTicketSchema = new mongoose.Schema(
       default: "open",
       trim: true,
     },
+    closed_at: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

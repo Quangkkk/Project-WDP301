@@ -364,9 +364,7 @@ function ProductListPage() {
         setIsLoading(true)
         setError('')
 
-        const params = {
-          status: 'active',
-        }
+        const params = { status: 'active' }
 
         if (filters.keyword.trim()) {
           params.q = filters.keyword.trim()

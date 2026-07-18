@@ -18,7 +18,7 @@ import {
   sendChatMessage,
   uploadChatFiles,
 } from '../../services/chat.service'
-import { getCurrentUser, getUserId } from '../../utils/authStorage'
+import { getAccessToken, getCurrentUser, getUserId } from '../../utils/authStorage'
 import { getId } from '../../utils/format'
 
 function formatDateTime(value) {
@@ -171,6 +171,7 @@ function MessageAttachments({ attachments = [], isMine }) {
 function ChatPage() {
   const user = getCurrentUser()
   const currentUserId = getUserId(user)
+  const token = getAccessToken()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -345,9 +346,7 @@ function ChatPage() {
 
     const socket = io(API_BASE_URL, {
       transports: ['websocket', 'polling'],
-      auth: {
-        user_id: currentUserId,
-      },
+      auth: { token },
     })
 
     socketRef.current = socket
@@ -398,7 +397,7 @@ function ChatPage() {
       socketRef.current = null
       setIsSocketConnected(false)
     }
-  }, [conversationId, currentUserId])
+  }, [conversationId, currentUserId, token])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({

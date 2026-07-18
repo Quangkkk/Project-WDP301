@@ -94,6 +94,11 @@ const orderSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    handled_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

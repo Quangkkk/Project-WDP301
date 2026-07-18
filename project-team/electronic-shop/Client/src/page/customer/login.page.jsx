@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react'
-import Container from 'react-bootstrap/Container'
-import Form from 'react-bootstrap/Form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AuthPanel from '../../components/organisms/AuthPanel'
 import MainLayout from '../../components/templates/MainLayout'
@@ -16,47 +14,30 @@ function LoginPage() {
   const location = useLocation()
   const redirectPath = location.state?.from || ''
 
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
-  })
-
+  const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const isDisabled = useMemo(() => {
-    return !form.email.trim() || !form.password.trim() || isLoading
-  }, [form, isLoading])
+  const isDisabled = useMemo(
+    () => !form.email.trim() || !form.password.trim() || isLoading,
+    [form, isLoading],
+  )
 
   const handleChange = (event) => {
     const { name, value } = event.target
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: '',
-    }))
-
+    setForm((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => ({ ...prev, [name]: '' }))
     setMessage('')
   }
 
   const validate = () => {
     const next = {}
 
-    if (!form.email.trim()) {
-      next.email = 'Vui lòng nhập email'
-    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      next.email = 'Email không hợp lệ'
-    }
+    if (!form.email.trim()) next.email = 'Vui lòng nhập email'
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Email không hợp lệ'
 
-    if (!form.password.trim()) {
-      next.password = 'Vui lòng nhập mật khẩu'
-    }
+    if (!form.password.trim()) next.password = 'Vui lòng nhập mật khẩu'
 
     setErrors(next)
     return Object.keys(next).length === 0
@@ -64,12 +45,10 @@ function LoginPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-
     if (!validate()) return
 
     try {
       setIsLoading(true)
-
       const response = await login({
         email: form.email.trim(),
         password: form.password,
@@ -99,15 +78,19 @@ function LoginPage() {
 
   return (
     <MainLayout>
-      <section className='page-section'>
-        <Container className='max-w-xl'>
+      <section className='py-12 md:py-20'>
+        <div className='container mx-auto max-w-lg px-4'>
           <AuthPanel
             title='Đăng nhập'
-            subtitle='Đăng nhập để mua hàng và quản lý đơn hàng của bạn.'
+            subtitle='Chào mừng trở lại. Đăng nhập để tiếp tục mua sắm.'
           >
-            <Alert type='danger'>{message}</Alert>
+            {message && (
+              <div className='mb-6'>
+                <Alert type='danger'>{message}</Alert>
+              </div>
+            )}
 
-            <Form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
               <TextField
                 label='Email'
                 id='email'
@@ -117,7 +100,7 @@ function LoginPage() {
                 value={form.email}
                 error={errors.email}
                 onChange={handleChange}
-                className='mb-3'
+                className='mb-5'
               />
 
               <TextField
@@ -129,17 +112,21 @@ function LoginPage() {
                 value={form.password}
                 error={errors.password}
                 onChange={handleChange}
-                className='mb-3'
+                className='mb-5'
               />
 
-              <div className='mb-4 d-flex justify-content-between gap-3 text-sm'>
-                <label className='d-flex align-items-center gap-2 text-slate-600'>
-                  <input type='checkbox' /> Ghi nhớ đăng nhập
+              <div className='mb-8 flex items-center justify-between text-sm'>
+                <label className='flex cursor-pointer items-center gap-2 text-slate-600'>
+                  <input
+                    type='checkbox'
+                    className='h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500'
+                  />
+                  <span className='font-medium'>Ghi nhớ tài khoản</span>
                 </label>
 
                 <Link
                   to='/forgot-password'
-                  className='font-bold text-orange-600 text-decoration-none hover:text-orange-700'
+                  className='font-bold text-orange-600 transition-colors hover:text-orange-700'
                 >
                   Quên mật khẩu?
                 </Link>
@@ -147,22 +134,25 @@ function LoginPage() {
 
               <Button
                 type='submit'
-                className='w-100 py-3'
+                className='w-full py-3 text-lg'
                 isLoading={isLoading}
                 disabled={isDisabled}
               >
                 Đăng nhập
               </Button>
-            </Form>
+            </form>
 
-            <p className='mt-4 mb-0 text-center text-sm text-slate-500'>
-              Chưa có tài khoản?{' '}
-              <Link to='/register' className='font-bold text-orange-600'>
+            <p className='mt-8 text-center text-slate-500'>
+              Bạn chưa có tài khoản?{' '}
+              <Link
+                to='/register'
+                className='font-bold text-orange-600 transition-colors hover:text-orange-700'
+              >
                 Đăng ký ngay
               </Link>
             </p>
           </AuthPanel>
-        </Container>
+        </div>
       </section>
     </MainLayout>
   )

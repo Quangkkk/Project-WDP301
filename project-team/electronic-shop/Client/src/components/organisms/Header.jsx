@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react'
-import Container from 'react-bootstrap/Container'
-import Navbar from 'react-bootstrap/Navbar'
-import Form from 'react-bootstrap/Form'
-import Dropdown from 'react-bootstrap/Dropdown'
+import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Search, X, LayoutGrid, ShoppingCart, Truck } from 'lucide-react'
 
 import BrandLogo from '../atoms/BrandLogo'
 import HeaderActions from '../molecules/HeaderActions'
 import { clearAuth, getCurrentUser, getUserRole, isAuthenticated } from '../../utils/authStorage'
 import { getCategories } from '../../services/product.service'
 import { pickArray } from '../../utils/format'
+import TrackOrderModal from './TrackOrderModal'
 
 function HeaderSearch({ className = '' }) {
   const navigate = useNavigate()
@@ -25,89 +23,83 @@ function HeaderSearch({ className = '' }) {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-
     const value = keyword.trim()
     const params = new URLSearchParams()
-
     if (value) {
       params.set('keyword', value)
     }
-
     navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`)
   }
 
   const handleClear = () => {
     setKeyword('')
-
     if (location.pathname === '/products') {
       navigate('/products')
     }
   }
 
   return (
-    <Form onSubmit={handleSubmit} className={className}>
-      <div className='d-flex align-items-center gap-2 rounded-pill border border-slate-200 bg-slate-50 px-3 py-2 transition focus-within:border-orange-500 focus-within:bg-white focus-within:shadow-sm'>
-        <span className='text-slate-400'>
-          <i className='bi bi-search' />
-        </span>
-
-        <Form.Control
+    <form onSubmit={handleSubmit} className={`w-full ${className}`}>
+      <div className='flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 transition-all focus-within:border-blue-500 focus-within:bg-white focus-within:shadow-md focus-within:ring-2 focus-within:ring-blue-100'>
+        <Search className='w-5 h-5 text-slate-400 shrink-0' />
+        <input
           type='text'
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
-          placeholder='Tìm sản phẩm...'
-          className='border-0 bg-transparent p-0 text-sm shadow-none'
+          placeholder='Tìm kiếm sản phẩm công nghệ...'
+          className='w-full bg-transparent border-0 p-0 text-sm focus:outline-none focus:ring-0 text-slate-700 placeholder-slate-400'
         />
-
         {keyword && (
           <button
             type='button'
-            className='border-0 bg-transparent p-0 text-slate-400 hover:text-slate-700'
+            className='shrink-0 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none rounded-full p-1 hover:bg-slate-100'
             onClick={handleClear}
             aria-label='Clear search'
           >
-            <i className='bi bi-x-lg' />
+            <X className='w-4 h-4' />
           </button>
         )}
       </div>
-    </Form>
+    </form>
   )
 }
 
 function CategoryDropdown() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-
   const selectedCategoryId = searchParams.get('categoryId') || ''
   const [categories, setCategories] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
-
     const loadCategories = async () => {
       try {
         setIsLoading(true)
-
         const response = await getCategories({ status: 'active' })
-
         if (!mounted) return
-
         setCategories(pickArray(response, []))
       } catch (error) {
         if (!mounted) return
-
         setCategories([])
       } finally {
         if (mounted) setIsLoading(false)
       }
     }
-
     loadCategories()
+    return () => { mounted = false }
+  }, [])
 
-    return () => {
-      mounted = false
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
     }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const selectedCategory = categories.find((category) => {
@@ -116,72 +108,64 @@ function CategoryDropdown() {
   })
 
   const handleSelectCategory = (categoryId = '') => {
+    setIsOpen(false)
     if (!categoryId) {
       navigate('/products')
       return
     }
-
     const params = new URLSearchParams()
     params.set('categoryId', categoryId)
-
     navigate(`/products?${params.toString()}`)
   }
 
   return (
-    <Dropdown align='end'>
-      <Dropdown.Toggle
-        variant='light'
-        className='d-flex align-items-center gap-2 rounded-pill border-0 bg-orange-50 px-3 py-2 font-bold text-orange-600 shadow-sm'
+    <div className='relative' ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className='flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none'
       >
-        <i className='bi bi-grid-3x3-gap-fill' />
-        <span className='d-none d-xl-inline'>
+        <LayoutGrid className='w-5 h-5 text-blue-600' />
+        <span className='hidden xl:inline'>
           {selectedCategory?.name || 'Danh mục'}
         </span>
-      </Dropdown.Toggle>
+      </button>
 
-      <Dropdown.Menu className='mt-2 min-w-56 rounded-4 border-0 p-2 shadow-lg'>
-        <Dropdown.Item
-          onClick={() => handleSelectCategory('')}
-          className={`rounded-3 px-3 py-2 font-bold ${
-            !selectedCategoryId ? 'bg-orange-50 text-orange-600' : ''
-          }`}
-        >
-          Tất cả sản phẩm
-        </Dropdown.Item>
-
-        <Dropdown.Divider />
-
-        {isLoading && (
-          <Dropdown.Item disabled className='rounded-3 px-3 py-2 text-slate-500'>
-            Đang tải danh mục...
-          </Dropdown.Item>
-        )}
-
-        {!isLoading && categories.length === 0 && (
-          <Dropdown.Item disabled className='rounded-3 px-3 py-2 text-slate-500'>
-            Chưa có danh mục
-          </Dropdown.Item>
-        )}
-
-        {!isLoading &&
-          categories.map((category) => {
+      {isOpen && (
+        <div className='absolute right-0 mt-2 w-56 rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-1'>
+          <button
+            onClick={() => handleSelectCategory('')}
+            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
+              !selectedCategoryId ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            Tất cả sản phẩm
+          </button>
+          <div className='my-1 border-t border-slate-100' />
+          
+          {isLoading && (
+            <div className='px-4 py-2 text-sm text-slate-500'>Đang tải danh mục...</div>
+          )}
+          {!isLoading && categories.length === 0 && (
+            <div className='px-4 py-2 text-sm text-slate-500'>Chưa có danh mục</div>
+          )}
+          {!isLoading && categories.map((category) => {
             const categoryId = category._id || category.id
             const isActive = String(categoryId) === String(selectedCategoryId)
-
             return (
-              <Dropdown.Item
+              <button
                 key={categoryId}
                 onClick={() => handleSelectCategory(categoryId)}
-                className={`rounded-3 px-3 py-2 ${
-                  isActive ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-700'
+                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                  isActive ? 'bg-blue-50 font-bold text-blue-600' : 'text-slate-700 hover:bg-slate-50 font-medium'
                 }`}
               >
                 {category.name}
-              </Dropdown.Item>
+              </button>
             )
           })}
-      </Dropdown.Menu>
-    </Dropdown>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -192,31 +176,15 @@ function CartButton() {
 
   return (
     <button
-      type='button'
       onClick={() => navigate('/cart')}
-      className={`position-relative d-flex align-items-center justify-content-center rounded-circle border-0 shadow-sm transition ${
-        isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600'
+      className={`relative flex items-center justify-center w-11 h-11 rounded-full shadow-sm transition-colors focus:outline-none ${
+        isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
       }`}
-      style={{
-        width: 46,
-        height: 46,
-      }}
-      title='Cart'
-      aria-label='Go to cart'
+      aria-label='Giỏ hàng'
     >
-      <i className='bi bi-cart3 fs-5' />
-
+      <ShoppingCart className='w-5 h-5' />
       {!isActive && (
-        <span
-          className='position-absolute rounded-circle bg-orange-600'
-          style={{
-            width: 9,
-            height: 9,
-            top: 9,
-            right: 9,
-            border: '2px solid #fff',
-          }}
-        />
+        <span className='absolute top-2 right-2 w-2.5 h-2.5 bg-orange-600 rounded-full border-2 border-white' />
       )}
     </button>
   )
@@ -227,6 +195,7 @@ function Header() {
   const user = getCurrentUser()
   const loggedIn = isAuthenticated()
   const role = getUserRole(user)
+  const [showTrackModal, setShowTrackModal] = useState(false)
 
   const handleLogout = () => {
     clearAuth()
@@ -234,34 +203,51 @@ function Header() {
   }
 
   return (
-    <Navbar className='sticky-top border-bottom bg-white/95 py-3 shadow-sm backdrop-blur'>
-      <Container>
-        <div className='d-flex w-100 align-items-center gap-3'>
-          <div className='d-flex flex-shrink-0 align-items-center'>
-            <BrandLogo />
-          </div>
+    <>
+      <header className='sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm'>
+        <div className='container mx-auto px-4 py-3'>
+          <div className='flex w-full items-center gap-4'>
+            {/* Logo */}
+            <div className='shrink-0'>
+              <BrandLogo />
+            </div>
 
-          <div className='d-flex flex-grow-1 justify-content-center px-4'>
-            <div className='w-100' style={{ maxWidth: 520 }}>
-              <HeaderSearch className='w-100' />
+            {/* Search */}
+            <div className='flex-1 flex justify-center px-2 md:px-6'>
+              <div className='w-full max-w-lg'>
+                <HeaderSearch />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className='flex shrink-0 items-center gap-3'>
+              <button
+                onClick={() => setShowTrackModal(true)}
+                className='flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                title='Tra cứu đơn hàng'
+              >
+                <Truck className='w-5 h-5' />
+                <span className='hidden xl:inline'>Tra cứu đơn</span>
+              </button>
+
+              <CategoryDropdown />
+              <CartButton />
+              <HeaderActions
+                loggedIn={loggedIn}
+                user={user}
+                role={role}
+                onLogout={handleLogout}
+              />
             </div>
           </div>
-
-          <div className='d-flex flex-shrink-0 align-items-center gap-3'>
-            <CategoryDropdown />
-
-            <CartButton />
-
-            <HeaderActions
-              loggedIn={loggedIn}
-              user={user}
-              role={role}
-              onLogout={handleLogout}
-            />
-          </div>
         </div>
-      </Container>
-    </Navbar>
+      </header>
+
+      <TrackOrderModal
+        show={showTrackModal}
+        onHide={() => setShowTrackModal(false)}
+      />
+    </>
   )
 }
 

@@ -1,14 +1,11 @@
 const mongoose = require("mongoose");
-
-const Cart = require("../models/Cart.model");
-const CartItem = require("../models/CartItem.model");
-const Product = require("../models/Product.model");
-const ProductVariant = require("../models/ProductVariant.model");
+const cartService = require("../services/cart.service");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 
 const getCartQuery = (req) => {
-  const userId = req.params.userId || req.query.user_id || req.body?.user_id;
+  // uu tien lay user_id cua nguoi dung da dang nhap tu token truoc
+  const userId = req.user_id || req.params.userId || req.query.user_id || req.body?.user_id;
   const sessionId = req.query.session_id || req.body?.session_id;
 
   if (userId) {
@@ -23,58 +20,10 @@ const getCartQuery = (req) => {
   return null;
 };
 
-const collectValidIds = (items, field) => {
-  return [
-    ...new Set(
-      items
-        .map((item) => item?.[field])
-        .filter((value) => value && isValidObjectId(value))
-        .map((value) => String(value))
-    ),
-  ];
-};
-
-const toMapById = (items) => {
-  return new Map(items.map((item) => [String(item._id), item]));
-};
-
-const loadCartItems = async (cartId) => {
-  const rawItems = await CartItem.find({ cart_id: cartId })
-    .select("-__v")
-    .sort({ created_at: -1 })
-    .lean();
-
-  if (rawItems.length === 0) return [];
-
-  const productIds = collectValidIds(rawItems, "product_id");
-  const variantIds = collectValidIds(rawItems, "variant_id");
-
-  const [products, variants] = await Promise.all([
-    Product.find({ _id: { $in: productIds } })
-      .select("name sku status is_featured average_rating")
-      .lean(),
-
-    ProductVariant.find({ _id: { $in: variantIds } })
-      .select("sku variant_value price sale_price image stock_quantity is_active")
-      .lean(),
-  ]);
-
-  const productMap = toMapById(products);
-  const variantMap = toMapById(variants);
-
-  return rawItems.map((item) => ({
-    ...item,
-    product_id: productMap.get(String(item.product_id)) || item.product_id,
-    variant_id: item.variant_id
-      ? variantMap.get(String(item.variant_id)) || item.variant_id
-      : null,
-  }));
-};
-
+// Controller lay gio hang
 const getCart = async (req, res) => {
   try {
     const query = getCartQuery(req);
-
     if (!query) {
       return res.status(400).json({
         success: false,
@@ -82,37 +31,13 @@ const getCart = async (req, res) => {
       });
     }
 
-    const cart = await Cart.findOne(query).select("-__v").lean();
-
-    if (!cart) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          cart: null,
-          items: [],
-          total: 0,
-        },
-      });
-    }
-
-    const items = await loadCartItems(cart._id);
-
-    const total = items.reduce(
-      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
-      0
-    );
-
+    const data = await cartService.getCart(query);
     return res.status(200).json({
       success: true,
-      data: {
-        cart,
-        items,
-        total,
-      },
+      data,
     });
   } catch (error) {
     console.error("[cart.getCart]", error);
-
     return res.status(500).json({
       success: false,
       message: "Không tải được giỏ hàng",
@@ -121,10 +46,11 @@ const getCart = async (req, res) => {
   }
 };
 
+// Controller them san pham vao gio
 const addItemToCart = async (req, res) => {
   try {
     const query = getCartQuery(req);
-    const { product_id, variant_id, quantity = 1, price: bodyPrice } = req.body;
+    const { product_id, variant_id, quantity = 1, price } = req.body;
 
     if (!query) {
       return res.status(400).json({
@@ -147,97 +73,12 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    const qty = Number(quantity || 1);
-
-    if (!Number.isFinite(qty) || qty < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Số lượng phải lớn hơn 0",
-      });
-    }
-
-    const product = await Product.findById(product_id).lean();
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm",
-      });
-    }
-
-    let price = Number(bodyPrice || 0);
-    let variantObjectId = null;
-
-    const cart = await Cart.findOneAndUpdate(
-      query,
-      { $setOnInsert: query },
-      {
-        new: true,
-        upsert: true,
-        setDefaultsOnInsert: true,
-      }
-    );
-
-    if (variant_id) {
-      const variant = await ProductVariant.findById(variant_id).lean();
-
-      if (!variant) {
-        return res.status(404).json({
-          success: false,
-          message: "Không tìm thấy phiên bản sản phẩm",
-        });
-      }
-
-      if (String(variant.product_id) !== String(product_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Phiên bản không thuộc sản phẩm này",
-        });
-      }
-
-      if (!variant.is_active) {
-        return res.status(400).json({
-          success: false,
-          message: "Phiên bản sản phẩm đang ngừng bán",
-        });
-      }
-
-      const existingItem = await CartItem.findOne({
-        cart_id: cart._id,
-        product_id,
-        variant_id,
-      }).lean();
-
-      const nextQuantity = Number(existingItem?.quantity || 0) + qty;
-
-      if (Number(variant.stock_quantity || 0) < nextQuantity) {
-        return res.status(400).json({
-          success: false,
-          message: "Không đủ hàng trong kho",
-        });
-      }
-
-      price = Number(variant.sale_price || 0) > 0 ? variant.sale_price : variant.price;
-      variantObjectId = variant_id;
-    }
-
-    const item = await CartItem.findOneAndUpdate(
-      {
-        cart_id: cart._id,
-        product_id,
-        variant_id: variantObjectId,
-      },
-      {
-        $inc: { quantity: qty },
-        $set: { price },
-      },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-        setDefaultsOnInsert: true,
-      }
-    ).select("-__v");
+    const item = await cartService.addItemToCart(query, {
+      product_id,
+      variant_id,
+      quantity,
+      price,
+    });
 
     return res.status(200).json({
       success: true,
@@ -246,15 +87,29 @@ const addItemToCart = async (req, res) => {
     });
   } catch (error) {
     console.error("[cart.addItemToCart]", error);
-
-    return res.status(500).json({
+    let statusCode = 500;
+    if (
+      error.message === "Khong tim thay san pham" ||
+      error.message === "Khong tim thay phien ban san pham"
+    ) {
+      statusCode = 404;
+    } else if (
+      error.message === "So luong phai lon hon 0" ||
+      error.message === "Phien ban khong thuoc san pham nay" ||
+      error.message === "Phien ban san pham dang ngung ban" ||
+      error.message === "Khong du hang trong kho"
+    ) {
+      statusCode = 400;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Không thêm được sản phẩm vào giỏ hàng",
+      message: error.message || "Không thêm được sản phẩm vào giỏ hàng",
       error: error.message,
     });
   }
 };
 
+// Controller cap nhat gio hang
 const updateCartItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -267,47 +122,7 @@ const updateCartItem = async (req, res) => {
       });
     }
 
-    const qty = Number(quantity || 0);
-
-    if (!Number.isFinite(qty) || qty < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Số lượng phải lớn hơn 0",
-      });
-    }
-
-    const currentItem = await CartItem.findById(itemId).lean();
-
-    if (!currentItem) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm trong giỏ hàng",
-      });
-    }
-
-    if (currentItem.variant_id) {
-      const variant = await ProductVariant.findById(currentItem.variant_id).lean();
-
-      if (variant && Number(variant.stock_quantity || 0) < qty) {
-        return res.status(400).json({
-          success: false,
-          message: "Không đủ hàng trong kho",
-        });
-      }
-    }
-
-    const updateData = {
-      quantity: qty,
-    };
-
-    if (price !== undefined) {
-      updateData.price = Number(price);
-    }
-
-    const data = await CartItem.findByIdAndUpdate(itemId, updateData, {
-      new: true,
-      runValidators: true,
-    }).select("-__v");
+    const data = await cartService.updateCartItem(itemId, { quantity, price });
 
     return res.status(200).json({
       success: true,
@@ -316,15 +131,24 @@ const updateCartItem = async (req, res) => {
     });
   } catch (error) {
     console.error("[cart.updateCartItem]", error);
-
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "Khong tim thay san pham trong giot hang") {
+      statusCode = 404;
+    } else if (
+      error.message === "So luong phai lon hon 0" ||
+      error.message === "Khong du hang trong kho"
+    ) {
+      statusCode = 400;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Không cập nhật được giỏ hàng",
+      message: error.message || "Không cập nhật được giỏ hàng",
       error: error.message,
     });
   }
 };
 
+// Controller xoa mat hang khoi gio
 const deleteCartItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -336,14 +160,7 @@ const deleteCartItem = async (req, res) => {
       });
     }
 
-    const data = await CartItem.findByIdAndDelete(itemId).select("-__v");
-
-    if (!data) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm trong giỏ hàng",
-      });
-    }
+    const data = await cartService.deleteCartItem(itemId);
 
     return res.status(200).json({
       success: true,
@@ -352,19 +169,22 @@ const deleteCartItem = async (req, res) => {
     });
   } catch (error) {
     console.error("[cart.deleteCartItem]", error);
-
-    return res.status(500).json({
+    let statusCode = 500;
+    if (error.message === "Khong tim thay san pham trong giot hang") {
+      statusCode = 404;
+    }
+    return res.status(statusCode).json({
       success: false,
-      message: "Không xóa được sản phẩm khỏi giỏ hàng",
+      message: error.message || "Không xóa được sản phẩm khỏi giỏ hàng",
       error: error.message,
     });
   }
 };
 
+// Controller xoa sach gio
 const clearCart = async (req, res) => {
   try {
     const query = getCartQuery(req);
-
     if (!query) {
       return res.status(400).json({
         success: false,
@@ -372,19 +192,7 @@ const clearCart = async (req, res) => {
       });
     }
 
-    const cart = await Cart.findOne(query).lean();
-
-    if (!cart) {
-      return res.status(200).json({
-        success: true,
-        message: "Giỏ hàng đã trống",
-        deletedCount: 0,
-      });
-    }
-
-    const result = await CartItem.deleteMany({
-      cart_id: cart._id,
-    });
+    const result = await cartService.clearCart(query);
 
     return res.status(200).json({
       success: true,
@@ -393,7 +201,6 @@ const clearCart = async (req, res) => {
     });
   } catch (error) {
     console.error("[cart.clearCart]", error);
-
     return res.status(500).json({
       success: false,
       message: "Không xóa được giỏ hàng",

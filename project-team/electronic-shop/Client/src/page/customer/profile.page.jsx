@@ -12,6 +12,7 @@ import Alert from '../../components/atoms/Alert'
 import Button from '../../components/atoms/Button'
 import EmptyState from '../../components/atoms/EmptyState'
 import LoadingText from '../../components/atoms/LoadingText'
+import SelectField from '../../components/atoms/SelectField'
 import TextField from '../../components/atoms/TextField'
 import { getErrorMessage } from '../../services/api'
 import {
@@ -30,6 +31,13 @@ const initialAddressForm = {
   ward: '',
   address_line: '',
   is_default: false,
+}
+
+function buildLocationOptions(options, placeholder) {
+  return [
+    { value: '', label: placeholder },
+    ...options,
+  ]
 }
 
 function getRoleLabel(user) {
@@ -130,6 +138,10 @@ function ProfilePage() {
 
   const [addresses, setAddresses] = useState([])
   const [addressForm, setAddressForm] = useState(initialAddressForm)
+  const [locations, setLocations] = useState([])
+  const [districtOptions, setDistrictOptions] = useState([])
+  const [wardOptions, setWardOptions] = useState([])
+  const [locationsError, setLocationsError] = useState('')
 
   const [avatarPreview, setAvatarPreview] = useState('')
   const [avatarFileName, setAvatarFileName] = useState('')
@@ -188,6 +200,55 @@ function ProfilePage() {
     }
   }, [])
 
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const response = await fetch('https://provinces.open-api.vn/api/?depth=3')
+        const data = await response.json()
+
+        if (!Array.isArray(data)) {
+          throw new Error('Dữ liệu địa chỉ không hợp lệ.')
+        }
+
+        setLocations(data)
+        setLocationsError('')
+      } catch (error) {
+        setLocations([])
+        setDistrictOptions([])
+        setWardOptions([])
+        setLocationsError('Không tải được danh sách địa chỉ. Vui lòng thử lại sau.')
+      }
+    }
+
+    loadLocations()
+  }, [])
+
+  useEffect(() => {
+    const province = locations.find((item) => item.name === addressForm.province)
+    const districts = province?.districts || []
+
+    setDistrictOptions(
+      districts.map((district) => ({
+        value: district.name,
+        label: district.name,
+      })),
+    )
+    setWardOptions([])
+  }, [addressForm.province, locations])
+
+  useEffect(() => {
+    const province = locations.find((item) => item.name === addressForm.province)
+    const district = province?.districts?.find((item) => item.name === addressForm.district)
+    const wards = district?.wards || []
+
+    setWardOptions(
+      wards.map((ward) => ({
+        value: ward.name,
+        label: ward.name,
+      })),
+    )
+  }, [addressForm.province, addressForm.district, locations])
+
   const handleChange = (event) => {
     const { name, value } = event.target
 
@@ -206,6 +267,8 @@ function ProfilePage() {
     setAddressForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
+      ...(name === 'province' ? { district: '', ward: '' } : {}),
+      ...(name === 'district' ? { ward: '' } : {}),
     }))
 
     setMessage('')
@@ -750,29 +813,56 @@ function ProfilePage() {
               </Col>
 
               <Col md={4}>
-                <TextField
+                <SelectField
                   label='Tỉnh / Thành phố'
                   name='province'
                   value={addressForm.province}
                   onChange={handleAddressChange}
+                  options={buildLocationOptions(
+                    locations.map((province) => ({
+                      value: province.name,
+                      label: province.name,
+                    })),
+                    locations.length
+                      ? 'Chọn tỉnh / thành phố'
+                      : 'Đang tải tỉnh / thành phố...',
+                  )}
                 />
               </Col>
 
               <Col md={4}>
-                <TextField
+                <SelectField
                   label='Quận / Huyện'
                   name='district'
                   value={addressForm.district}
                   onChange={handleAddressChange}
+                  options={buildLocationOptions(
+                    districtOptions,
+                    addressForm.province
+                      ? districtOptions.length
+                        ? 'Chọn quận / huyện'
+                        : 'Không có quận / huyện'
+                      : 'Chọn tỉnh / thành phố trước',
+                  )}
+                  disabled={!addressForm.province || districtOptions.length === 0}
                 />
               </Col>
 
               <Col md={4}>
-                <TextField
+                <SelectField
                   label='Phường / Xã'
                   name='ward'
                   value={addressForm.ward}
                   onChange={handleAddressChange}
+                  options={buildLocationOptions(
+                    wardOptions,
+                    addressForm.district
+                      ? wardOptions.length
+                        ? 'Chọn phường / xã'
+                        : 'Không có phường / xã'
+                      : 'Chọn quận / huyện trước',
+                  )}
+                  disabled={!addressForm.district || wardOptions.length === 0}
                 />
               </Col>
 

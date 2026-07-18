@@ -30,6 +30,7 @@ function HomePage() {
         setIsLoading(true)
         setError('')
 
+        // Goi song song APIs lay san pham noi bat (featured) va danh muc (categories) de toi uu thoi gian load
         const [productRes, categoryRes] = await Promise.all([
           getProducts({ featured: true, status: 'active' }),
           getCategories({ status: 'active' }),
@@ -86,7 +87,7 @@ function HomePage() {
             title='Sản phẩm nổi bật'
             action={<Link to='/products'><Button variant='secondary'>View all</Button></Link>}
           />
-          <ProductGrid products={products.slice(0, 6)} isLoading={isLoading} />
+          <ProductGrid products={products.slice(0, 8)} isLoading={isLoading} />
         </Container>
       </section>
     </MainLayout>
