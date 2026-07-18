@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
 const Role = require("../models/Roles.model");
 
-const safeSelect = "-hash_pass -__v";
+const safeSelect = "-hash_pass -email_otp -email_otp_expires -reset_password_token -reset_password_expires -__v";
 
 // Tao JWT token cho user
 // parameters: user (object), role (object)
@@ -25,7 +25,7 @@ const buildToken = (user, role) => {
 // Lay hoac tao mac dinh role customer
 // return: Role document
 const getCustomerRole = async () => {
-  let role = await Role.findOne({ code: "customer" });
+  let role = await Role.findOne({ code: { $regex: /^customer$/i } });
   if (!role) {
     role = await Role.create({
       code: "customer",

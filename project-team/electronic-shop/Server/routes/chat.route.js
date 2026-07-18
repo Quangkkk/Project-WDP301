@@ -4,17 +4,39 @@ const verifyToken = require("../middleware/verifyToken");
 const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
+const chatRoles = authorizeRoles("CUSTOMER", "STAFF", "ADMIN", "MANAGER");
+const staffRoles = authorizeRoles("STAFF", "ADMIN", "MANAGER");
 
-// Customer tao cuoc hoi thoai voi 1 staff tu dong
-router.post("/conversations", verifyToken, authorizeRoles("Customer"), chat.createConversation);
+router.use(verifyToken);
 
-// Customer hoac Staff lay danh sach cac cuoc hoi thoai cua minh
-router.get("/conversations", verifyToken, authorizeRoles("Customer", "Staff"), chat.getAllConversations);
-
-// Lay lich su tin nhan cua cuoc hoi thoai (ho tro phan trang)
-router.get("/conversations/:id/messages", verifyToken, authorizeRoles("Customer", "Staff"), chat.getMessagesByConversation);
-
-// REST API gui tin nhan (fallback cho socket)
-router.post("/conversations/:conversationId/messages", verifyToken, authorizeRoles("Customer", "Staff"), chat.createChatMessage);
+router.post("/uploads", chatRoles, chat.uploadChatFiles, chat.uploadChatAttachments);
+router.post(
+  "/conversations/open",
+  authorizeRoles("CUSTOMER"),
+  chat.getOrCreateConversation
+);
+router.post(
+  "/conversations",
+  authorizeRoles("CUSTOMER"),
+  chat.createConversation
+);
+router.get("/conversations", chatRoles, chat.getConversations);
+router.get(
+  "/conversations/:id/messages",
+  chatRoles,
+  chat.getMessagesByConversation
+);
+router.get("/conversations/:id", chatRoles, chat.getConversationById);
+router.put("/conversations/:id", staffRoles, chat.updateConversation);
+router.post(
+  "/conversations/:conversationId/messages",
+  chatRoles,
+  chat.sendMessage
+);
+router.patch(
+  "/conversations/:conversationId/read",
+  chatRoles,
+  chat.markMessagesAsRead
+);
 
 module.exports = router;

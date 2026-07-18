@@ -1,116 +1,146 @@
-const mongoose = require("mongoose");
 const ChatConversation = require("../models/ChatConversation.model");
 const ChatMessage = require("../models/ChatMessage.model");
 const User = require("../models/User.model");
 const Role = require("../models/Roles.model");
 
-// Tao hoac lay cuoc tro chuyen open cho Customer
+const normalizeRole = (role) => String(role || "").toUpperCase();
+
+const populateConversation = (query) =>
+  query
+    .populate("customer_id", "name email phone img_url")
+    .populate("staff_id", "name email phone img_url")
+    .select("-__v");
+
+const populateMessage = (query) =>
+  query.populate("sender_id", "name email img_url role_id").select("-__v");
+
 const createConversation = async (customerId) => {
   const customer = await User.findById(customerId);
-  if (!customer) {
-    throw new Error("Customer not found");
-  }
+  if (!customer) throw new Error("Customer not found");
 
-  // 1. Kiem tra xem customer hien tai da co conversation dang 'open' nao chua
-  // Neu co, tra ve luon de dam bao gioi han 1 conversation open tai 1 thoi diem
   const existing = await ChatConversation.findOne({
     customer_id: customerId,
-    status: "open",
-  });
+    status: { $ne: "closed" },
+  }).sort({ updated_at: -1, created_at: -1 });
 
   if (existing) {
-    return existing;
+    return populateConversation(ChatConversation.findById(existing._id)).lean();
   }
 
-  // 2. Tim vai tro Staff de tu dong assign
-  const staffRole = await Role.findOne({ code: "STAFF" });
-  if (!staffRole) {
-    throw new Error("Staff role not found in database");
-  }
+  const staffRole = await Role.findOne({ code: { $regex: /^staff$/i } });
+  if (!staffRole) throw new Error("Staff role not found in database");
 
-  const staffs = await User.find({ role_id: staffRole._id });
-  if (staffs.length === 0) {
-    throw new Error("No staff available to assign");
-  }
+  const staffs = await User.find({
+    role_id: staffRole._id,
+    status: { $ne: "blocked" },
+  });
 
-  // 3. Tinh so cuoc tro chuyen dang open cua tung staff de phan bo cho nguoi it viec nhat (auto-assign)
+  if (staffs.length === 0) throw new Error("No staff available to assign");
+
   const conversationStats = await ChatConversation.aggregate([
     { $match: { status: "open" } },
     { $group: { _id: "$staff_id", count: { $sum: 1 } } },
   ]);
 
-  const statsMap = {};
-  conversationStats.forEach((stat) => {
-    statsMap[String(stat._id)] = stat.count;
-  });
+  const statsMap = Object.fromEntries(
+    conversationStats.map((item) => [String(item._id), item.count])
+  );
 
-  // Tim staff co so cuoc tro chuyen open thap nhat
-  let assignedStaff = staffs[0];
-  let minCount = statsMap[String(assignedStaff._id)] || 0;
+  const assignedStaff = staffs.reduce((selected, current) => {
+    const selectedCount = statsMap[String(selected._id)] || 0;
+    const currentCount = statsMap[String(current._id)] || 0;
+    return currentCount < selectedCount ? current : selected;
+  }, staffs[0]);
 
-  for (let i = 1; i < staffs.length; i++) {
-    const s = staffs[i];
-    const count = statsMap[String(s._id)] || 0;
-    if (count < minCount) {
-      minCount = count;
-      assignedStaff = s;
-    }
-  }
-
-  // 4. Tao conversation moi
   const conversation = await ChatConversation.create({
     customer_id: customerId,
     staff_id: assignedStaff._id,
     status: "open",
   });
 
+  return populateConversation(ChatConversation.findById(conversation._id)).lean();
+};
+
+const getConversations = async (userId, role, filters = {}) => {
+  const normalizedRole = normalizeRole(role);
+  const query = {};
+
+  if (normalizedRole === "CUSTOMER") {
+    query.customer_id = userId;
+  } else if (normalizedRole === "STAFF") {
+    query.staff_id = userId;
+  } else if (!["ADMIN", "MANAGER"].includes(normalizedRole)) {
+    throw new Error("Unauthorized conversation access");
+  }
+
+  if (filters.status && filters.status !== "all") query.status = filters.status;
+  if (
+    filters.customer_id &&
+    ["STAFF", "ADMIN", "MANAGER"].includes(normalizedRole)
+  ) {
+    query.customer_id = filters.customer_id;
+  }
+  if (filters.staff_id && ["ADMIN", "MANAGER"].includes(normalizedRole)) {
+    query.staff_id = filters.staff_id;
+  }
+
+  return populateConversation(ChatConversation.find(query))
+    .sort({ updated_at: -1, created_at: -1 })
+    .lean();
+};
+
+const assertConversationAccess = async (conversationId, userId, role) => {
+  const conversation = await ChatConversation.findById(conversationId);
+  if (!conversation) throw new Error("Conversation not found");
+
+  const normalizedRole = normalizeRole(role);
+  const isCustomer = String(conversation.customer_id) === String(userId);
+  const isAssignedStaff = String(conversation.staff_id) === String(userId);
+  const isPrivileged = ["ADMIN", "MANAGER"].includes(normalizedRole);
+
+  if (
+    (normalizedRole === "CUSTOMER" && !isCustomer) ||
+    (normalizedRole === "STAFF" && !isAssignedStaff) ||
+    (!["CUSTOMER", "STAFF", "ADMIN", "MANAGER"].includes(normalizedRole))
+  ) {
+    throw new Error("Unauthorized conversation access");
+  }
+
+  if (!isCustomer && !isAssignedStaff && !isPrivileged) {
+    throw new Error("Unauthorized conversation access");
+  }
+
   return conversation;
 };
 
-// Lay danh sach conversations tuy theo role
-const getConversations = async (userId, role) => {
-  const filter = {};
-  if (String(role).toUpperCase() === "CUSTOMER") {
-    filter.customer_id = userId;
-  } else {
-    // Mac dinh neu la Staff/Manager thi hien thi cuoc hoi thoai duoc chi dinh cho ho
-    filter.staff_id = userId;
+const getMessages = async (
+  conversationId,
+  { page = 1, limit = 100, userId, role } = {}
+) => {
+  if (userId && role) {
+    await assertConversationAccess(conversationId, userId, role);
   }
 
-  return await ChatConversation.find(filter)
-    .populate("customer_id", "name email img_url")
-    .populate("staff_id", "name email img_url")
-    .sort({ updated_at: -1 })
-    .lean();
-};
-
-// Lay lich su tin nhan kem phan trang
-const getMessages = async (conversationId, { page = 1, limit = 50 }) => {
   const pageNum = Math.max(Number(page || 1), 1);
-  const limitNum = Math.max(Number(limit || 50), 1);
+  const limitNum = Math.min(Math.max(Number(limit || 100), 1), 200);
   const skip = (pageNum - 1) * limitNum;
 
-  const conversation = await ChatConversation.findById(conversationId)
-    .populate("customer_id", "name email img_url")
-    .populate("staff_id", "name email img_url")
-    .lean();
+  const conversation = await populateConversation(
+    ChatConversation.findById(conversationId)
+  ).lean();
 
-  if (!conversation) {
-    throw new Error("Conversation not found");
-  }
+  if (!conversation) throw new Error("Conversation not found");
 
   const [messages, totalCount] = await Promise.all([
-    ChatMessage.find({ conversation_id: conversationId })
-      .populate("sender_id", "name email img_url")
-      .select("-__v")
-      .sort({ created_at: -1 }) // Lay tu tin moi nhat ve truoc
-      .skip(skip)
-      .limit(limitNum)
-      .lean(),
+    populateMessage(
+      ChatMessage.find({ conversation_id: conversationId })
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limitNum)
+    ).lean(),
     ChatMessage.countDocuments({ conversation_id: conversationId }),
   ]);
 
-  // Dao nguoc lai tin nhan de render theo thu tu thoi gian tang dan tren UI
   return {
     conversation,
     messages: messages.reverse(),
@@ -123,31 +153,97 @@ const getMessages = async (conversationId, { page = 1, limit = 50 }) => {
   };
 };
 
-// Luu message gui tu Socket hoac REST
-const saveMessage = async ({ conversationId, senderId, message }) => {
-  const conversation = await ChatConversation.findById(conversationId);
-  if (!conversation) {
-    throw new Error("Conversation not found");
+const normalizeAttachments = (attachments = []) => {
+  if (!Array.isArray(attachments)) return [];
+
+  return attachments
+    .map((item) => ({
+      original_name: item.original_name || item.originalName || item.name || "",
+      filename: item.filename || "",
+      mime_type: item.mime_type || item.mimeType || "",
+      size: Number(item.size || 0),
+      url: item.url || "",
+      type:
+        item.type === "image" ||
+        String(item.mime_type || item.mimeType || "").startsWith("image/")
+          ? "image"
+          : "file",
+    }))
+    .filter((item) => item.url);
+};
+
+const saveMessage = async ({
+  conversationId,
+  senderId,
+  role,
+  message,
+  attachments = [],
+}) => {
+  const conversation = await assertConversationAccess(
+    conversationId,
+    senderId,
+    role
+  );
+
+  if (conversation.status === "closed") {
+    throw new Error("Conversation is closed");
   }
 
-  // Luu message vao db
-  const chatMsg = await ChatMessage.create({
+  const cleanMessage = String(message || "").trim();
+  const cleanAttachments = normalizeAttachments(attachments);
+
+  if (!cleanMessage && cleanAttachments.length === 0) {
+    throw new Error("Message content cannot be empty");
+  }
+
+  const created = await ChatMessage.create({
     conversation_id: conversationId,
     sender_id: senderId,
-    message: message.trim(),
+    message: cleanMessage,
+    attachments: cleanAttachments,
+    is_read: false,
   });
 
-  // Cap nhat updated_at de sap xep cuoc hoi thoai noi len dau danh sach
   conversation.updated_at = new Date();
   await conversation.save();
 
-  // Populate sender info truoc khi tra ve
-  const populated = await ChatMessage.findById(chatMsg._id)
-    .populate("sender_id", "name email img_url")
-    .select("-__v")
-    .lean();
+  return populateMessage(ChatMessage.findById(created._id)).lean();
+};
 
-  return populated;
+const markMessagesAsRead = async (conversationId, userId, role) => {
+  await assertConversationAccess(conversationId, userId, role);
+
+  await ChatMessage.updateMany(
+    {
+      conversation_id: conversationId,
+      sender_id: { $ne: userId },
+      is_read: false,
+    },
+    {
+      is_read: true,
+      read_at: new Date(),
+    }
+  );
+};
+
+const updateConversation = async (conversationId, payload = {}) => {
+  const updateData = {};
+
+  if (payload.status !== undefined) updateData.status = payload.status;
+  if (payload.staff_id !== undefined) updateData.staff_id = payload.staff_id || null;
+  if (payload.assigned_staff_id !== undefined) {
+    updateData.staff_id = payload.assigned_staff_id || null;
+  }
+
+  const data = await populateConversation(
+    ChatConversation.findByIdAndUpdate(conversationId, updateData, {
+      new: true,
+      runValidators: true,
+    })
+  ).lean();
+
+  if (!data) throw new Error("Conversation not found");
+  return data;
 };
 
 module.exports = {
@@ -155,4 +251,7 @@ module.exports = {
   getConversations,
   getMessages,
   saveMessage,
+  markMessagesAsRead,
+  updateConversation,
+  assertConversationAccess,
 };

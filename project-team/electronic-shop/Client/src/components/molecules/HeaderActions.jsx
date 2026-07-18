@@ -1,15 +1,20 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { User, Receipt, LogOut } from 'lucide-react'
+import {
+  Headphones,
+  Heart,
+  LogOut,
+  MessageCircle,
+  Receipt,
+  User,
+} from 'lucide-react'
 
 function getRoleLabel(role) {
   const value = String(role || '').toUpperCase()
-
   if (value === 'ADMIN') return 'Admin'
   if (value === 'MANAGER') return 'Manager'
   if (value === 'STAFF') return 'Staff'
   if (value === 'CUSTOMER') return 'Customer'
-
   return value || 'User'
 }
 
@@ -24,30 +29,21 @@ function getUserName(user) {
   )
 }
 
-function getUserEmail(user) {
-  return user?.email || ''
-}
-
 function getUserAvatar(user) {
   return user?.img_url || user?.avatar || user?.avatar_url || ''
-}
-
-function getInitial(user) {
-  const name = getUserName(user)
-  return String(name).trim().charAt(0).toUpperCase() || 'U'
 }
 
 function HeaderActions({ loggedIn, user, role, onLogout }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  // Dong menu khi click ra ngoai
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false)
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
@@ -57,14 +53,13 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
       <div className='flex items-center gap-4'>
         <Link
           to='/register'
-          className='font-bold text-orange-600 hover:text-orange-700 transition-colors'
+          className='font-bold text-orange-600 transition-colors hover:text-orange-700'
         >
           Đăng ký
         </Link>
-
         <Link
           to='/login'
-          className='rounded-md bg-orange-600 px-5 py-2 font-bold text-white shadow-sm hover:bg-orange-700 transition-colors'
+          className='rounded-md bg-orange-600 px-5 py-2 font-bold text-white shadow-sm transition-colors hover:bg-orange-700'
         >
           Đăng nhập
         </Link>
@@ -73,17 +68,28 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
   }
 
   const name = getUserName(user)
-  const email = getUserEmail(user)
+  const email = user?.email || ''
   const avatar = getUserAvatar(user)
+  const initial = String(name).trim().charAt(0).toUpperCase() || 'U'
   const roleLabel = getRoleLabel(role || user?.role || user?.role_code)
+  const closeMenu = () => setIsOpen(false)
+
+  const menuItems = [
+    { to: '/profile', label: 'Hồ sơ của tôi', icon: User },
+    { to: '/orders', label: 'Đơn mua', icon: Receipt },
+    { to: '/wishlist', label: 'Yêu thích', icon: Heart },
+    { to: '/chat', label: 'Nhắn tin', icon: MessageCircle },
+    { to: '/support', label: 'Hỗ trợ', icon: Headphones },
+  ]
 
   return (
     <div className='relative' ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className='flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 p-1 pr-3 shadow-sm hover:bg-slate-100 transition-colors'
+        type='button'
+        onClick={() => setIsOpen((prev) => !prev)}
+        className='flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 p-1 pr-3 shadow-sm transition-colors hover:bg-slate-100'
       >
-        <span className='flex items-center justify-center rounded-full bg-orange-600 font-black text-white w-9 h-9 overflow-hidden'>
+        <span className='flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-orange-600 font-black text-white'>
           {avatar ? (
             <img
               src={avatar}
@@ -94,14 +100,12 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
               }}
             />
           ) : (
-            getInitial(user)
+            initial
           )}
         </span>
 
-        <span className='hidden xl:flex flex-col items-start leading-tight'>
-          <span className='text-sm font-bold text-slate-900'>
-            {name}
-          </span>
+        <span className='hidden flex-col items-start leading-tight xl:flex'>
+          <span className='text-sm font-bold text-slate-900'>{name}</span>
           <span className='text-[10px] font-black uppercase text-orange-600'>
             {roleLabel}
           </span>
@@ -109,10 +113,10 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
       </button>
 
       {isOpen && (
-        <div className='absolute right-0 mt-2 w-64 rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-2'>
-          <div className='px-4 py-3 border-b border-slate-100'>
+        <div className='absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-slate-100 bg-white py-2 shadow-xl'>
+          <div className='border-b border-slate-100 px-4 py-3'>
             <div className='flex items-center gap-3'>
-              <span className='flex items-center justify-center rounded-full bg-orange-600 font-black text-white w-10 h-10 overflow-hidden shrink-0'>
+              <span className='flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-600 font-black text-white'>
                 {avatar ? (
                   <img
                     src={avatar}
@@ -123,52 +127,41 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
                     }}
                   />
                 ) : (
-                  getInitial(user)
+                  initial
                 )}
               </span>
 
               <div className='min-w-0'>
-                <div className='text-sm font-bold text-slate-900 truncate'>
-                  {name}
-                </div>
-                {email && (
-                  <div className='text-xs text-slate-500 truncate'>
-                    {email}
-                  </div>
-                )}
+                <div className='truncate text-sm font-bold text-slate-900'>{name}</div>
+                {email && <div className='truncate text-xs text-slate-500'>{email}</div>}
               </div>
             </div>
           </div>
 
           <div className='py-1'>
-            <Link
-              to='/profile'
-              onClick={() => setIsOpen(false)}
-              className='flex items-center px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600'
-            >
-              <User className='w-4 h-4 mr-3 text-slate-400' />
-              Hồ sơ của tôi
-            </Link>
-
-            <Link
-              to='/orders'
-              onClick={() => setIsOpen(false)}
-              className='flex items-center px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600'
-            >
-              <Receipt className='w-4 h-4 mr-3 text-slate-400' />
-              Đơn mua
-            </Link>
+            {menuItems.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={closeMenu}
+                className='flex items-center px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-orange-600'
+              >
+                <Icon className='mr-3 h-4 w-4 text-slate-400' />
+                {label}
+              </Link>
+            ))}
           </div>
 
           <div className='border-t border-slate-100 py-1'>
             <button
+              type='button'
               onClick={() => {
-                setIsOpen(false)
+                closeMenu()
                 onLogout()
               }}
               className='flex w-full items-center px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50'
             >
-              <LogOut className='w-4 h-4 mr-3' />
+              <LogOut className='mr-3 h-4 w-4' />
               Đăng xuất
             </button>
           </div>

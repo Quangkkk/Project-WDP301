@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User.model");
 const userService = require("../services/user.service");
 
 // Helper check ObjectId hop le
@@ -276,6 +278,104 @@ const deleteAddress = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mã người dùng không hợp lệ.',
+      })
+    }
+
+    const requesterRole = String(req.role || '').toUpperCase()
+    const canChangeOtherUser = ['ADMIN', 'MANAGER'].includes(requesterRole)
+
+    if (String(req.user_id) !== String(id) && !canChangeOtherUser) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền đổi mật khẩu của tài khoản khác.',
+      })
+    }
+
+    const currentPassword =
+      req.body.current_password ||
+      req.body.currentPassword ||
+      req.body.old_password ||
+      req.body.oldPassword
+
+    const newPassword =
+      req.body.new_password ||
+      req.body.newPassword ||
+      req.body.password
+
+    const confirmPassword =
+      req.body.confirm_password ||
+      req.body.confirmPassword
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu.',
+      })
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+      })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu xác nhận không khớp.',
+      })
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
+      })
+    }
+
+    const user = await User.findById(id)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng.',
+      })
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.hash_pass)
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng.',
+      })
+    }
+
+    user.hash_pass = await bcrypt.hash(newPassword, 10)
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Đổi mật khẩu thành công.',
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Không đổi được mật khẩu.',
+      error: error.message,
+    })
+  }
+}
+
 module.exports = {
   addUser,
   getAllUser,
@@ -287,4 +387,5 @@ module.exports = {
   createAddress,
   updateAddress,
   deleteAddress,
+  changePassword,
 };

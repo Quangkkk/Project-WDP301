@@ -1,27 +1,30 @@
 const mongoose = require("mongoose");
 const supportService = require("../services/support.service");
+const SupportTicket = require("../models/SupportTicket.model");
+const TicketMessage = require("../models/TicketMessage.model");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const normalizeRole = (role) => String(role || "").toUpperCase();
 
-// -------------------------------------------------------------
-// CUSTOMER CONTROLLERS
-// -------------------------------------------------------------
-
-// Customer tao ticket ho tro moi
 const createTicket = async (req, res) => {
   try {
-    const customerId = req.user_id;
     const { subject, description, order_id } = req.body;
 
-    if (!subject) {
-      return res.status(400).json({ success: false, message: "subject is required" });
+    if (!subject || !String(subject).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject is required",
+      });
     }
 
     if (order_id && !isValidObjectId(order_id)) {
-      return res.status(400).json({ success: false, message: "Invalid order_id" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order_id",
+      });
     }
 
-    const data = await supportService.createTicket(customerId, {
+    const data = await supportService.createTicket(req.user_id, {
       subject,
       description,
       order_id,
@@ -33,10 +36,13 @@ const createTicket = async (req, res) => {
       data,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message.includes("not found") || error.message.includes("belong to you") || error.message.includes("required")) {
-      statusCode = 400;
-    }
+    const statusCode =
+      error.message.includes("not found") ||
+      error.message.includes("belong to you") ||
+      error.message.includes("required")
+        ? 400
+        : 500;
+
     return res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to create support ticket",
@@ -45,16 +51,10 @@ const createTicket = async (req, res) => {
   }
 };
 
-// Customer xem danh sach ticket ho tro cua minh
 const getCustomerTickets = async (req, res) => {
   try {
-    const customerId = req.user_id;
-    const data = await supportService.getCustomerTickets(customerId);
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
-    });
+    const data = await supportService.getCustomerTickets(req.user_id);
+    return res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -64,120 +64,23 @@ const getCustomerTickets = async (req, res) => {
   }
 };
 
-// Customer xem chi tiet tin nhan cua ticket ho tro
-const getTicketMessages = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user_id;
-    const role = req.role;
-
-    if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
-    }
-
-    const result = await supportService.getTicketDetails(id, userId, role);
-    return res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    let statusCode = 500;
-    if (error.message === "Support ticket not found") {
-      statusCode = 404;
-    } else if (error.message.includes("Unauthorized")) {
-      statusCode = 403;
-    }
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || "Failed to get ticket messages",
-      error: error.message,
-    });
-  }
-};
-
-// Customer gui tin nhan phan hoi trong ticket
-const createCustomerMessage = async (req, res) => {
-  try {
-    const { id } = req.params; // Ticket ID
-    const senderId = req.user_id;
-    const { message } = req.body;
-    const role = req.role;
-
-    if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
-    }
-
-    const data = await supportService.addMessage(id, senderId, message, role);
-    return res.status(201).json({
-      success: true,
-      message: "Send message successfully",
-      data,
-    });
-  } catch (error) {
-    let statusCode = 500;
-    if (error.message === "Support ticket not found") {
-      statusCode = 404;
-    } else if (error.message.includes("Unauthorized") || error.message.includes("empty")) {
-      statusCode = 400;
-    }
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || "Failed to send message",
-      error: error.message,
-    });
-  }
-};
-
-// Customer tu dong ticket ho tro cua minh
-const closeCustomerTicket = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user_id;
-
-    if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
-    }
-
-    const data = await supportService.closeTicket(id, userId);
-    return res.status(200).json({
-      success: true,
-      message: "Close support ticket successfully",
-      data,
-    });
-  } catch (error) {
-    let statusCode = 500;
-    if (error.message === "Support ticket not found") {
-      statusCode = 404;
-    } else if (error.message.includes("Unauthorized")) {
-      statusCode = 403;
-    }
-    return res.status(statusCode).json({
-      success: false,
-      message: error.message || "Failed to close ticket",
-      error: error.message,
-    });
-  }
-};
-
-// -------------------------------------------------------------
-// STAFF/MANAGER CONTROLLERS
-// -------------------------------------------------------------
-
-// Admin/Staff/Manager xem toan bo tickets
 const getAdminTickets = async (req, res) => {
   try {
     const { status, assigned_staff_id } = req.query;
 
     if (assigned_staff_id && !isValidObjectId(assigned_staff_id)) {
-      return res.status(400).json({ success: false, message: "Invalid assigned_staff_id" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid assigned_staff_id",
+      });
     }
 
-    const data = await supportService.getAdminTickets({ status, assigned_staff_id });
-    return res.status(200).json({
-      success: true,
-      count: data.length,
-      data,
+    const data = await supportService.getAdminTickets({
+      status,
+      assigned_staff_id,
     });
+
+    return res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -187,18 +90,132 @@ const getAdminTickets = async (req, res) => {
   }
 };
 
-// Admin/Staff/Manager chi dinh nhan vien cho ticket
+const getTickets = async (req, res) => {
+  if (normalizeRole(req.role) === "CUSTOMER") {
+    return getCustomerTickets(req, res);
+  }
+  return getAdminTickets(req, res);
+};
+
+const getTicketMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket id",
+      });
+    }
+
+    const data = await supportService.getTicketDetails(
+      id,
+      req.user_id,
+      req.role
+    );
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    let statusCode = 500;
+    if (error.message === "Support ticket not found") statusCode = 404;
+    if (error.message.includes("Unauthorized")) statusCode = 403;
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to get ticket messages",
+      error: error.message,
+    });
+  }
+};
+
+const createMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket id",
+      });
+    }
+
+    const data = await supportService.addMessage(
+      id,
+      req.user_id,
+      req.body.message,
+      req.role
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Send message successfully",
+      data,
+    });
+  } catch (error) {
+    let statusCode = 500;
+    if (error.message === "Support ticket not found") statusCode = 404;
+    if (error.message.includes("Unauthorized")) statusCode = 403;
+    if (error.message.includes("empty")) statusCode = 400;
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to send message",
+      error: error.message,
+    });
+  }
+};
+
+const createCustomerMessage = createMessage;
+const createAdminMessage = createMessage;
+
+const closeCustomerTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket id",
+      });
+    }
+
+    const data = await supportService.closeTicket(id, req.user_id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Close support ticket successfully",
+      data,
+    });
+  } catch (error) {
+    let statusCode = 500;
+    if (error.message === "Support ticket not found") statusCode = 404;
+    if (error.message.includes("Unauthorized")) statusCode = 403;
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to close ticket",
+      error: error.message,
+    });
+  }
+};
+
 const assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { assigned_staff_id } = req.body;
 
     if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket id",
+      });
     }
 
     if (!assigned_staff_id || !isValidObjectId(assigned_staff_id)) {
-      return res.status(400).json({ success: false, message: "Valid assigned_staff_id is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Valid assigned_staff_id is required",
+      });
     }
 
     const data = await supportService.assignTicket(id, assigned_staff_id);
@@ -208,10 +225,7 @@ const assignTicket = async (req, res) => {
       data,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message.includes("not found")) {
-      statusCode = 404;
-    }
+    const statusCode = error.message.includes("not found") ? 404 : 500;
     return res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to assign ticket",
@@ -220,31 +234,44 @@ const assignTicket = async (req, res) => {
   }
 };
 
-// Admin/Staff/Manager cap nhat status ticket
 const updateTicketStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket id",
+      });
     }
 
     if (!status) {
-      return res.status(400).json({ success: false, message: "status is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Status is required",
+      });
     }
 
-    const data = await supportService.updateTicketStatus(id, { status });
+    const allowedStatuses = ["open", "in_progress", "closed"];
+    if (!allowedStatuses.includes(String(status).toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ticket status",
+      });
+    }
+
+    const data = await supportService.updateTicketStatus(id, {
+      status: String(status).toLowerCase(),
+    });
+
     return res.status(200).json({
       success: true,
       message: "Update ticket status successfully",
       data,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message.includes("not found")) {
-      statusCode = 404;
-    }
+    const statusCode = error.message.includes("not found") ? 404 : 500;
     return res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to update ticket status",
@@ -253,34 +280,94 @@ const updateTicketStatus = async (req, res) => {
   }
 };
 
-// Admin/Staff/Manager phan hoi/gui tin nhan giai quyet ticket
-const createAdminMessage = async (req, res) => {
-  try {
-    const { id } = req.params; // Ticket ID
-    const senderId = req.user_id;
-    const { message } = req.body;
-    const role = req.role;
+const updateTicket = async (req, res) => {
+  const role = normalizeRole(req.role);
 
-    if (!id || !isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid ticket id" });
+  if (role === "CUSTOMER") {
+    if (String(req.body.status || "").toLowerCase() !== "closed") {
+      return res.status(403).json({
+        success: false,
+        message: "Customer can only close their own ticket",
+      });
+    }
+    return closeCustomerTicket(req, res);
+  }
+
+  try {
+    const { id } = req.params;
+    let data = null;
+
+    if (req.body.assigned_staff_id) {
+      data = await supportService.assignTicket(id, req.body.assigned_staff_id);
     }
 
-    const data = await supportService.addMessage(id, senderId, message, role);
-    return res.status(201).json({
+    if (req.body.status) {
+      data = await supportService.updateTicketStatus(id, {
+        status: String(req.body.status).toLowerCase(),
+      });
+    }
+
+    if (!data) {
+      return res.status(400).json({
+        success: false,
+        message: "No data to update",
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      message: "Send admin reply message successfully",
+      message: "Update ticket successfully",
       data,
     });
   } catch (error) {
-    let statusCode = 500;
-    if (error.message === "Support ticket not found") {
-      statusCode = 404;
-    } else if (error.message.includes("empty")) {
-      statusCode = 400;
-    }
+    const statusCode = error.message.includes("not found") ? 404 : 500;
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to send message",
+      message: error.message || "Failed to update ticket",
+      error: error.message,
+    });
+  }
+};
+
+const deleteTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid ticket id" });
+    }
+
+    const ticket = await SupportTicket.findById(id);
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Support ticket not found",
+      });
+    }
+
+    const role = normalizeRole(req.role);
+    if (
+      role === "CUSTOMER" &&
+      String(ticket.user_id) !== String(req.user_id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized to delete this ticket",
+      });
+    }
+
+    await Promise.all([
+      SupportTicket.findByIdAndDelete(id),
+      TicketMessage.deleteMany({ ticket_id: id }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Delete ticket successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete ticket",
       error: error.message,
     });
   }
@@ -288,12 +375,16 @@ const createAdminMessage = async (req, res) => {
 
 module.exports = {
   createTicket,
+  getTickets,
   getCustomerTickets,
-  getTicketMessages,
-  createCustomerMessage,
-  closeCustomerTicket,
   getAdminTickets,
+  getTicketMessages,
+  createMessage,
+  createCustomerMessage,
+  createAdminMessage,
+  closeCustomerTicket,
   assignTicket,
   updateTicketStatus,
-  createAdminMessage,
+  updateTicket,
+  deleteTicket,
 };

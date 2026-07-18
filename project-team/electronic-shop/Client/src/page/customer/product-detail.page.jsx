@@ -16,7 +16,8 @@ import { addItemToCart } from '../../services/cart.service'
 import { getErrorMessage } from '../../services/api'
 import { getProductById } from '../../services/product.service'
 import { getReviews } from '../../services/review.service'
-import { getCurrentUser } from '../../utils/authStorage'
+import { addToWishlist, getWishlist } from '../../services/wishlist.service'
+import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import { getCartIdentity } from '../../utils/sessionCart'
 import { getId, pickArray, pickData } from '../../utils/format'
 import {
@@ -28,6 +29,14 @@ import {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('vi-VN').format(Number(value || 0))
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0))
 }
 
 function formatReviewDate(value) {
@@ -60,6 +69,23 @@ function getSoldCount(product, variant) {
     product?.sales_count ??
     product?.salesCount ??
     product?.sold ??
+    0
+
+  return Number(value || 0)
+}
+
+function getProductWishlistCount(product) {
+  const value =
+    product?.wishlist_count ??
+    product?.wishlistCount ??
+    product?.favorite_count ??
+    product?.favoriteCount ??
+    product?.liked_count ??
+    product?.likedCount ??
+    product?.total_wishlist ??
+    product?.totalWishlist ??
+    product?.likes ??
+    product?.like_count ??
     0
 
   return Number(value || 0)
@@ -119,6 +145,37 @@ function getBrandInfo(product) {
   }
 }
 
+function getWishlistProductId(item) {
+  const product =
+    item?.product_id ||
+    item?.product ||
+    item?.productId ||
+    item?.product_info
+
+  if (typeof product === 'string') return product
+
+  return getId(product) || item?.product_id || item?.productId || ''
+}
+
+function getWishlistUserId(item) {
+  const user = item?.user_id || item?.user || item?.userId
+
+  if (typeof user === 'string') return user
+
+  return getId(user) || item?.user_id || item?.userId || ''
+}
+
+function isAlreadyWishlistMessage(value) {
+  const message = String(value || '').toLowerCase()
+
+  return (
+    message.includes('duplicate') ||
+    message.includes('already') ||
+    message.includes('exist') ||
+    message.includes('đã')
+  )
+}
+
 function getReviewUser(review) {
   return review?.user_id || review?.user || {}
 }
@@ -156,6 +213,24 @@ function getReviewImages(review) {
   if (typeof images === 'string') return [images]
 
   return []
+}
+
+function buildProductChatMessage(product, selectedVariant, price) {
+  const productId = getId(product)
+  const variantLabel = selectedVariant ? getVariantLabel(selectedVariant) : ''
+  const productLink = productId
+    ? `${window.location.origin}/products/${productId}`
+    : window.location.href
+
+  return [
+    'Shop ơi, tôi muốn hỏi về sản phẩm này:',
+    `Sản phẩm: ${product?.name || 'Sản phẩm'}`,
+    variantLabel ? `Phiên bản: ${variantLabel}` : '',
+    `Giá: ${formatMoney(price)}`,
+    `Link sản phẩm: ${productLink}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 function RatingStars({ rating = 0 }) {
@@ -254,17 +329,10 @@ function QuantityInput({ value, max, disabled, onChange }) {
 }
 
 function ProductReviews({ reviews, isLoading, error }) {
-  const averageRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length
-      : 0
-
   return (
     <div className='mt-5'>
       <Card className='overflow-hidden border-0 bg-white shadow-sm'>
         <Card.Body className='p-0'>
-            
-
           <div className='p-4 p-lg-5'>
             <Alert type='warning'>{error}</Alert>
 
@@ -339,7 +407,8 @@ function ProductReviews({ reviews, isLoading, error }) {
                       </div>
 
                       <p className='mb-0 leading-8 text-slate-600'>
-                        {getReviewComment(review) || 'Khách hàng không để lại nội dung đánh giá.'}
+                        {getReviewComment(review) ||
+                          'Khách hàng không để lại nội dung đánh giá.'}
                       </p>
 
                       {reviewImages.length > 0 && (
@@ -394,10 +463,47 @@ function ProductDetailPage() {
   const [isReviewLoading, setIsReviewLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [isAddingWishlist, setIsAddingWishlist] = useState(false)
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [wishlistCount, setWishlistCount] = useState(0)
 
   const [error, setError] = useState('')
   const [reviewError, setReviewError] = useState('')
   const [message, setMessage] = useState('')
+
+  const user = getCurrentUser()
+  const currentUserId = getUserId(user)
+
+  const loadWishlistStatus = async (productId) => {
+    if (!productId) {
+      setIsWishlisted(false)
+      setWishlistCount(0)
+      return
+    }
+
+    try {
+      const response = await getWishlist({
+        product_id: productId,
+      })
+
+      const wishlistItems = pickArray(response, [])
+      const totalCount = Number(
+        response?.count ?? response?.data?.count ?? wishlistItems.length ?? 0,
+      )
+
+      const existed = currentUserId
+        ? wishlistItems.some(
+            (item) => String(getWishlistUserId(item)) === String(currentUserId),
+          )
+        : false
+
+      setWishlistCount(totalCount)
+      setIsWishlisted(existed)
+    } catch {
+      setWishlistCount(0)
+      setIsWishlisted(false)
+    }
+  }
 
   useEffect(() => {
     let mounted = true
@@ -423,6 +529,8 @@ function ProductDetailPage() {
           setVariants([])
           setVariantId('')
           setReviews([])
+          setIsWishlisted(false)
+          setWishlistCount(0)
           setError('Không tìm thấy sản phẩm từ backend.')
           return
         }
@@ -435,6 +543,8 @@ function ProductDetailPage() {
         setVariants(loadedVariants)
         setVariantId(getId(loadedVariants[0]) || '')
         setQuantity(1)
+
+        await loadWishlistStatus(getId(loadedProduct))
 
         try {
           const reviewResponse = await getReviews({
@@ -458,6 +568,8 @@ function ProductDetailPage() {
         setVariants([])
         setVariantId('')
         setReviews([])
+        setIsWishlisted(false)
+        setWishlistCount(0)
         setError(getErrorMessage(error, 'Không tải được chi tiết sản phẩm từ backend.'))
       } finally {
         if (mounted) {
@@ -540,6 +652,78 @@ function ProductDetailPage() {
     } finally {
       setIsCheckingOut(false)
     }
+  }
+
+  const handleAddToWishlist = async () => {
+    if (!currentUserId) {
+      setMessage('')
+      setError('Vui lòng đăng nhập để thêm sản phẩm vào yêu thích.')
+      return
+    }
+
+    const productId = getId(product)
+
+    if (!productId) {
+      setMessage('')
+      setError('Không tìm thấy sản phẩm để thêm vào yêu thích.')
+      return
+    }
+
+    if (isWishlisted) {
+      return
+    }
+
+    try {
+      setIsAddingWishlist(true)
+      setMessage('')
+      setError('')
+
+      const response = await addToWishlist({
+        user_id: currentUserId,
+        product_id: productId,
+      })
+
+      const alreadyExists = isAlreadyWishlistMessage(response?.message)
+
+      setIsWishlisted(true)
+
+      if (alreadyExists) {
+        await loadWishlistStatus(productId)
+      } else {
+        setWishlistCount((prev) => prev + 1)
+      }
+    } catch (error) {
+      const rawMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        ''
+
+      if (isAlreadyWishlistMessage(rawMessage)) {
+        setIsWishlisted(true)
+        await loadWishlistStatus(productId)
+        return
+      }
+
+      setMessage('')
+      setError(getErrorMessage(error, 'Không thêm được sản phẩm vào yêu thích.'))
+    } finally {
+      setIsAddingWishlist(false)
+    }
+  }
+
+  const handleChatWithShop = () => {
+    const chatMessage = buildProductChatMessage(product, selectedVariant, price)
+
+    navigate('/chat', {
+      state: {
+        autoSendMessage: true,
+        prefillMessage: chatMessage,
+        source: 'product-detail',
+        productId: getId(product),
+        variantId: getId(selectedVariant) || null,
+      },
+    })
   }
 
   if (isLoading) {
@@ -638,6 +822,59 @@ function ProductDetailPage() {
                   )}
                 </div>
               </Card>
+
+              <Row className='mt-3 g-0 align-items-center'>
+                <Col xs={6}>
+                  <button
+                    type='button'
+                    onClick={handleAddToWishlist}
+                    disabled={isAddingWishlist}
+                    title='Thêm vào yêu thích'
+                    className='mx-auto d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-red-500 disabled:opacity-60'
+                    style={{
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    <i
+                      className={`bi ${
+                        isWishlisted
+                          ? 'bi-heart-fill text-red-500'
+                          : 'bi-heart text-red-500'
+                      }`}
+                      style={{
+                        fontSize: 18,
+                      }}
+                    />
+
+                    <span className='text-sm font-semibold text-slate-700'>
+                      {formatNumber(wishlistCount)} đã thích
+                    </span>
+                  </button>
+                </Col>
+
+                <Col xs={6}>
+                  <button
+                    type='button'
+                    onClick={handleChatWithShop}
+                    title='Chat với shop'
+                    className='mx-auto d-flex align-items-center justify-content-center gap-2 border-0 bg-transparent p-0 text-slate-700 shadow-none outline-none transition hover:text-orange-600'
+                    style={{
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    <i
+                      className='bi bi-chat-dots-fill'
+                      style={{
+                        fontSize: 18,
+                      }}
+                    />
+
+                    <span className='text-sm font-semibold text-slate-700'>
+                      Chat ngay
+                    </span>
+                  </button>
+                </Col>
+              </Row>
             </Col>
 
             <Col lg={6}>

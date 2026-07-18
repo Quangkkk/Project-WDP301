@@ -3,7 +3,7 @@ const User = require("../models/User.model");
 const Role = require("../models/Roles.model");
 const UserAddress = require("../models/UserAddress.model");
 
-const safeSelect = "-hash_pass -__v";
+const safeSelect = "-hash_pass -email_otp -email_otp_expires -reset_password_token -reset_password_expires -__v";
 
 // Them nguoi dung moi (danh cho Admin/Manager)
 const addUser = async ({ role_id, name, email, password, hash_pass, phone, img_url, status }) => {

@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: "unverified",
+      default: "active",
       trim: true,
     },
     email_otp: {
@@ -44,6 +44,15 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     email_otp_expires: {
+      type: Date,
+      default: null,
+    },
+    reset_password_token: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    reset_password_expires: {
       type: Date,
       default: null,
     },

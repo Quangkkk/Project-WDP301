@@ -4,46 +4,35 @@ const verifyToken = require("../middleware/verifyToken");
 const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
+const allSupportRoles = authorizeRoles("CUSTOMER", "STAFF", "ADMIN", "MANAGER");
+const staffRoles = authorizeRoles("STAFF", "ADMIN", "MANAGER");
 
-// -------------------------------------------------------------
-// CUSTOMER ROUTES (Chi danh cho Customer)
-// -------------------------------------------------------------
+router.use(verifyToken);
 
-// Customer tao ticket ho tro moi
-router.post("/tickets", verifyToken, authorizeRoles("Customer"), support.createTicket);
+router.post("/tickets", authorizeRoles("CUSTOMER"), support.createTicket);
+router.get("/tickets", allSupportRoles, support.getTickets);
+router.get("/tickets/:id/messages", allSupportRoles, support.getTicketMessages);
+router.get("/tickets/:id", allSupportRoles, support.getTicketMessages);
+router.post("/tickets/:id/messages", allSupportRoles, support.createMessage);
+router.put("/tickets/:id", allSupportRoles, support.updateTicket);
+router.delete("/tickets/:id", allSupportRoles, support.deleteTicket);
+router.patch(
+  "/tickets/:id/close",
+  authorizeRoles("CUSTOMER"),
+  support.closeCustomerTicket
+);
 
-// Customer xem danh sach ticket cua chinh minh
-router.get("/tickets", verifyToken, authorizeRoles("Customer"), support.getCustomerTickets);
-
-// Customer gui tin nhan phan hoi trong ticket
-router.post("/tickets/:id/messages", verifyToken, authorizeRoles("Customer"), support.createCustomerMessage);
-
-// Customer tu dong ticket ho tro
-router.patch("/tickets/:id/close", verifyToken, authorizeRoles("Customer"), support.closeCustomerTicket);
-
-
-// -------------------------------------------------------------
-// SHARED ROUTES (Customer chu so huu hoac Staff duoc assign doc chi tiet)
-// -------------------------------------------------------------
-
-// Xem chi tiet ticket va toan bo tin nhan phan hoi
-router.get("/tickets/:id/messages", verifyToken, authorizeRoles("Customer", "Admin", "Manager", "Staff"), support.getTicketMessages);
-
-
-// -------------------------------------------------------------
-// STAFF/MANAGER/ADMIN ROUTES (Nhan vien/Quan tri vien ho tro)
-// -------------------------------------------------------------
-
-// Xem toan bo tickets (co the loc theo status hoac assigned staff)
-router.get("/admin/tickets", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), support.getAdminTickets);
-
-// Chi dinh nhan vien ho tro cho ticket
-router.patch("/admin/tickets/:id/assign", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), support.assignTicket);
-
-// Cap nhat trang thai ticket (Open -> In Progress -> Closed)
-router.patch("/admin/tickets/:id/status", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), support.updateTicketStatus);
-
-// Staff/Admin tra loi phan hoi tin nhan ticket
-router.post("/admin/tickets/:id/messages", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), support.createAdminMessage);
+router.get("/admin/tickets", staffRoles, support.getAdminTickets);
+router.patch("/admin/tickets/:id/assign", staffRoles, support.assignTicket);
+router.patch(
+  "/admin/tickets/:id/status",
+  staffRoles,
+  support.updateTicketStatus
+);
+router.post(
+  "/admin/tickets/:id/messages",
+  staffRoles,
+  support.createAdminMessage
+);
 
 module.exports = router;
