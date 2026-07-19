@@ -95,7 +95,7 @@ function ChatNotice({ type = 'info', children }) {
 
   return (
     <div
-      className={`mb-3 rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}
+      className={`mb-3 !rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}
     >
       {children}
     </div>
@@ -119,7 +119,7 @@ function MessageAttachments({ attachments = [], isMine }) {
               href={item.url}
               target='_blank'
               rel='noreferrer'
-              className='d-block overflow-hidden rounded-3 border bg-white'
+              className='d-block overflow-hidden !rounded-3 border bg-white'
               style={{
                 width: 190,
                 maxWidth: '100%',
@@ -146,7 +146,7 @@ function MessageAttachments({ attachments = [], isMine }) {
             href={item.url}
             target='_blank'
             rel='noreferrer'
-            className={`d-flex align-items-center gap-2 rounded-3 border px-3 py-2 text-decoration-none ${
+            className={`d-flex align-items-center gap-2 !rounded-3 border px-3 py-2 text-decoration-none ${
               isMine
                 ? 'border-white bg-white text-slate-700'
                 : 'border-slate-200 bg-slate-50 text-slate-700'
@@ -513,7 +513,7 @@ function ChatPage() {
                   </div>
 
                   <span
-                    className={`rounded-pill px-3 py-2 text-xs font-bold ${
+                    className={`!rounded-pill px-3 py-2 text-xs font-bold ${
                       isClosed
                         ? 'bg-slate-100 text-slate-600'
                         : isSocketConnected
@@ -559,7 +559,7 @@ function ChatPage() {
                         >
                           {!isMine && (
                             <div
-                              className='d-flex align-items-center justify-content-center overflow-hidden rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
+                              className='d-flex align-items-center justify-content-center overflow-hidden !rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
                               style={{
                                 width: 36,
                                 height: 36,
@@ -579,7 +579,7 @@ function ChatPage() {
                           )}
 
                           <div
-                            className={`rounded-4 px-3 py-2 shadow-sm ${
+                            className={`!rounded-4 px-3 py-2 shadow-sm ${
                               isMine
                                 ? 'bg-orange-500 text-white'
                                 : 'bg-white text-slate-800'
@@ -619,7 +619,7 @@ function ChatPage() {
 
               <div className='border-top bg-white p-3'>
                 {isClosed ? (
-                  <div className='rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
+                  <div className='!rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
                     Cuộc trò chuyện đã đóng, không thể gửi thêm tin nhắn.
                   </div>
                 ) : (
@@ -629,7 +629,7 @@ function ChatPage() {
                         {selectedFiles.map((file, index) => (
                           <div
                             key={`${file.name}-${index}`}
-                            className='d-flex align-items-center gap-2 rounded-pill border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
+                            className='d-flex align-items-center gap-2 !rounded-pill border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
                           >
                             <i
                               className={
@@ -667,7 +667,7 @@ function ChatPage() {
                       <button
                         type='button'
                         onClick={() => fileInputRef.current?.click()}
-                        className='d-flex align-items-center justify-content-center rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                        className='d-flex align-items-center justify-content-center !rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                         style={{
                           width: 46,
                           height: 46,
@@ -688,7 +688,7 @@ function ChatPage() {
                           setMessage('')
                         }}
                         placeholder='Nhập tin nhắn...'
-                        className='rounded-4 border-slate-200 text-sm shadow-sm'
+                        className='!rounded-4 border-slate-200 text-sm shadow-sm'
                         style={{
                           resize: 'none',
                         }}

@@ -27,9 +27,6 @@ const ChatMessage = require("./ChatMessage.model");
 const SupportTicket = require("./SupportTicket.model");
 const TicketMessage = require("./TicketMessage.model");
 
-const Permission = require("./Permission.model");
-const RolePermission = require("./RolePermission.model");
-
 const db = {
   mongoose,
 
@@ -59,19 +56,23 @@ const db = {
   ChatMessage,
   SupportTicket,
   TicketMessage,
-
-  Permission,
-  RolePermission,
 };
 
 db.connectDB = async () => {
+  mongoose.set("strictQuery", true);
+
   try {
-    mongoose.set("strictQuery", true);
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: Number(
+        process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || 10000
+      ),
+    });
+
     console.log("Connected to MongoDB successfully");
+    return mongoose.connection;
   } catch (error) {
     console.error("Error connecting to MongoDB:", error.message);
-    process.exit(1);
+    throw error;
   }
 };
 

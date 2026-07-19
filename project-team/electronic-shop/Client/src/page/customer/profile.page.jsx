@@ -17,9 +17,9 @@ import TextField from '../../components/atoms/TextField'
 import { getErrorMessage } from '../../services/api'
 import {
   createAddress,
-  getUserById,
+  getProfile,
   updateAddress,
-  updateUser,
+  updateProfile,
 } from '../../services/user.service'
 import { getCurrentUser, getUserId, updateStoredUser } from '../../utils/authStorage'
 
@@ -160,7 +160,7 @@ function ProfilePage() {
       return
     }
 
-    const response = await getUserById(getUserId(currentUser))
+    const response = await getProfile()
     const data = response?.data || {}
     const user = data.user || data
 
@@ -349,7 +349,7 @@ function ProfilePage() {
         payload.img_url = form.img_url
       }
 
-      const response = await updateUser(getUserId(currentUser), payload)
+      const response = await updateProfile(payload)
       const updatedUser = response?.data || response?.user || response
 
       updateStoredUser(updatedUser)
@@ -683,7 +683,7 @@ function ProfilePage() {
                     </div>
 
                     {addresses.length === 0 ? (
-                      <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-4 text-center'>
+                      <div className='!rounded-4 border border-dashed border-slate-300 bg-slate-50 p-4 text-center'>
                         <div className='mb-2 text-3xl'>📍</div>
 
                         <p className='mb-0 font-bold text-slate-600'>
@@ -700,7 +700,7 @@ function ProfilePage() {
                           return (
                             <Col md={6} key={addressKey}>
                               <div
-                                className={`h-100 rounded-4 border bg-white p-4 shadow-sm transition ${isDefault ? 'border-emerald-300' : 'border-slate-200'
+                                className={`h-100 !rounded-4 border bg-white p-4 shadow-sm transition ${isDefault ? 'border-emerald-300' : 'border-slate-200'
                                   }`}
                               >
                                 <div className='mb-3 d-flex align-items-start gap-3'>
@@ -754,7 +754,7 @@ function ProfilePage() {
                                   </div>
                                 </div>
 
-                                <div className='rounded-4 bg-slate-50 p-3'>
+                                <div className='!rounded-4 bg-slate-50 p-3'>
                                   <p className='mb-0 text-sm leading-7 text-slate-600'>
                                     {formatAddress(address)}
                                   </p>
@@ -894,7 +894,7 @@ function ProfilePage() {
               type='button'
               onClick={handleCloseAddressModal}
               disabled={isUpdatingAddress}
-              className='rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50'
+              className='!rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50'
             >
               Hủy
             </button>

@@ -138,7 +138,7 @@ function SelectField({ label, icon, name, value, onChange, children }) {
     <Form.Group className='mb-4'>
       <Form.Label className='mb-2 d-flex align-items-center gap-2 text-sm font-black text-slate-700'>
         <span
-          className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
+          className='d-flex align-items-center justify-content-center !rounded-circle bg-orange-50 text-orange-600'
           style={{
             width: 28,
             height: 28,
@@ -154,7 +154,7 @@ function SelectField({ label, icon, name, value, onChange, children }) {
         name={name}
         value={value}
         onChange={onChange}
-        className='rounded-4 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm'
+        className='!rounded-4 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm'
       >
         {children}
       </Form.Select>
@@ -172,7 +172,7 @@ function PriceRangeField({
     <Form.Group className='mb-4'>
       <Form.Label className='mb-2 d-flex align-items-center gap-2 text-sm font-black text-slate-700'>
         <span
-          className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
+          className='d-flex align-items-center justify-content-center !rounded-circle bg-orange-50 text-orange-600'
           style={{
             width: 28,
             height: 28,
@@ -193,7 +193,7 @@ function PriceRangeField({
             value={minPrice}
             onChange={onMinChange}
             placeholder='Từ'
-            className='rounded-4 border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 shadow-sm'
+            className='!rounded-4 border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 shadow-sm'
           />
         </Col>
 
@@ -205,13 +205,13 @@ function PriceRangeField({
             value={maxPrice}
             onChange={onMaxChange}
             placeholder='Đến'
-            className='rounded-4 border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 shadow-sm'
+            className='!rounded-4 border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 shadow-sm'
           />
         </Col>
       </Row>
 
       {(minPrice || maxPrice) && (
-        <div className='mt-2 rounded-4 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700'>
+        <div className='mt-2 !rounded-4 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700'>
           {minPrice ? `${formatNumber(toNumber(minPrice))}đ` : '0đ'} -{' '}
           {maxPrice ? `${formatNumber(toNumber(maxPrice))}đ` : 'Không giới hạn'}
         </div>
@@ -226,7 +226,7 @@ function PaginationButton({ active, disabled, children, onClick }) {
       type='button'
       disabled={disabled}
       onClick={onClick}
-      className={`d-flex align-items-center justify-content-center rounded-circle border text-sm font-black transition ${
+      className={`d-flex align-items-center justify-content-center !rounded-circle border text-sm font-black transition ${
         active
           ? 'border-orange-500 bg-orange-500 text-white shadow-sm'
           : 'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700'
@@ -496,7 +496,7 @@ function ProductListPage() {
                     </div>
 
                     <span
-                      className='d-flex align-items-center justify-content-center rounded-circle bg-white/20'
+                      className='d-flex align-items-center justify-content-center !rounded-circle bg-white/20'
                       style={{
                         width: 52,
                         height: 52,

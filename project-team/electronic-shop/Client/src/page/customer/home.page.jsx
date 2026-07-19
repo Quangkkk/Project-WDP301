@@ -68,7 +68,7 @@ function HomePage() {
                 <Col md={6} lg={3} key={getId(category) || category.name}>
                   <Link to={`/products?categoryId=${getId(category)}`} className='text-decoration-none'>
                     <div className='card-surface h-100 p-4 transition hover:-translate-y-1'>
-                      <div className='mb-4 flex h-14 w-14 items-center justify-center rounded-4 bg-blue-50 text-3xl'>{categoryIcons[index % categoryIcons.length]}</div>
+                      <div className='mb-4 flex h-14 w-14 items-center justify-center !rounded-4 bg-blue-50 text-3xl'>{categoryIcons[index % categoryIcons.length]}</div>
                       <h3 className='mb-2 text-xl font-black text-slate-950'>{category.name}</h3>
                       <p className='mb-0 text-sm leading-6 text-slate-500'>Xem sản phẩm trong danh mục {category.name}.</p>
                     </div>

@@ -1,5 +1,23 @@
 import api from './api'
 
+// ============================================================
+// PROFILE CỦA USER ĐANG ĐĂNG NHẬP
+// ============================================================
+
+export const getProfile = async () => {
+  const response = await api.get('/user/profile')
+  return response.data
+}
+
+export const updateProfile = async (payload) => {
+  const response = await api.put('/user/profile', payload)
+  return response.data
+}
+
+// ============================================================
+// QUẢN LÝ USER — CHỈ ADMIN
+// ============================================================
+
 export const getUsers = async (params = {}) => {
   const response = await api.get('/user', { params })
   return response.data
@@ -25,6 +43,10 @@ export const deleteUser = async (id) => {
   return response.data
 }
 
+// ============================================================
+// ADDRESS
+// ============================================================
+
 export const createAddress = async (userId, payload) => {
   const response = await api.post(`/user/${userId}/address`, payload)
   return response.data
@@ -39,6 +61,10 @@ export const deleteAddress = async (addressId) => {
   const response = await api.delete(`/user/address/${addressId}`)
   return response.data
 }
+
+// ============================================================
+// PASSWORD
+// ============================================================
 
 export const changePassword = async (id, payload) => {
   const response = await api.patch(`/user/${id}/change-password`, payload)

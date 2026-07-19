@@ -5,7 +5,7 @@ const Order = require("../models/Orders.model");
 
 // Manager lay danh sach toan bo nhan vien ho tro (Staff)
 const getStaffList = async () => {
-  const staffRole = await Role.findOne({ code: "STAFF" });
+  const staffRole = await Role.findOne({ code: { $regex: /^staff$/i } });
   if (!staffRole) {
     throw new Error("Staff role not found in database");
   }

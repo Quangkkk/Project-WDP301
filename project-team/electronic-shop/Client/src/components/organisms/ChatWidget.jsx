@@ -127,7 +127,7 @@ function ChatWidget() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className='flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-blue-700'
+          className='flex h-14 w-14 items-center justify-center !rounded-full bg-blue-600 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-blue-700'
           style={{ border: 'none', cursor: 'pointer' }}
           aria-label='Chat ho tro'
         >
@@ -138,7 +138,7 @@ function ChatWidget() {
       {/* Khung chatbox hien thi */}
       {isOpen && (
         <div
-          className='card shadow-2xl rounded-4 overflow-hidden bg-white border border-slate-100'
+          className='card shadow-2xl !rounded-4 overflow-hidden bg-white border border-slate-100'
           style={{ width: 360, height: 460, display: 'flex', flexDirection: 'column' }}
         >
           {/* Header */}
@@ -174,8 +174,8 @@ function ChatWidget() {
                 return (
                   <div key={msg._id || index} className={`flex flex-column ${isMe ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`rounded-4 px-3 py-2 text-sm max-w-[85%] ${
-                        isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-none'
+                      className={`!rounded-4 px-3 py-2 text-sm max-w-[85%] ${
+                        isMe ? 'bg-blue-600 text-white !rounded-br-none' : 'bg-white text-slate-800 border border-slate-100 !rounded-bl-none'
                       }`}
                       style={{ wordBreak: 'break-word shadow-sm' }}
                     >
@@ -191,7 +191,7 @@ function ChatWidget() {
 
             {isStaffTyping && (
               <div className='flex items-start'>
-                <div className='bg-slate-200 text-slate-600 rounded-4 px-3 py-2 text-xs italic rounded-bl-none'>
+                <div className='bg-slate-200 text-slate-600 !rounded-4 px-3 py-2 text-xs italic !rounded-bl-none'>
                   Nhan vien dang go phim...
                 </div>
               </div>
@@ -207,12 +207,12 @@ function ChatWidget() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder='Nhap tin nhan...'
-              className='flex-1 border border-slate-200 rounded-pill px-3 py-2 text-sm shadow-none focus:outline-none focus:border-blue-600'
+              className='flex-1 border border-slate-200 !rounded-pill px-3 py-2 text-sm shadow-none focus:outline-none focus:border-blue-600'
               disabled={isLoading}
             />
             <button
               type='submit'
-              className='flex items-center justify-center bg-blue-600 text-white rounded-full w-9 h-9 border-0 hover:bg-blue-700'
+              className='flex items-center justify-center bg-blue-600 text-white !rounded-full w-9 h-9 border-0 hover:bg-blue-700'
               style={{ cursor: 'pointer' }}
               disabled={isLoading || !inputText.trim()}
             >

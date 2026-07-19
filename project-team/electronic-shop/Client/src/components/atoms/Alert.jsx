@@ -45,7 +45,7 @@ function Alert({ type = 'info', children, className = '' }) {
   const Icon = style.icon
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-lg border ${style.bg} ${style.border} ${style.text} ${className}`}>
+    <div className={`flex items-start gap-3 p-4 !rounded-lg border ${style.bg} ${style.border} ${style.text} ${className}`}>
       <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${style.iconColor}`} />
       <div className="text-sm font-medium leading-relaxed">
         {children}

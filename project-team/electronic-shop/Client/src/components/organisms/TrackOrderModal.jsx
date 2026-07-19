@@ -80,20 +80,20 @@ function TrackOrderModal({ show, onHide }) {
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4'>
       <div 
-        className='relative w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200'
+        className='relative w-full max-w-md bg-white !rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200'
         onClick={(e) => e.stopPropagation()}
       >
-        <div className='flex items-center justify-between p-5 border-b border-slate-100'>
+        <div className='flex items-center justify-between px-3 pt-4 border-b border-slate-100'>
           <h2 className='text-lg font-black text-slate-900'>Tra cứu đơn hàng</h2>
           <button 
             onClick={handleClose}
-            className='p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors focus:outline-none'
+            className='p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 !rounded-full transition-colors focus:outline-none'
           >
             <X className='w-5 h-5' />
           </button>
         </div>
 
-        <div className='p-6 overflow-y-auto'>
+        <div className='px-6 py-3 overflow-y-auto'>
           {!orderResult ? (
             <form onSubmit={handleTrack}>
               <p className='text-sm text-slate-600 mb-5 leading-relaxed'>
@@ -123,7 +123,7 @@ function TrackOrderModal({ show, onHide }) {
               </Button>
             </form>
           ) : (
-            <div className='bg-slate-50 p-5 rounded-xl border border-slate-200'>
+            <div className='bg-slate-50 p-5 !rounded-xl border border-slate-200'>
               <div className='flex justify-between items-center mb-4 pb-4 border-b border-slate-200'>
                 <span className='font-bold text-slate-700'>Trạng thái:</span>
                 <StatusBadge value={orderResult.status} />

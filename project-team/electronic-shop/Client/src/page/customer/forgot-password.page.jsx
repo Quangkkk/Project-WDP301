@@ -76,7 +76,7 @@ function ForgotPasswordPage() {
             <Alert type='success'>{message}</Alert>
 
             {resetUrl && (
-              <div className='mb-3 rounded-4 border border-orange-100 bg-orange-50 p-3 text-sm text-orange-700'>
+              <div className='mb-3 !rounded-4 border border-orange-100 bg-orange-50 p-3 text-sm text-orange-700'>
                 <p className='mb-2 font-bold'>
                   Link reset dùng khi chạy local:
                 </p>

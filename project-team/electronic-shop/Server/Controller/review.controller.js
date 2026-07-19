@@ -105,6 +105,45 @@ const updateReview = async (req, res) => {
   }
 };
 
+// Controller xoa review
+const deleteReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid review ID",
+      });
+    }
+
+    const data = await reviewService.deleteReview(id, {
+      user_id: req.user_id,
+      role: req.role,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Delete review successfully",
+      data,
+    });
+  } catch (error) {
+    let statusCode = 500;
+
+    if (error.message === "Review not found") {
+      statusCode = 404;
+    } else if (error.message === "Access denied") {
+      statusCode = 403;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || "Failed to delete review",
+      error: error.message,
+    });
+  }
+};
+
 // Controller an review vi pham (chi danh cho Admin/Manager/Staff)
 const hideReview = async (req, res) => {
   try {
@@ -140,5 +179,6 @@ module.exports = {
   createReview,
   getProductReviews,
   updateReview,
+  deleteReview,
   hideReview,
 };

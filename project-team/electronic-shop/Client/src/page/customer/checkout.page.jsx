@@ -600,12 +600,12 @@ function CheckoutPage() {
                           </h3>
                         </div>
 
-                        <span className='rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
+                        <span className='!rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
                           {addresses.length} địa chỉ
                         </span>
                       </div>
 
-                      <div className='mb-4 overflow-hidden rounded-4 border border-orange-100 bg-orange-50/40'>
+                      <div className='mb-4 overflow-hidden !rounded-4 border border-orange-100 bg-orange-50/40'>
                         <div
                           className='bg-orange-500'
                           style={{
@@ -629,7 +629,7 @@ function CheckoutPage() {
                               <button
                                 type='button'
                                 onClick={handleOpenAddressModal}
-                                className='rounded-pill px-4 py-2 text-sm font-bold shadow-sm transition'
+                                className='!rounded-pill px-4 py-2 text-sm font-bold shadow-sm transition'
                                 style={{
                                   border: '1px solid #fed7aa',
                                   backgroundColor: '#ffffff',
@@ -654,7 +654,7 @@ function CheckoutPage() {
                           {selectedAddress ? (
                             <Row className='g-3 align-items-stretch'>
                               <Col md={4}>
-                                <div className='h-100 rounded-4 bg-white px-4 py-3 shadow-sm'>
+                                <div className='h-100 !rounded-4 bg-white px-4 py-3 shadow-sm'>
                                   <p className='mb-1 text-xs font-black uppercase text-slate-400'>
                                     Người nhận
                                   </p>
@@ -670,14 +670,14 @@ function CheckoutPage() {
                               </Col>
 
                               <Col md={8}>
-                                <div className='h-100 rounded-4 bg-white px-4 py-3 shadow-sm'>
+                                <div className='h-100 !rounded-4 bg-white px-4 py-3 shadow-sm'>
                                   <div className='mb-2 d-flex flex-wrap align-items-center justify-content-between gap-2'>
                                     <p className='mb-0 text-xs font-black uppercase text-slate-400'>
                                       Địa chỉ giao hàng
                                     </p>
 
                                     {isDefaultAddress(selectedAddress) && (
-                                      <span className='rounded-1 border border-orange-500 px-2 py-1 text-xs font-bold text-orange-600'>
+                                      <span className='!rounded-1 border border-orange-500 px-2 py-1 text-xs font-bold text-orange-600'>
                                         Mặc định
                                       </span>
                                     )}
@@ -690,7 +690,7 @@ function CheckoutPage() {
                               </Col>
                             </Row>
                           ) : (
-                            <div className='rounded-4 bg-white px-4 py-3 shadow-sm'>
+                            <div className='!rounded-4 bg-white px-4 py-3 shadow-sm'>
                               <p className='mb-1 font-bold text-slate-800'>
                                 Nhập địa chỉ giao hàng mới
                               </p>
@@ -1002,7 +1002,7 @@ function CheckoutPage() {
                   >
                     <div className='d-flex align-items-start gap-3'>
                       <span
-                        className={`mt-1 d-flex align-items-center justify-content-center rounded-circle border ${isSelected
+                        className={`mt-1 d-flex align-items-center justify-content-center !rounded-circle border ${isSelected
                             ? 'border-orange-500'
                             : 'border-slate-300'
                           }`}
@@ -1014,7 +1014,7 @@ function CheckoutPage() {
                       >
                         {isSelected && (
                           <span
-                            className='rounded-circle bg-orange-500'
+                            className='!rounded-circle bg-orange-500'
                             style={{
                               width: 10,
                               height: 10,
@@ -1081,7 +1081,7 @@ function CheckoutPage() {
           <button
             type='button'
             onClick={handleUseManualAddress}
-            className='ms-auto d-flex align-items-center gap-2 rounded-2 border-0 bg-orange-500 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-orange-600'
+            className='ms-auto d-flex align-items-center gap-2 !rounded-2 border-0 bg-orange-500 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-orange-600'
           >
             <i className='bi bi-plus-lg' />
             Thêm Địa Chỉ Mới

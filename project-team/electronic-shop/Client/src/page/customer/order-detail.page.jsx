@@ -76,7 +76,7 @@ function getStatusClass(status) {
 function StatusPill({ children, status }) {
     return (
         <span
-            className={`d-inline-flex align-items-center justify-content-center rounded-pill px-3 py-2 text-xs font-bold ${getStatusClass(status)}`}
+            className={`d-inline-flex align-items-center justify-content-center !rounded-pill px-3 py-2 text-xs font-bold ${getStatusClass(status)}`}
             style={{
                 minWidth: 118,
                 whiteSpace: 'nowrap',
@@ -383,7 +383,7 @@ const handleChatWithShop = (item) => {
                         <button
                             type='button'
                             onClick={() => navigate('/orders')}
-                            className='mb-3 d-inline-flex align-items-center gap-2 rounded-pill border bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                            className='mb-3 d-inline-flex align-items-center gap-2 !rounded-pill border bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                         >
                             <i className='bi bi-arrow-left' />
                             Quay lại
@@ -451,7 +451,7 @@ const handleChatWithShop = (item) => {
 
                                         <Row className='g-3'>
                                             <Col md={5}>
-                                                <div className='h-100 rounded-4 border border-slate-100 bg-slate-50 p-3'>
+                                                <div className='h-100 !rounded-4 border border-slate-100 bg-slate-50 p-3'>
                                                     <p className='mb-1 text-xs font-black uppercase text-slate-400'>
                                                         Người nhận
                                                     </p>
@@ -467,7 +467,7 @@ const handleChatWithShop = (item) => {
                                             </Col>
 
                                             <Col md={7}>
-                                                <div className='h-100 rounded-4 border border-slate-100 bg-slate-50 p-3'>
+                                                <div className='h-100 !rounded-4 border border-slate-100 bg-slate-50 p-3'>
                                                     <p className='mb-1 text-xs font-black uppercase text-slate-400'>
                                                         Địa chỉ nhận hàng
                                                     </p>
@@ -511,7 +511,7 @@ const handleChatWithShop = (item) => {
                                                                 <Col md={6}>
                                                                     <div className='d-flex align-items-center gap-3'>
                                                                         <div
-                                                                            className='d-flex align-items-center justify-content-center overflow-hidden rounded-4 bg-slate-100'
+                                                                            className='d-flex align-items-center justify-content-center overflow-hidden !rounded-4 bg-slate-100'
                                                                             style={{
                                                                                 width: 76,
                                                                                 height: 76,
@@ -672,11 +672,11 @@ const handleChatWithShop = (item) => {
                                         </div>
 
                                         {order.payment_method === 'bank_transfer' && payment?.qr_url && (
-                                            <div className='mb-4 rounded-4 border border-orange-100 bg-orange-50 p-3 text-center'>
+                                            <div className='mb-4 !rounded-4 border border-orange-100 bg-orange-50 p-3 text-center'>
                                                 <img
                                                     src={payment.qr_url}
                                                     alt='QR chuyển khoản'
-                                                    className='img-fluid rounded-3'
+                                                    className='img-fluid !rounded-3'
                                                 />
 
                                                 <p className='mt-3 mb-1 text-sm text-slate-500'>
@@ -729,7 +729,7 @@ const handleChatWithShop = (item) => {
                 <Modal.Body className='p-4'>
                     <div className='mb-3 d-flex align-items-start gap-3'>
                         <span
-                            className='d-flex align-items-center justify-content-center rounded-circle bg-red-50 text-red-600'
+                            className='d-flex align-items-center justify-content-center !rounded-circle bg-red-50 text-red-600'
                             style={{
                                 width: 48,
                                 height: 48,
@@ -754,7 +754,7 @@ const handleChatWithShop = (item) => {
                         </div>
                     </div>
 
-                    <div className='mb-4 rounded-4 border border-slate-200 bg-slate-50 p-3'>
+                    <div className='mb-4 !rounded-4 border border-slate-200 bg-slate-50 p-3'>
                         <div className='d-flex justify-content-between gap-3'>
                             <span className='text-slate-500'>Tổng tiền</span>
 

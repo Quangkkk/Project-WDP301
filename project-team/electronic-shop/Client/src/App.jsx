@@ -1,45 +1,52 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import ProtectedRoute from './components/templates/ProtectedRoute.jsx'
 
-import HomePage from './page/customer/home.page.jsx'
-import LoginPage from './page/customer/login.page.jsx'
-import RegisterPage from './page/customer/register.page.jsx'
-import ForgotPasswordPage from './page/customer/forgot-password.page.jsx'
-import ResetPasswordPage from './page/customer/reset-password.page.jsx'
-import ProductListPage from './page/customer/product-list.page.jsx'
-import ProductDetailPage from './page/customer/product-detail.page.jsx'
-import CartPage from './page/customer/cart.page.jsx'
-import CheckoutPage from './page/customer/checkout.page.jsx'
-import PaymentResultPage from './page/customer/payment-result.page.jsx'
-import OrderHistoryPage from './page/customer/order-history.page.jsx'
-import OrderDetailPage from './page/customer/order-detail.page.jsx'
-import ProfilePage from './page/customer/profile.page.jsx'
-import WishlistPage from './page/customer/wishlist.page.jsx'
-import SupportPage from './page/customer/support.page.jsx'
-import ChatPage from './page/customer/chat.page.jsx'
-import ChangePasswordPage from './page/customer/change-password.page.jsx'
+const HomePage = lazy(() => import('./page/customer/home.page.jsx'))
+const LoginPage = lazy(() => import('./page/customer/login.page.jsx'))
+const RegisterPage = lazy(() => import('./page/customer/register.page.jsx'))
+const ForgotPasswordPage = lazy(() => import('./page/customer/forgot-password.page.jsx'))
+const ResetPasswordPage = lazy(() => import('./page/customer/reset-password.page.jsx'))
+const ProductListPage = lazy(() => import('./page/customer/product-list.page.jsx'))
+const ProductDetailPage = lazy(() => import('./page/customer/product-detail.page.jsx'))
+const CartPage = lazy(() => import('./page/customer/cart.page.jsx'))
+const CheckoutPage = lazy(() => import('./page/customer/checkout.page.jsx'))
+const PaymentResultPage = lazy(() => import('./page/customer/payment-result.page.jsx'))
+const OrderHistoryPage = lazy(() => import('./page/customer/order-history.page.jsx'))
+const OrderDetailPage = lazy(() => import('./page/customer/order-detail.page.jsx'))
+const ProfilePage = lazy(() => import('./page/customer/profile.page.jsx'))
+const WishlistPage = lazy(() => import('./page/customer/wishlist.page.jsx'))
+const SupportPage = lazy(() => import('./page/customer/support.page.jsx'))
+const ChatPage = lazy(() => import('./page/customer/chat.page.jsx'))
+const ChangePasswordPage = lazy(() => import('./page/customer/change-password.page.jsx'))
 
-import AdminDashboardPage from './page/admin/admin-dashboard.page.jsx'
-import ProductManagementPage from './page/admin/product-management.page.jsx'
-import CategoryManagementPage from './page/admin/category-management.page.jsx'
-import BrandManagementPage from './page/admin/brand-management.page.jsx'
-import CouponManagementPage from './page/admin/coupon-management.page.jsx'
-import OrderManagementPage from './page/admin/order-management.page.jsx'
-import UserManagementPage from './page/admin/user-management.page.jsx'
-import SupportManagementPage from './page/admin/support-management.page.jsx'
-import ChatManagementPage from './page/admin/chat-management.page.jsx'
-import RolePermissionManagementPage from './page/admin/role-permission-management.page.jsx'
+const AdminDashboardPage = lazy(() => import('./page/admin/admin-dashboard.page.jsx'))
+const ProductManagementPage = lazy(() => import('./page/admin/product-management.page.jsx'))
+const CategoryManagementPage = lazy(() => import('./page/admin/category-management.page.jsx'))
+const BrandManagementPage = lazy(() => import('./page/admin/brand-management.page.jsx'))
+const CouponManagementPage = lazy(() => import('./page/admin/coupon-management.page.jsx'))
+const OrderManagementPage = lazy(() => import('./page/admin/order-management.page.jsx'))
+const UserManagementPage = lazy(() => import('./page/admin/user-management.page.jsx'))
+const SupportManagementPage = lazy(() => import('./page/admin/support-management.page.jsx'))
+const ChatManagementPage = lazy(() => import('./page/admin/chat-management.page.jsx'))
 
 const customerOnly = ['CUSTOMER']
 const backOfficeRoles = ['ADMIN', 'MANAGER', 'STAFF']
-const managerOnly = ['MANAGER']
+const productManagementRoles = ['ADMIN', 'MANAGER']
 const adminOnly = ['ADMIN']
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense
+        fallback={
+          <div className='flex min-h-screen items-center justify-center text-sm font-semibold text-slate-500'>
+            Đang tải trang...
+          </div>
+        }
+      >
+        <Routes>
         <Route path='/' element={<HomePage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
@@ -48,7 +55,14 @@ function App() {
         <Route path='/products' element={<ProductListPage />} />
         <Route path='/products/:id' element={<ProductDetailPage />} />
         <Route path='/product' element={<Navigate to='/products' replace />} />
-        <Route path='/cart' element={<CartPage />} />
+        <Route
+          path='/cart'
+          element={
+            <ProtectedRoute allowedRoles={customerOnly}>
+              <CartPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path='/checkout'
@@ -143,7 +157,7 @@ function App() {
         <Route
           path='/admin/products'
           element={
-            <ProtectedRoute allowedRoles={managerOnly}>
+            <ProtectedRoute allowedRoles={productManagementRoles}>
               <ProductManagementPage />
             </ProtectedRoute>
           }
@@ -152,7 +166,7 @@ function App() {
         <Route
           path='/admin/categories'
           element={
-            <ProtectedRoute allowedRoles={managerOnly}>
+            <ProtectedRoute allowedRoles={productManagementRoles}>
               <CategoryManagementPage />
             </ProtectedRoute>
           }
@@ -161,7 +175,7 @@ function App() {
         <Route
           path='/admin/brands'
           element={
-            <ProtectedRoute allowedRoles={managerOnly}>
+            <ProtectedRoute allowedRoles={productManagementRoles}>
               <BrandManagementPage />
             </ProtectedRoute>
           }
@@ -170,7 +184,7 @@ function App() {
         <Route
           path='/admin/coupons'
           element={
-            <ProtectedRoute allowedRoles={managerOnly}>
+            <ProtectedRoute allowedRoles={productManagementRoles}>
               <CouponManagementPage />
             </ProtectedRoute>
           }
@@ -195,15 +209,6 @@ function App() {
         />
 
         <Route
-          path='/admin/roles'
-          element={
-            <ProtectedRoute allowedRoles={adminOnly}>
-              <RolePermissionManagementPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path='/admin/support'
           element={
             <ProtectedRoute allowedRoles={backOfficeRoles}>
@@ -222,7 +227,8 @@ function App() {
         />
 
         <Route path='*' element={<Navigate to='/' replace />} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

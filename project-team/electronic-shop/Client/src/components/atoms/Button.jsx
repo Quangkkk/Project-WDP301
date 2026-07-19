@@ -32,7 +32,7 @@ function Button({
   // Xu ly fallback cho nhung variant cu dang dung (react-bootstrap mapping)
   if (variant === 'light') variant = 'ghost'
 
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+  const baseStyles = 'inline-flex items-center justify-center font-semibold !rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
   const combinedClasses = `${baseStyles} ${variantStyles[variant] || variantStyles.primary} ${sizeStyles[size] || sizeStyles.md} ${className}`
 
   return (

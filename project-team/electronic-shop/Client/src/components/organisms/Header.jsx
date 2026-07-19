@@ -40,7 +40,7 @@ function HeaderSearch({ className = '' }) {
 
   return (
     <form onSubmit={handleSubmit} className={`w-full ${className}`}>
-      <div className='flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 transition-all focus-within:border-blue-500 focus-within:bg-white focus-within:shadow-md focus-within:ring-2 focus-within:ring-blue-100'>
+      <div className='flex items-center gap-2 !rounded-full border border-slate-200 bg-slate-50 px-4 py-2 transition-all focus-within:border-blue-500 focus-within:bg-white focus-within:shadow-md focus-within:ring-2 focus-within:ring-blue-100'>
         <Search className='w-5 h-5 text-slate-400 shrink-0' />
         <input
           type='text'
@@ -52,7 +52,7 @@ function HeaderSearch({ className = '' }) {
         {keyword && (
           <button
             type='button'
-            className='shrink-0 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none rounded-full p-1 hover:bg-slate-100'
+            className='shrink-0 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none !rounded-full p-1 hover:bg-slate-100'
             onClick={handleClear}
             aria-label='Clear search'
           >
@@ -122,7 +122,7 @@ function CategoryDropdown() {
     <div className='relative' ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className='flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none'
+        className='flex items-center gap-2 !rounded-full border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none'
       >
         <LayoutGrid className='w-5 h-5 text-blue-600' />
         <span className='hidden xl:inline'>
@@ -131,7 +131,7 @@ function CategoryDropdown() {
       </button>
 
       {isOpen && (
-        <div className='absolute right-0 mt-2 w-56 rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-1'>
+        <div className='absolute right-0 mt-2 w-56 !rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-1'>
           <button
             onClick={() => handleSelectCategory('')}
             className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
@@ -177,14 +177,14 @@ function CartButton() {
   return (
     <button
       onClick={() => navigate('/cart')}
-      className={`relative flex items-center justify-center w-11 h-11 rounded-full shadow-sm transition-colors focus:outline-none ${
+      className={`relative flex items-center justify-center w-11 h-11 !rounded-full shadow-sm transition-colors focus:outline-none ${
         isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
       }`}
       aria-label='Giỏ hàng'
     >
       <ShoppingCart className='w-5 h-5' />
       {!isActive && (
-        <span className='absolute top-2 right-2 w-2.5 h-2.5 bg-orange-600 rounded-full border-2 border-white' />
+        <span className='absolute top-2 right-2 w-2.5 h-2.5 bg-orange-600 !rounded-full border-2 border-white' />
       )}
     </button>
   )
@@ -219,11 +219,10 @@ function Header() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className='flex shrink-0 items-center gap-3'>
               <button
                 onClick={() => setShowTrackModal(true)}
-                className='flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
                 title='Tra cứu đơn hàng'
               >
                 <Truck className='w-5 h-5' />

@@ -214,7 +214,7 @@ function FilterPill({ active, icon, children, onClick }) {
     <button
       type='button'
       onClick={onClick}
-      className={`d-inline-flex align-items-center gap-2 rounded-4 border px-4 py-3 text-sm font-bold transition ${
+      className={`d-inline-flex align-items-center gap-2 !rounded-4 border px-4 py-3 text-sm font-bold transition ${
         active
           ? 'border-orange-500 bg-orange-50 text-orange-600 shadow-sm'
           : 'border-transparent bg-slate-100 text-slate-800 hover:bg-slate-200'
@@ -231,7 +231,7 @@ function StockBadge({ stock }) {
 
   return (
     <span
-      className={`rounded-pill px-3 py-2 text-xs font-black ${
+      className={`!rounded-pill px-3 py-2 text-xs font-black ${
         isInStock
           ? 'bg-emerald-50 text-emerald-700'
           : 'bg-red-50 text-red-600'
@@ -291,7 +291,7 @@ function WishlistProductCard({ entry, isRemoving, onRemove }) {
             onClick={handleRemoveClick}
             disabled={isRemoving}
             title='Bỏ khỏi yêu thích'
-            className='d-flex align-items-center justify-content-center rounded-circle border-0 bg-white text-red-500 shadow-sm transition hover:bg-red-50 disabled:opacity-60'
+            className='d-flex align-items-center justify-content-center !rounded-circle border-0 bg-white text-red-500 shadow-sm transition hover:bg-red-50 disabled:opacity-60'
             style={{
               width: 42,
               height: 42,
@@ -323,7 +323,7 @@ function WishlistProductCard({ entry, isRemoving, onRemove }) {
             }}
           />
         ) : (
-          <div className='d-flex align-items-center justify-content-center rounded-5 bg-white text-5xl shadow-sm'>
+          <div className='d-flex align-items-center justify-content-center !rounded-5 bg-white text-5xl shadow-sm'>
             💻
           </div>
         )}
@@ -331,11 +331,11 @@ function WishlistProductCard({ entry, isRemoving, onRemove }) {
 
       <Card.Body className='d-flex flex-column p-4'>
         <div className='mb-3 d-flex flex-wrap gap-2'>
-          <span className='rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700'>
+          <span className='!rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700'>
             {getBrandName(product)}
           </span>
 
-          <span className='rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600'>
+          <span className='!rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600'>
             {getCategoryName(product)}
           </span>
         </div>
@@ -583,7 +583,7 @@ function WishlistPage() {
               </p>
             </div>
 
-            <Button variant='secondary' onClick={() => navigate('/products')}>
+            <Button className="!rounded-[10px]" variant='secondary' onClick={() => navigate('/products')}>
               Tiếp tục mua sắm
             </Button>
           </div>
@@ -594,16 +594,6 @@ function WishlistPage() {
           {!isLoading && currentUserId && entries.length > 0 && (
             <div className='mb-5 d-flex flex-column gap-4'>
               <div>
-                <div className='mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3'>
-                  <h2 className='mb-0 text-2xl font-black text-slate-950'>
-                    Chọn theo tiêu chí
-                  </h2>
-
-                  <div className='rounded-pill bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700'>
-                    Hiển thị {formatNumber(visibleEntries.length)} /{' '}
-                    {formatNumber(entries.length)} sản phẩm
-                  </div>
-                </div>
 
                 <div className='d-flex flex-wrap align-items-center gap-2'>
                   {stockFilterOptions.map((option) => (

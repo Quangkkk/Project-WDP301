@@ -187,7 +187,7 @@ function CartPage() {
             />
           ) : (
             <>
-              <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 rounded-4 border border-orange-100 bg-white px-4 py-3 shadow-sm'>
+              <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 !rounded-4 border border-orange-100 bg-white px-4 py-3 shadow-sm'>
                 <label className='d-flex align-items-center gap-3 font-bold text-slate-700'>
                   <input
                     type='checkbox'
@@ -203,7 +203,7 @@ function CartPage() {
                   <span>Chọn tất cả</span>
                 </label>
 
-                <span className='rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
+                <span className='!rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
                   Đã chọn {selectedItemIds.length}/{items.length} sản phẩm
                 </span>
               </div>
@@ -245,7 +245,7 @@ function CartPage() {
             <Row className='justify-content-center'>
               <Col xs={11} md={10} lg={8}>
                 <div
-                  className='rounded-5 border border-orange-100 bg-white px-4 py-3 shadow-lg'
+                  className='!rounded-5 border border-orange-100 bg-white px-4 py-3 shadow-lg'
                   style={{
                     pointerEvents: 'auto',
                   }}

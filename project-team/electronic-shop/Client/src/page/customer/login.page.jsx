@@ -119,7 +119,7 @@ function LoginPage() {
                 <label className='flex cursor-pointer items-center gap-2 text-slate-600'>
                   <input
                     type='checkbox'
-                    className='h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500'
+                    className='h-4 w-4 !rounded border-slate-300 text-orange-600 focus:ring-orange-500'
                   />
                   <span className='font-medium'>Ghi nhớ tài khoản</span>
                 </label>

@@ -153,7 +153,7 @@ function ChangePasswordPage() {
                   <div className='bg-gradient-to-br from-orange-500 to-amber-400 p-4 text-white'>
                     <div className='d-flex align-items-center gap-3'>
                       <span
-                        className='d-flex align-items-center justify-content-center rounded-circle bg-white/20'
+                        className='d-flex align-items-center justify-content-center !rounded-circle bg-white/20'
                         style={{
                           width: 56,
                           height: 56,
@@ -221,7 +221,7 @@ function ChangePasswordPage() {
                         </button>
                       </div>
 
-                      <div className='mb-4 rounded-4 border border-slate-200 bg-slate-50 p-3'>
+                      <div className='mb-4 !rounded-4 border border-slate-200 bg-slate-50 p-3'>
                         <div className='d-flex flex-column gap-2'>
                           <PasswordHint valid={isLengthValid}>
                             Mật khẩu mới có ít nhất 8 ký tự

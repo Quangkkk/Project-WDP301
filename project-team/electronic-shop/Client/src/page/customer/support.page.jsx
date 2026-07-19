@@ -54,7 +54,7 @@ function getStatusClass(status) {
 function StatusPill({ status }) {
   return (
     <span
-      className={`rounded-pill px-3 py-2 text-xs font-bold ${getStatusClass(status)}`}
+      className={`!rounded-pill px-3 py-2 text-xs font-bold ${getStatusClass(status)}`}
       style={{
         whiteSpace: 'nowrap',
       }}
@@ -359,7 +359,7 @@ function SupportPage() {
                       <Form.Group>
                         <Form.Label className='mb-2 d-flex align-items-center gap-2 text-sm font-black text-slate-700'>
                           <span
-                            className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
+                            className='d-flex align-items-center justify-content-center !rounded-circle bg-orange-50 text-orange-600'
                             style={{
                               width: 28,
                               height: 28,
@@ -374,7 +374,7 @@ function SupportPage() {
                         <Form.Select
                           value={activeTab}
                           onChange={(event) => setActiveTab(event.target.value)}
-                          className='rounded-4 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm'
+                          className='!rounded-4 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm'
                         >
                           {ticketTabs.map((tab) => (
                             <option key={tab.key} value={tab.key}>
@@ -516,7 +516,7 @@ function SupportPage() {
                                 >
                                   {!isMine && (
                                     <div
-                                      className='d-flex align-items-center justify-content-center overflow-hidden rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
+                                      className='d-flex align-items-center justify-content-center overflow-hidden !rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
                                       style={{
                                         width: 36,
                                         height: 36,
@@ -536,7 +536,7 @@ function SupportPage() {
                                   )}
 
                                   <div
-                                    className={`rounded-4 px-3 py-2 shadow-sm ${isMine
+                                    className={`!rounded-4 px-3 py-2 shadow-sm ${isMine
                                         ? 'bg-orange-500 text-white'
                                         : 'bg-white text-slate-800'
                                       }`}
@@ -567,7 +567,7 @@ function SupportPage() {
 
                       <div className='border-top bg-white p-3'>
                         {isClosed ? (
-                          <div className='rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
+                          <div className='!rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
                             Ticket đã đóng, không thể gửi thêm tin nhắn.
                           </div>
                         ) : (
@@ -579,7 +579,7 @@ function SupportPage() {
                                 value={newMessage}
                                 onChange={(event) => setNewMessage(event.target.value)}
                                 placeholder='Nhập tin nhắn hỗ trợ...'
-                                className='rounded-4 border-slate-200 text-sm shadow-sm'
+                                className='!rounded-4 border-slate-200 text-sm shadow-sm'
                                 style={{
                                   resize: 'none',
                                 }}
@@ -639,7 +639,7 @@ function SupportPage() {
                 value={createForm.description}
                 onChange={handleCreateChange}
                 placeholder='Mô tả vấn đề bạn đang gặp...'
-                className='rounded-4 border-slate-200 text-sm shadow-sm'
+                className='!rounded-4 border-slate-200 text-sm shadow-sm'
                 style={{
                   resize: 'vertical',
                 }}

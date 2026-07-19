@@ -42,6 +42,9 @@ const createOrder = async (req, res) => {
       error.message.includes("is inactive") ||
       error.message.includes("Not enough stock") ||
       error.message.includes("must not be negative") ||
+      error.message.includes("price is invalid") ||
+      error.message.includes("variant_id") ||
+      error.message.includes("Invalid payment method") ||
       error.message.includes("Coupon") ||
       error.message.includes("Minimum order") ||
       error.message.includes("limit reached") ||

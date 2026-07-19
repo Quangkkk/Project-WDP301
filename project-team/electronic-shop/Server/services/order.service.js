@@ -1,24 +1,62 @@
 const mongoose = require("mongoose");
+
 const Order = require("../models/Orders.model");
-const OrderItem = require("../models/OrderItem.model");
+const OrderItem = require(
+  "../models/OrderItem.model"
+);
 const Cart = require("../models/Cart.model");
-const CartItem = require("../models/CartItem.model");
-const Product = require("../models/Product.model");
-const ProductVariant = require("../models/ProductVariant.model");
-const ShippingMethod = require("../models/ShippingMethod.model");
+const CartItem = require(
+  "../models/CartItem.model"
+);
+const Product = require(
+  "../models/Product.model"
+);
+const ProductVariant = require(
+  "../models/ProductVariant.model"
+);
+const ShippingMethod = require(
+  "../models/ShippingMethod.model"
+);
 const Coupon = require("../models/Coupon.model");
-const CouponUsage = require("../models/CouponUsage.model");
-const User = require("../models/User.model");
-const couponService = require("./coupon.service");
+const CouponUsage = require(
+  "../models/CouponUsage.model"
+);
+const couponService = require(
+  "./coupon.service"
+);
 
-const ORDER_STATUS = ["pending", "confirmed", "processing", "shipping", "completed", "cancelled"];
-const PAYMENT_STATUS = ["unpaid", "pending", "paid", "failed", "refunded"];
+const ORDER_STATUS = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipping",
+  "completed",
+  "cancelled",
+];
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
+const PAYMENT_STATUS = [
+  "unpaid",
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+];
 
-// Helper lay danh sach mat hang tu request body hoac gio hang
-const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
-  if (Array.isArray(items) && items.length > 0) {
+const isValidObjectId = (id) =>
+  mongoose.Types.ObjectId.isValid(
+    String(id || "")
+  );
+
+// Lay danh sach mat hang tu request hoac gio hang
+const getItemsFromRequestOrCart = async ({
+  items,
+  cart_id,
+  user_id,
+}) => {
+  if (
+    Array.isArray(items) &&
+    items.length > 0
+  ) {
     return items;
   }
 
@@ -26,10 +64,24 @@ const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
     if (!isValidObjectId(cart_id)) {
       throw new Error("Invalid cart_id");
     }
-    const cartItems = await CartItem.find({ cart_id }).lean();
+
+    const cart = await Cart.findOne({
+      _id: cart_id,
+      user_id,
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const cartItems = await CartItem.find({
+      cart_id: cart._id,
+    }).lean();
+
     if (cartItems.length === 0) {
       throw new Error("Cart is empty");
     }
+
     return cartItems.map((item) => ({
       product_id: item.product_id,
       variant_id: item.variant_id,
@@ -39,9 +91,15 @@ const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
   }
 
   if (user_id) {
-    const cart = await Cart.findOne({ user_id });
+    const cart = await Cart.findOne({
+      user_id,
+    });
+
     if (cart) {
-      const cartItems = await CartItem.find({ cart_id: cart._id }).lean();
+      const cartItems = await CartItem.find({
+        cart_id: cart._id,
+      }).lean();
+
       if (cartItems.length > 0) {
         return cartItems.map((item) => ({
           product_id: item.product_id,
@@ -53,67 +111,137 @@ const getItemsFromRequestOrCart = async ({ items, cart_id, user_id }) => {
     }
   }
 
-  throw new Error("items or cart_id is required");
+  throw new Error(
+    "items or cart_id is required"
+  );
 };
 
-// Helper kiem tra stock va tinh tam tinh cho tung item
+// Chi xoa/decrement item da checkout
+const removeOrderedItemsFromCart = async ({
+  cart_id,
+  user_id,
+  orderedItems,
+  hasExplicitItems,
+}) => {
+  let cart = null;
+
+  if (cart_id) {
+    cart = await Cart.findOne({
+      _id: cart_id,
+      user_id,
+    });
+  } else {
+    cart = await Cart.findOne({
+      user_id,
+    });
+  }
+
+  if (!cart) {
+    return;
+  }
+
+  // Dat toan bo gio hang
+  if (!hasExplicitItems) {
+    await CartItem.deleteMany({
+      cart_id: cart._id,
+    });
+
+    return;
+  }
+
+  // Dat mot phan gio hang
+  for (const item of orderedItems) {
+    const cartItem = await CartItem.findOne({
+      cart_id: cart._id,
+      product_id: item.product_id,
+      variant_id: item.variant_id || null,
+    });
+
+    if (!cartItem) {
+      continue;
+    }
+
+    const orderedQuantity = Math.max(
+      Number(item.quantity || 1),
+      1
+    );
+
+    if (
+      cartItem.quantity > orderedQuantity
+    ) {
+      cartItem.quantity -= orderedQuantity;
+      await cartItem.save();
+    } else {
+      await cartItem.deleteOne();
+    }
+  }
+};
+
+// Kiem tra stock va tinh tong tien. Gia luon lay tu database, khong tin gia frontend.
 const buildOrderItems = async (items) => {
   const orderItems = [];
   let subtotal = 0;
 
   for (const rawItem of items) {
-    const product_id = rawItem.product_id;
-    const variant_id = rawItem.variant_id || null;
+    const productId = rawItem.product_id;
+    const variantId = rawItem.variant_id;
     const quantity = Number(rawItem.quantity || 1);
 
-    if (!isValidObjectId(product_id)) {
+    if (!isValidObjectId(productId)) {
       throw new Error("Invalid product_id in items");
     }
-    if (variant_id && !isValidObjectId(variant_id)) {
-      throw new Error("Invalid variant_id in items");
+
+    if (!isValidObjectId(variantId)) {
+      throw new Error("Valid variant_id is required for every order item");
     }
-    if (quantity < 1) {
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
       throw new Error("Item quantity must be greater than 0");
     }
 
-    const product = await Product.findById(product_id);
+    const product = await Product.findById(productId).lean();
+
     if (!product) {
       throw new Error("Product not found");
     }
 
-    let unitPrice = rawItem.price !== undefined ? Number(rawItem.price) : 0;
-    let image = rawItem.image || null;
-
-    if (variant_id) {
-      const variant = await ProductVariant.findById(variant_id);
-      if (!variant) {
-        throw new Error("Variant not found");
-      }
-      if (String(variant.product_id) !== String(product_id)) {
-        throw new Error("variant_id does not belong to product_id");
-      }
-      if (!variant.is_active) {
-        throw new Error(`Variant ${variant.sku} is inactive`);
-      }
-      if (variant.stock_quantity < quantity) {
-        throw new Error(`Not enough stock for ${variant.sku}`);
-      }
-
-      unitPrice = variant.sale_price > 0 ? variant.sale_price : variant.price;
-      image = variant.image || image;
+    if (String(product.status || "active").toLowerCase() !== "active") {
+      throw new Error(`Product ${product.sku || productId} is inactive`);
     }
 
-    if (unitPrice < 0) {
-      throw new Error("Item price must not be negative");
+    const variant = await ProductVariant.findOne({
+      _id: variantId,
+      product_id: productId,
+    }).lean();
+
+    if (!variant) {
+      throw new Error("Variant not found or does not belong to product");
+    }
+
+    if (!variant.is_active) {
+      throw new Error(`Variant ${variant.sku} is inactive`);
+    }
+
+    if (Number(variant.stock_quantity || 0) < quantity) {
+      throw new Error(`Not enough stock for ${variant.sku}`);
+    }
+
+    const unitPrice =
+      Number(variant.sale_price || 0) > 0
+        ? Number(variant.sale_price)
+        : Number(variant.price);
+
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      throw new Error("Variant price is invalid");
     }
 
     const itemSubtotal = unitPrice * quantity;
     subtotal += itemSubtotal;
 
     orderItems.push({
-      product_id,
-      variant_id,
-      image,
+      product_id: productId,
+      variant_id: variantId,
+      image: variant.image || null,
       unit_price: unitPrice,
       quantity,
       subtotal: itemSubtotal,
@@ -126,14 +254,40 @@ const buildOrderItems = async (items) => {
   };
 };
 
-// Tao don hang moi (kem theo tinh toan coupon, update ton kho, xoa gio hang)
+const rollbackCouponUsage = async ({ coupon, userId }) => {
+  if (!coupon) return;
+
+  const usage = await CouponUsage.findOneAndUpdate(
+    {
+      coupon_id: coupon._id,
+      user_id: userId,
+      used_count: { $gt: 0 },
+    },
+    {
+      $inc: { used_count: -1 },
+    },
+    { new: true }
+  );
+
+  if (usage && Number(usage.used_count || 0) <= 0) {
+    await CouponUsage.deleteOne({ _id: usage._id });
+  }
+};
+
+const rollbackStock = async (stockChanges) => {
+  for (const change of stockChanges) {
+    await ProductVariant.findByIdAndUpdate(change.variant_id, {
+      $inc: { stock_quantity: change.quantity },
+    });
+  }
+};
+
+// Tao don hang
 const createOrder = async (orderData) => {
   const {
     user_id,
     shipping_method_id,
-    status,
     payment_method = "cod",
-    payment_status,
     receiver_name,
     receiver_phone,
     address_province,
@@ -147,10 +301,18 @@ const createOrder = async (orderData) => {
     items,
     cart_id,
     coupon_code,
+    note,
   } = orderData;
 
   if (!user_id || !isValidObjectId(user_id)) {
     throw new Error("Valid user_id is required");
+  }
+
+  const normalizedPaymentMethod = String(payment_method || "cod").toLowerCase();
+  const allowedPaymentMethods = ["cod", "bank_transfer", "zalopay"];
+
+  if (!allowedPaymentMethods.includes(normalizedPaymentMethod)) {
+    throw new Error("Invalid payment method");
   }
 
   const province = address_province || shipping_province;
@@ -158,94 +320,164 @@ const createOrder = async (orderData) => {
   const district = address_district || shipping_district;
   const addressLine = address_address_line || shipping_address_line;
 
-  if (!receiver_name || !receiver_phone || !province || !ward || !district || !addressLine) {
+  if (
+    !receiver_name ||
+    !receiver_phone ||
+    !province ||
+    !ward ||
+    !district ||
+    !addressLine
+  ) {
     throw new Error("Missing receiver/address information");
   }
 
-  // Tinh phi van chuyen
   let shippingFee = 0;
+
   if (shipping_method_id) {
     if (!isValidObjectId(shipping_method_id)) {
       throw new Error("Invalid shipping_method_id");
     }
+
     const shippingMethod = await ShippingMethod.findById(shipping_method_id);
+
     if (!shippingMethod) {
       throw new Error("Shipping method not found");
     }
+
+    if (shippingMethod.is_active === false) {
+      throw new Error("Shipping method is inactive");
+    }
+
     shippingFee = Number(shippingMethod.base_fee || 0);
   }
 
-  // Lay items va validate logic
-  const finalItems = await getItemsFromRequestOrCart({ items, cart_id, user_id });
+  const hasExplicitItems = Array.isArray(items) && items.length > 0;
+  const finalItems = await getItemsFromRequestOrCart({
+    items,
+    cart_id,
+    user_id,
+  });
+
   const { orderItems, subtotal } = await buildOrderItems(finalItems);
 
-  // Validate coupon dung service cua coupon
   let discountAmount = 0;
   let coupon = null;
+
   if (coupon_code) {
     const validated = await couponService.validateCoupon({
       code: coupon_code,
       user_id,
       order_amount: subtotal,
     });
+
     coupon = validated.coupon;
     discountAmount = validated.discount_amount;
   }
 
   const totalAmount = Math.max(subtotal + shippingFee - discountAmount, 0);
 
-  // Tao document Order
   const order = await Order.create({
     user_id,
     shipping_method_id: shipping_method_id || null,
-    receiver_name,
-    receiver_phone,
-    address_province: province,
-    address_ward: ward,
-    address_district: district,
-    address_address_line: addressLine,
+    receiver_name: String(receiver_name).trim(),
+    receiver_phone: String(receiver_phone).trim(),
+    address_province: String(province).trim(),
+    address_ward: String(ward).trim(),
+    address_district: String(district).trim(),
+    address_address_line: String(addressLine).trim(),
     subtotal,
     total_amount: totalAmount,
-    status: status || "pending",
-    payment_method,
-    payment_status: payment_status || (payment_method === "cod" ? "unpaid" : "pending"),
-    coupon_code: coupon ? coupon.code : coupon_code ? coupon_code.trim().toUpperCase() : null,
+    status: "pending",
+    payment_method: normalizedPaymentMethod,
+    payment_status: normalizedPaymentMethod === "cod" ? "unpaid" : "pending",
+    coupon_code: coupon
+      ? coupon.code
+      : coupon_code
+        ? coupon_code.trim().toUpperCase()
+        : null,
+    note: note ? String(note).trim().slice(0, 1000) : null,
   });
 
-  // Tao document OrderItems
-  const createdItems = await OrderItem.insertMany(
-    orderItems.map((item) => ({
-      ...item,
-      order_id: order._id,
-    }))
-  );
+  let createdItems = [];
+  const stockChanges = [];
+  let couponUsageIncremented = false;
 
-  // Cap nhat trừ ton kho variant trong database
-  for (const item of orderItems) {
-    if (item.variant_id) {
-      await ProductVariant.findByIdAndUpdate(item.variant_id, {
-        $inc: { stock_quantity: -item.quantity },
+  try {
+    createdItems = await OrderItem.insertMany(
+      orderItems.map((item) => ({
+        ...item,
+        order_id: order._id,
+      }))
+    );
+
+    for (const item of orderItems) {
+      const updatedVariant = await ProductVariant.findOneAndUpdate(
+        {
+          _id: item.variant_id,
+          is_active: true,
+          stock_quantity: { $gte: item.quantity },
+        },
+        {
+          $inc: { stock_quantity: -item.quantity },
+        },
+        { new: true }
+      );
+
+      if (!updatedVariant) {
+        throw new Error("Not enough stock while creating order");
+      }
+
+      stockChanges.push({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
       });
     }
-  }
 
-  // Ghi nhan luot dung coupon neu co
-  if (coupon) {
-    await CouponUsage.findOneAndUpdate(
-      { coupon_id: coupon._id, user_id },
-      { $inc: { used_count: 1 } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-  }
+    if (coupon) {
+      await CouponUsage.findOneAndUpdate(
+        {
+          coupon_id: coupon._id,
+          user_id,
+        },
+        {
+          $inc: { used_count: 1 },
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
 
-  // Clear gio hang sau khi dat hang thanh cong
-  if (cart_id) {
-    await CartItem.deleteMany({ cart_id });
-  } else {
-    const cart = await Cart.findOne({ user_id });
-    if (cart) {
-      await CartItem.deleteMany({ cart_id: cart._id });
+      couponUsageIncremented = true;
     }
+  } catch (error) {
+    try {
+      await rollbackStock(stockChanges);
+
+      if (couponUsageIncremented) {
+        await rollbackCouponUsage({ coupon, userId: user_id });
+      }
+
+      await OrderItem.deleteMany({ order_id: order._id });
+      await Order.findByIdAndDelete(order._id);
+    } catch (rollbackError) {
+      console.error("[order.createOrder.rollback]", rollbackError);
+    }
+
+    throw error;
+  }
+
+  // Don hang da tao thanh cong. Loi don dep cart khong duoc lam mat don/stock.
+  try {
+    await removeOrderedItemsFromCart({
+      cart_id,
+      user_id,
+      orderedItems: finalItems,
+      hasExplicitItems,
+    });
+  } catch (cartCleanupError) {
+    console.error("[order.createOrder.cartCleanup]", cartCleanupError);
   }
 
   return {
@@ -257,72 +489,134 @@ const createOrder = async (orderData) => {
   };
 };
 
-// Lay danh sach don hang (kem theo check phan quyen)
-const getAllOrders = async (queryParams, currentUser) => {
-  const { user_id, status, payment_status } = queryParams;
-  const filter = {};
+// Lay danh sach don hang
+const getAllOrders = async (
+  queryParams,
+  currentUser
+) => {
+  const {
+    user_id,
+    status,
+    payment_status,
+  } = queryParams;
 
-  // Check phan quyen: Neu la Customer, chi cho xem don hang cua chinh ho
-  if (currentUser.role === "CUSTOMER") {
-    filter.user_id = currentUser.user_id;
-  } else {
-    // Admin/Manager/Staff co the xem cua user khac neu truyen param
-    if (user_id) {
-      if (!isValidObjectId(user_id)) {
-        throw new Error("Invalid user_id");
-      }
-      filter.user_id = user_id;
+  const filter = {};
+  const role = String(
+    currentUser.role || ""
+  ).toUpperCase();
+
+  if (role === "CUSTOMER") {
+    filter.user_id =
+      currentUser.user_id;
+  } else if (user_id) {
+    if (!isValidObjectId(user_id)) {
+      throw new Error("Invalid user_id");
     }
+
+    filter.user_id = user_id;
   }
 
   if (status) {
     if (!ORDER_STATUS.includes(status)) {
-      throw new Error(`Invalid order status. Allowed: ${ORDER_STATUS.join(", ")}`);
+      throw new Error(
+        `Invalid order status. Allowed: ${ORDER_STATUS.join(
+          ", "
+        )}`
+      );
     }
+
     filter.status = status;
   }
 
   if (payment_status) {
-    if (!PAYMENT_STATUS.includes(payment_status)) {
-      throw new Error(`Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(", ")}`);
+    if (
+      !PAYMENT_STATUS.includes(
+        payment_status
+      )
+    ) {
+      throw new Error(
+        `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(
+          ", "
+        )}`
+      );
     }
-    filter.payment_status = payment_status;
+
+    filter.payment_status =
+      payment_status;
   }
 
   const orders = await Order.find(filter)
-    .populate("user_id", "name email phone")
-    .populate("shipping_method_id", "name base_fee estimate_days is_active")
+    .populate(
+      "user_id",
+      "name email phone"
+    )
+    .populate(
+      "shipping_method_id",
+      "name base_fee estimate_days is_active"
+    )
     .select("-__v")
-    .sort({ created_at: -1 })
+    .sort({
+      created_at: -1,
+    })
     .lean();
 
-  const orderIds = orders.map((order) => order._id);
-  const items = await OrderItem.find({ order_id: { $in: orderIds } })
-    .populate("product_id", "name sku status")
-    .populate("variant_id", "sku variant_value image price sale_price")
+  const orderIds = orders.map(
+    (order) => order._id
+  );
+
+  const items = await OrderItem.find({
+    order_id: {
+      $in: orderIds,
+    },
+  })
+    .populate(
+      "product_id",
+      "name sku status"
+    )
+    .populate(
+      "variant_id",
+      "sku variant_value image price sale_price"
+    )
     .select("-__v")
     .lean();
 
-  const itemsByOrder = items.reduce((map, item) => {
-    const key = String(item.order_id);
-    if (!map[key]) {
-      map[key] = [];
-    }
-    map[key].push(item);
-    return map;
-  }, {});
+  const itemsByOrder = items.reduce(
+    (map, item) => {
+      const key = String(item.order_id);
+
+      if (!map[key]) {
+        map[key] = [];
+      }
+
+      map[key].push(item);
+
+      return map;
+    },
+    {}
+  );
 
   return orders.map((order) => ({
     ...order,
-    items: itemsByOrder[String(order._id)] || [],
+    items:
+      itemsByOrder[String(order._id)] ||
+      [],
   }));
 };
 
-// Lay chi tiet don hang theo ID (check so huu neu la customer)
-const getOrderById = async (id, currentUser) => {
+// Lay chi tiet don hang
+const getOrderById = async (
+  id,
+  currentUser
+) => {
   const order = await Order.findById(id)
-    .populate("user_id", "name email phone")
-    .populate("shipping_method_id", "name base_fee estimate_days is_active")
+    .populate(
+      "user_id",
+      "name email phone"
+    )
+    .populate(
+      "shipping_method_id",
+      "name base_fee estimate_days is_active"
+    )
     .select("-__v")
     .lean();
 
@@ -330,36 +624,69 @@ const getOrderById = async (id, currentUser) => {
     throw new Error("Order not found");
   }
 
-  // Security check: Customer chi duoc xem don hang cua chinh ho
-  if (currentUser.role === "CUSTOMER" && String(order.user_id?._id || order.user_id) !== String(currentUser.user_id)) {
-    throw new Error("Access denied. You do not have permission.");
+  const role = String(
+    currentUser.role || ""
+  ).toUpperCase();
+
+  const ownerId =
+    order.user_id?._id ||
+    order.user_id;
+
+  if (
+    role === "CUSTOMER" &&
+    String(ownerId) !==
+      String(currentUser.user_id)
+  ) {
+    throw new Error(
+      "Access denied. You do not have permission."
+    );
   }
 
-  const items = await OrderItem.find({ order_id: id })
-    .populate("product_id", "name sku status")
-    .populate("variant_id", "sku variant_value image price sale_price")
+  const items = await OrderItem.find({
+    order_id: id,
+  })
+    .populate(
+      "product_id",
+      "name sku status"
+    )
+    .populate(
+      "variant_id",
+      "sku variant_value image price sale_price"
+    )
     .select("-__v");
 
-  let coupon_usage = null;
+  let couponUsage = null;
+
   if (order.coupon_code) {
-    const coupon = await Coupon.findOne({ code: order.coupon_code.toUpperCase() });
+    const coupon = await Coupon.findOne({
+      code: order.coupon_code.toUpperCase(),
+    });
+
     if (coupon) {
-      coupon_usage = await CouponUsage.findOne({
-        user_id: order.user_id?._id || order.user_id,
-        coupon_id: coupon._id,
-      }).populate("coupon_id", "code name discount_type discount_value");
+      couponUsage =
+        await CouponUsage.findOne({
+          user_id: ownerId,
+          coupon_id: coupon._id,
+        }).populate(
+          "coupon_id",
+          "code name discount_type discount_value"
+        );
     }
   }
 
   return {
     order,
     items,
-    coupon_usage,
+    coupon_usage: couponUsage,
   };
 };
 
-// Cap nhat thong tin don hang (Admin/Manager/Staff)
-const updateOrderById = async (id, updateFields, handledByUserId = null) => {
+// Cap nhat don hang
+const updateOrderById = async (
+  id,
+  updateFields,
+  handledByUserId = null
+) => {
   const allowedFields = [
     "shipping_method_id",
     "receiver_name",
@@ -377,135 +704,278 @@ const updateOrderById = async (id, updateFields, handledByUserId = null) => {
   ];
 
   const updateData = {};
+
   for (const field of allowedFields) {
-    if (updateFields[field] !== undefined) {
-      updateData[field] = updateFields[field];
+    if (
+      updateFields[field] !== undefined
+    ) {
+      updateData[field] =
+        updateFields[field];
     }
   }
 
-  if (updateData.status && !ORDER_STATUS.includes(updateData.status)) {
-    throw new Error(`Invalid order status. Allowed: ${ORDER_STATUS.join(", ")}`);
-  }
-  if (updateData.payment_status && !PAYMENT_STATUS.includes(updateData.payment_status)) {
-    throw new Error(`Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(", ")}`);
-  }
-  if (updateData.shipping_method_id && !isValidObjectId(updateData.shipping_method_id)) {
-    throw new Error("Invalid shipping_method_id");
+  if (
+    updateData.status &&
+    !ORDER_STATUS.includes(
+      updateData.status
+    )
+  ) {
+    throw new Error(
+      `Invalid order status. Allowed: ${ORDER_STATUS.join(
+        ", "
+      )}`
+    );
   }
 
-  // Luu nguoi xu ly don hang neu truyen staff user id
+  if (
+    updateData.payment_status &&
+    !PAYMENT_STATUS.includes(
+      updateData.payment_status
+    )
+  ) {
+    throw new Error(
+      `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(
+        ", "
+      )}`
+    );
+  }
+
+  if (
+    updateData.shipping_method_id &&
+    !isValidObjectId(
+      updateData.shipping_method_id
+    )
+  ) {
+    throw new Error(
+      "Invalid shipping_method_id"
+    );
+  }
+
   if (handledByUserId) {
-    updateData.handled_by = handledByUserId;
+    updateData.handled_by =
+      handledByUserId;
   }
 
-  if (Object.keys(updateData).length === 0) {
-    throw new Error("No data to update");
+  if (
+    Object.keys(updateData).length === 0
+  ) {
+    throw new Error(
+      "No data to update"
+    );
   }
 
-  const data = await Order.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).select("-__v");
+  const data =
+    await Order.findByIdAndUpdate(
+      id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-__v");
+
   if (!data) {
     throw new Error("Order not found");
   }
+
   return data;
 };
 
-// Huy don hang (kiem tra status hop le, tra lai ton kho cho variant, gui email ly do)
-const cancelOrder = async (id, currentUser, cancel_reason = null) => {
-  const order = await Order.findById(id);
+// Huy don hang
+const cancelOrder = async (
+  id,
+  currentUser,
+  cancelReason = null
+) => {
+  const order =
+    await Order.findById(id);
+
   if (!order) {
     throw new Error("Order not found");
   }
 
-  // Security check: Customer chi duoc huy don hang cua chinh ho
-  if (currentUser.role === "CUSTOMER" && String(order.user_id) !== String(currentUser.user_id)) {
-    throw new Error("Access denied. You do not have permission.");
+  const role = String(
+    currentUser.role || ""
+  ).toUpperCase();
+
+  if (
+    role === "CUSTOMER" &&
+    String(order.user_id) !==
+      String(currentUser.user_id)
+  ) {
+    throw new Error(
+      "Access denied. You do not have permission."
+    );
   }
 
-  const isStaff = ["STAFF", "MANAGER", "ADMIN"].includes(currentUser.role);
-  if (isStaff && (!cancel_reason || !cancel_reason.trim())) {
-    throw new Error("Cancel reason is required when cancelled by staff");
+  const isStaff = [
+    "STAFF",
+    "MANAGER",
+    "ADMIN",
+  ].includes(role);
+
+  if (
+    isStaff &&
+    (!cancelReason ||
+      !cancelReason.trim())
+  ) {
+    throw new Error(
+      "Cancel reason is required when cancelled by staff"
+    );
   }
 
-  // Chi cho phep huy neu chua shipping, completed hoac da cancelled truoc do
-  if (["shipping", "completed", "cancelled"].includes(order.status)) {
-    throw new Error("This order cannot be cancelled");
+  if (
+    [
+      "shipping",
+      "completed",
+      "cancelled",
+    ].includes(order.status)
+  ) {
+    throw new Error(
+      "This order cannot be cancelled"
+    );
   }
 
-  const items = await OrderItem.find({ order_id: id });
+  const items = await OrderItem.find({
+    order_id: id,
+  });
 
-  // Hoan lai ton kho cho các variant co trong don hang
   for (const item of items) {
     if (item.variant_id) {
-      await ProductVariant.findByIdAndUpdate(item.variant_id, {
-        $inc: { stock_quantity: item.quantity },
-      });
+      await ProductVariant.findByIdAndUpdate(
+        item.variant_id,
+        {
+          $inc: {
+            stock_quantity:
+              item.quantity,
+          },
+        }
+      );
     }
   }
 
   order.status = "cancelled";
-  if (isStaff && cancel_reason) {
-    order.cancel_reason = cancel_reason.trim();
+
+  if (cancelReason && String(cancelReason).trim()) {
+    order.cancel_reason = String(cancelReason).trim().slice(0, 1000);
   }
+
   await order.save();
 
-  // Gui email thong bao cho khach hang ve viec huy don
   try {
-    const User = require("../models/User.model");
-    const customer = await User.findById(order.user_id);
-    if (customer && customer.email) {
-      const sendMail = require("../mailtrap/nodemailer");
+    const User = require(
+      "../models/User.model"
+    );
+
+    const customer =
+      await User.findById(
+        order.user_id
+      );
+
+    if (
+      customer &&
+      customer.email
+    ) {
+      const sendMail = require(
+        "../mailtrap/nodemailer"
+      );
+
       await sendMail({
         email: customer.email,
-        subject: `Don hang #${order._id} cua ban da bi huy`,
-        html: `<p>Xin chao <b>${customer.name}</b>,</p>
-               <p>Chung toi rat tiec phai thong bao rang don hang <b>#${order._id}</b> cua ban da bi huy boi ${isStaff ? 'cua hang' : 'ban'}.</p>
-               ${order.cancel_reason ? `<p><b>Ly do huy don:</b> ${order.cancel_reason}</p>` : ""}
-               <p>San pham trong don hang da duoc hoan lai vao kho hang. Cam on ban da dong hanh cung Electronic Shop.</p>`
+        subject:
+          `Don hang #${order._id} cua ban da bi huy`,
+        html: `
+          <p>Xin chao <b>${customer.name}</b>,</p>
+          <p>
+            Don hang <b>#${order._id}</b>
+            cua ban da bi huy.
+          </p>
+          ${
+            order.cancel_reason
+              ? `<p><b>Ly do:</b> ${order.cancel_reason}</p>`
+              : ""
+          }
+          <p>
+            San pham trong don hang da duoc
+            hoan lai kho.
+          </p>
+        `,
       });
     }
-  } catch (err) {
-    console.error("Failed to send order cancel email:", err.message);
+  } catch (error) {
+    console.error(
+      "Failed to send order cancel email:",
+      error.message
+    );
   }
 
   return order;
 };
 
-// Khach vang lai (Guest) tra cuu don hang khong can dang nhap
-const trackGuestOrder = async ({ order_code, contact }) => {
+// Tra cuu don hang cho guest
+const trackGuestOrder = async ({
+  order_code,
+  contact,
+}) => {
   if (!order_code || !contact) {
-    throw new Error("order_code and contact (email or phone) are required");
+    throw new Error(
+      "order_code and contact (email or phone) are required"
+    );
   }
 
-  let filter = {};
-  if (mongoose.Types.ObjectId.isValid(order_code)) {
-    filter._id = order_code;
-  } else {
-    try {
-      filter._id = new mongoose.Types.ObjectId(order_code);
-    } catch (e) {
-      throw new Error("Invalid order_code format. Must be a valid Order ID.");
-    }
+  if (!isValidObjectId(order_code)) {
+    throw new Error(
+      "Invalid order_code format. Must be a valid Order ID."
+    );
   }
 
-  const order = await Order.findOne(filter)
-    .populate("user_id", "email name")
+  const order = await Order.findById(
+    order_code
+  )
+    .populate(
+      "user_id",
+      "email name"
+    )
     .lean();
 
   if (!order) {
     throw new Error("Order not found");
   }
 
-  const contactClean = contact.trim().toLowerCase();
-  const phoneClean = order.receiver_phone ? order.receiver_phone.trim() : "";
-  const emailClean = order.user_id?.email ? order.user_id.email.trim().toLowerCase() : "";
+  const contactClean = String(contact)
+    .trim()
+    .toLowerCase();
 
-  if (contactClean !== phoneClean && contactClean !== emailClean) {
-    throw new Error("Access denied. Contact information does not match the order.");
+  const phoneClean = String(
+    order.receiver_phone || ""
+  ).trim();
+
+  const emailClean = String(
+    order.user_id?.email || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (
+    contactClean !== phoneClean &&
+    contactClean !== emailClean
+  ) {
+    throw new Error(
+      "Access denied. Contact information does not match the order."
+    );
   }
 
-  const items = await OrderItem.find({ order_id: order._id })
-    .populate("product_id", "name sku")
-    .populate("variant_id", "variant_value image price sale_price")
+  const items = await OrderItem.find({
+    order_id: order._id,
+  })
+    .populate(
+      "product_id",
+      "name sku"
+    )
+    .populate(
+      "variant_id",
+      "variant_value image price sale_price"
+    )
     .lean();
 
   return {

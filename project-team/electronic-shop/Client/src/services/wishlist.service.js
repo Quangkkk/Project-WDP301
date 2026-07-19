@@ -1,5 +1,10 @@
 import api from './api'
 
+export const getProductWishlistCount = async (productId) => {
+  const response = await api.get(`/wishlist/product/${productId}/count`)
+  return response.data
+}
+
 export const getWishlist = async (params = {}) => {
   const response = await api.get('/wishlist', { params })
   return response.data

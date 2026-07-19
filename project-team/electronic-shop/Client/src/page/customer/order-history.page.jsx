@@ -62,7 +62,7 @@ function getStatusClass(status) {
 function StatusPill({ children, status }) {
   return (
     <span
-      className={`d-inline-flex align-items-center justify-content-center rounded-pill px-3 py-2 text-xs font-black ${getStatusClass(status)}`}
+      className={`d-inline-flex align-items-center justify-content-center !rounded-pill px-3 py-2 text-xs font-black ${getStatusClass(status)}`}
       style={{
         minWidth: 120,
         whiteSpace: 'nowrap',
@@ -251,7 +251,7 @@ function OrderHistoryPage() {
                           key={tab.key}
                           type='button'
                           onClick={() => setActiveTab(tab.key)}
-                          className={`d-inline-flex align-items-center justify-content-center gap-2 rounded-4 border px-4 py-3 text-sm font-black shadow-sm transition ${isActive
+                          className={`d-inline-flex align-items-center justify-content-center gap-2 !rounded-4 border px-4 py-3 text-sm font-black shadow-sm transition ${isActive
                               ? 'border-orange-500 bg-orange-500 text-white'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                             }`}
@@ -263,7 +263,7 @@ function OrderHistoryPage() {
                           {tab.label}
 
                           <span
-                            className={`d-inline-flex align-items-center justify-content-center rounded-3 px-2 py-1 text-xs ${isActive
+                            className={`d-inline-flex align-items-center justify-content-center !rounded-3 px-2 py-1 text-xs ${isActive
                                 ? 'bg-white text-orange-600'
                                 : 'bg-slate-100 text-slate-500'
                               }`}
@@ -352,7 +352,7 @@ function OrderHistoryPage() {
                               <Button
                                 type='button'
                                 variant='danger'
-                                className='rounded-pill px-4 py-2 text-sm'
+                                className='!rounded-pill px-4 py-2 text-sm'
                                 onClick={(event) => handleOpenCancelModal(event, order)}
                                 isLoading={loadingId === orderId}
                               >
@@ -383,7 +383,7 @@ function OrderHistoryPage() {
         <Modal.Body className='p-4'>
           <div className='mb-3 d-flex align-items-start gap-3'>
             <span
-              className='d-flex align-items-center justify-content-center rounded-circle bg-red-50 text-red-600'
+              className='d-flex align-items-center justify-content-center !rounded-circle bg-red-50 text-red-600'
               style={{
                 width: 48,
                 height: 48,
@@ -409,7 +409,7 @@ function OrderHistoryPage() {
           </div>
 
           {cancelTarget && (
-            <div className='mb-4 rounded-4 border border-slate-200 bg-slate-50 p-3'>
+            <div className='mb-4 !rounded-4 border border-slate-200 bg-slate-50 p-3'>
               <div className='d-flex justify-content-between gap-3'>
                 <span className='text-slate-500'>Sản phẩm</span>
 

@@ -111,7 +111,7 @@ function QuantityControl({ value, max, disabled, onChange }) {
   }
 
   return (
-    <div className='d-inline-flex align-items-center overflow-hidden rounded-pill border border-slate-200 bg-white shadow-sm'>
+    <div className='d-inline-flex align-items-center overflow-hidden !rounded-pill border border-slate-200 bg-white shadow-sm'>
       <button
         type='button'
         onClick={() => updateValue(Number(value) - 1)}
@@ -176,14 +176,14 @@ function CartItemRow({
 
   return (
     <Card
-      className={`position-relative overflow-hidden rounded-4 border bg-white shadow-sm transition ${
+      className={`position-relative overflow-hidden !rounded-4 border bg-white shadow-sm transition ${
         selected ? 'border-orange-300' : 'border-slate-200'
       }`}
     >
       <button
         type='button'
         onClick={() => onRemove(itemId)}
-        className='position-absolute end-0 top-0 m-3 d-flex align-items-center justify-content-center rounded-circle border-0 bg-slate-100 text-slate-500 shadow-sm transition hover:bg-red-500 hover:text-white'
+        className='position-absolute end-0 top-0 m-3 d-flex align-items-center justify-content-center !rounded-circle border-0 bg-slate-100 text-slate-500 shadow-sm transition hover:bg-red-500 hover:text-white'
         style={{
           width: 34,
           height: 34,
@@ -213,7 +213,7 @@ function CartItemRow({
 
           <Link
             to={productId ? `/products/${productId}` : '#'}
-            className='d-flex align-items-center justify-content-center overflow-hidden rounded-4 bg-slate-100 text-decoration-none'
+            className='d-flex align-items-center justify-content-center overflow-hidden !rounded-4 bg-slate-100 text-decoration-none'
             style={{
               width: 112,
               height: 112,

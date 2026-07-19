@@ -16,9 +16,12 @@ import { addItemToCart } from '../../services/cart.service'
 import { getErrorMessage } from '../../services/api'
 import { getProductById } from '../../services/product.service'
 import { getReviews } from '../../services/review.service'
-import { addToWishlist, getWishlist } from '../../services/wishlist.service'
-import { getCurrentUser, getUserId } from '../../utils/authStorage'
-import { getCartIdentity } from '../../utils/sessionCart'
+import {
+  addToWishlist,
+  checkWishlist,
+  getProductWishlistCount as fetchProductWishlistCount,
+} from '../../services/wishlist.service'
+import { getCurrentUser, getUserId, isAuthenticated } from '../../utils/authStorage'
 import { getId, pickArray, pickData } from '../../utils/format'
 import {
   getProductImage,
@@ -281,7 +284,7 @@ function QuantityInput({ value, max, disabled, onChange }) {
   }
 
   return (
-    <div className='d-inline-flex align-items-center overflow-hidden rounded-pill border border-slate-200 bg-white shadow-sm'>
+    <div className='d-inline-flex align-items-center overflow-hidden !rounded-pill border border-slate-200 bg-white shadow-sm'>
       <button
         type='button'
         onClick={() => updateValue(Number(value) - 1)}
@@ -339,7 +342,7 @@ function ProductReviews({ reviews, isLoading, error }) {
             {isLoading ? (
               <LoadingText />
             ) : reviews.length === 0 ? (
-              <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
+              <div className='!rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
                 <div className='mb-3 text-4xl'>💬</div>
 
                 <h3 className='mb-2 text-xl font-black text-slate-900'>
@@ -359,12 +362,12 @@ function ProductReviews({ reviews, isLoading, error }) {
                   return (
                     <div
                       key={getId(review) || `review-${index}`}
-                      className='rounded-4 border border-slate-200 bg-white p-4 shadow-sm'
+                      className='!rounded-4 border border-slate-200 bg-white p-4 shadow-sm'
                     >
                       <div className='mb-3 d-flex flex-wrap align-items-start justify-content-between gap-3'>
                         <div className='d-flex align-items-center gap-3'>
                           <span
-                            className='d-flex align-items-center justify-content-center rounded-circle bg-orange-500 font-black text-white'
+                            className='d-flex align-items-center justify-content-center !rounded-circle bg-orange-500 font-black text-white'
                             style={{
                               width: 48,
                               height: 48,
@@ -401,7 +404,7 @@ function ProductReviews({ reviews, isLoading, error }) {
                           </div>
                         </div>
 
-                        <span className='rounded-pill bg-amber-50 px-3 py-2 text-xs font-black text-amber-700'>
+                        <span className='!rounded-pill bg-amber-50 px-3 py-2 text-xs font-black text-amber-700'>
                           {Number(review.rating || 0).toFixed(1)} / 5
                         </span>
                       </div>
@@ -419,7 +422,7 @@ function ProductReviews({ reviews, isLoading, error }) {
                               href={item}
                               target='_blank'
                               rel='noreferrer'
-                              className='d-block overflow-hidden rounded-3 border border-slate-200 bg-slate-50'
+                              className='d-block overflow-hidden !rounded-3 border border-slate-200 bg-slate-50'
                               style={{
                                 width: 82,
                                 height: 82,
@@ -482,25 +485,24 @@ function ProductDetailPage() {
     }
 
     try {
-      const response = await getWishlist({
+      const countResponse = await fetchProductWishlistCount(productId)
+      setWishlistCount(Number(countResponse?.count || 0))
+    } catch {
+      setWishlistCount(getProductWishlistCount(product))
+    }
+
+    if (!currentUserId || !isAuthenticated()) {
+      setIsWishlisted(false)
+      return
+    }
+
+    try {
+      const statusResponse = await checkWishlist({
         product_id: productId,
       })
 
-      const wishlistItems = pickArray(response, [])
-      const totalCount = Number(
-        response?.count ?? response?.data?.count ?? wishlistItems.length ?? 0,
-      )
-
-      const existed = currentUserId
-        ? wishlistItems.some(
-            (item) => String(getWishlistUserId(item)) === String(currentUserId),
-          )
-        : false
-
-      setWishlistCount(totalCount)
-      setIsWishlisted(existed)
+      setIsWishlisted(Boolean(statusResponse?.exists || statusResponse?.data?.exists))
     } catch {
-      setWishlistCount(0)
       setIsWishlisted(false)
     }
   }
@@ -610,19 +612,36 @@ function ProductDetailPage() {
     setError('')
   }
 
+  const redirectToLogin = () => {
+    navigate('/login', {
+      state: { from: `/products/${id}` },
+    })
+  }
+
   const addSelectedItemToCart = async () => {
-    const user = getCurrentUser()
-    const identity = getCartIdentity(user)
+    if (!isAuthenticated() || !currentUserId) {
+      throw new Error('AUTH_REQUIRED')
+    }
+
+    const selectedVariantId = getId(selectedVariant)
+
+    if (!selectedVariantId) {
+      throw new Error('Vui lòng chọn phiên bản sản phẩm.')
+    }
 
     await addItemToCart({
-      ...identity,
       product_id: getId(product),
-      variant_id: getId(selectedVariant) || null,
+      variant_id: selectedVariantId,
       quantity,
     })
   }
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated() || !currentUserId) {
+      redirectToLogin()
+      return
+    }
+
     try {
       setIsAdding(true)
       setMessage('')
@@ -639,6 +658,11 @@ function ProductDetailPage() {
   }
 
   const handleCheckout = async () => {
+    if (!isAuthenticated() || !currentUserId) {
+      redirectToLogin()
+      return
+    }
+
     try {
       setIsCheckingOut(true)
       setMessage('')
@@ -885,11 +909,11 @@ function ProductDetailPage() {
               </div>
 
               <div className='mb-4 d-flex flex-wrap align-items-center gap-2'>
-                <span className='rounded-pill bg-amber-50 px-3 py-2 text-xs font-black text-amber-700'>
+                <span className='!rounded-pill bg-amber-50 px-3 py-2 text-xs font-black text-amber-700'>
                   ⭐ {Number(product.average_rating || 0).toFixed(1)}
                 </span>
 
-                <span className='rounded-pill bg-slate-100 px-3 py-2 text-xs font-black text-slate-700'>
+                <span className='!rounded-pill bg-slate-100 px-3 py-2 text-xs font-black text-slate-700'>
                   Đã bán {formatNumber(soldCount)}
                 </span>
               </div>
@@ -922,7 +946,7 @@ function ProductDetailPage() {
                           type='button'
                           key={currentVariantId}
                           onClick={() => handleSelectVariant(currentVariantId)}
-                          className={`rounded-4 border px-4 py-3 text-start transition ${
+                          className={`!rounded-4 border px-4 py-3 text-start transition ${
                             isSelected
                               ? 'border-orange-500 bg-orange-50 text-orange-700 shadow-sm'
                               : 'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50'
@@ -1003,7 +1027,7 @@ function ProductDetailPage() {
                 <div className='p-4 p-lg-5'>
                   <Row className='g-4'>
                     <Col lg={7}>
-                      <div className='h-100 rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
+                      <div className='h-100 !rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
                         <h3 className='mb-3 text-xl font-black text-slate-900'>
                           Mô tả sản phẩm
                         </h3>
@@ -1016,13 +1040,13 @@ function ProductDetailPage() {
                     </Col>
 
                     <Col lg={5}>
-                      <div className='h-100 rounded-4 border border-slate-200 bg-white p-4'>
+                      <div className='h-100 !rounded-4 border border-slate-200 bg-white p-4'>
                         <h3 className='mb-4 text-xl font-black text-slate-900'>
                           Thông tin nhanh
                         </h3>
 
                         <div className='d-flex flex-column gap-3'>
-                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-grid-3x3-gap-fill text-orange-500' />
                               Danh mục
@@ -1034,7 +1058,7 @@ function ProductDetailPage() {
                           </div>
 
                           {brandName && (
-                            <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                            <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
                               <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                                 <i className='bi bi-award-fill text-orange-500' />
                                 Thương hiệu
@@ -1046,7 +1070,7 @@ function ProductDetailPage() {
                             </div>
                           )}
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-bag-check-fill text-orange-500' />
                               Đã bán
@@ -1057,7 +1081,7 @@ function ProductDetailPage() {
                             </span>
                           </div>
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-chat-dots-fill text-orange-500' />
                               Feedback
@@ -1068,7 +1092,7 @@ function ProductDetailPage() {
                             </span>
                           </div>
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-box-seam-fill text-orange-500' />
                               Kho hàng

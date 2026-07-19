@@ -3,23 +3,18 @@ const CartItem = require("../models/CartItem.model");
 const Product = require("../models/Product.model");
 const ProductVariant = require("../models/ProductVariant.model");
 
-// Helper thu thap id hop le va loai bo trung lap
-const collectValidIds = (items, field) => {
-  return [
-    ...new Set(
-      items
-        .map((item) => item?.[field])
-        .filter((value) => value)
-        .map((value) => String(value))
-    ),
-  ];
-};
+const collectValidIds = (items, field) => [
+  ...new Set(
+    items
+      .map((item) => item?.[field])
+      .filter(Boolean)
+      .map((value) => String(value))
+  ),
+];
 
-const toMapById = (items) => {
-  return new Map(items.map((item) => [String(item._id), item]));
-};
+const toMapById = (items) =>
+  new Map(items.map((item) => [String(item._id), item]));
 
-// Tai danh sach items trong giop hang kem product va variant populate
 const loadCartItems = async (cartId) => {
   const rawItems = await CartItem.find({ cart_id: cartId })
     .select("-__v")
@@ -35,9 +30,10 @@ const loadCartItems = async (cartId) => {
     Product.find({ _id: { $in: productIds } })
       .select("name sku status is_featured average_rating")
       .lean(),
-
     ProductVariant.find({ _id: { $in: variantIds } })
-      .select("sku variant_value price sale_price image stock_quantity is_active")
+      .select(
+        "product_id sku variant_value price sale_price image stock_quantity is_active"
+      )
       .lean(),
   ]);
 
@@ -53,9 +49,9 @@ const loadCartItems = async (cartId) => {
   }));
 };
 
-// Lay giot hang
 const getCart = async (query) => {
   const cart = await Cart.findOne(query).select("-__v").lean();
+
   if (!cart) {
     return {
       cart: null,
@@ -77,118 +73,143 @@ const getCart = async (query) => {
   };
 };
 
-// Them san pham vao giot hang (check ton kho variant trong service)
-const addItemToCart = async (query, { product_id, variant_id, quantity = 1, price: bodyPrice }) => {
-  const qty = Number(quantity || 1);
-  if (qty < 1) {
+const getActiveVariant = async (productId, variantId) => {
+  if (!variantId) {
+    throw new Error("Vui long chon phien ban san pham");
+  }
+
+  const variant = await ProductVariant.findOne({
+    _id: variantId,
+    product_id: productId,
+  }).lean();
+
+  if (!variant) {
+    throw new Error("Khong tim thay phien ban san pham");
+  }
+
+  if (!variant.is_active) {
+    throw new Error("Phien ban san pham dang ngung ban");
+  }
+
+  return variant;
+};
+
+const getVariantPrice = (variant) =>
+  Number(variant.sale_price || 0) > 0
+    ? Number(variant.sale_price)
+    : Number(variant.price);
+
+const addItemToCart = async (
+  query,
+  { product_id, variant_id, quantity = 1 }
+) => {
+  const qty = Number(quantity);
+
+  if (!Number.isInteger(qty) || qty < 1) {
     throw new Error("So luong phai lon hon 0");
   }
 
-  // Check product ton tai
   const product = await Product.findById(product_id).lean();
+
   if (!product) {
     throw new Error("Khong tim thay san pham");
   }
 
-  // Lay hoac tao moi gio hang
+  if (String(product.status || "active").toLowerCase() !== "active") {
+    throw new Error("San pham dang ngung ban");
+  }
+
+  const variant = await getActiveVariant(product_id, variant_id);
+
   const cart = await Cart.findOneAndUpdate(
     query,
     { $setOnInsert: query },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
 
-  let price = Number(bodyPrice || 0);
-  let variantObjectId = null;
+  const existingItem = await CartItem.findOne({
+    cart_id: cart._id,
+    product_id,
+    variant_id,
+  }).lean();
 
-  if (variant_id) {
-    // Check variant ton tai va active
-    const variant = await ProductVariant.findById(variant_id).lean();
-    if (!variant) {
-      throw new Error("Khong tim thay phien ban san pham");
-    }
+  const nextQuantity = Number(existingItem?.quantity || 0) + qty;
 
-    if (String(variant.product_id) !== String(product_id)) {
-      throw new Error("Phien ban khong thuoc san pham nay");
-    }
+  if (Number(variant.stock_quantity || 0) < nextQuantity) {
+    throw new Error("Khong du hang trong kho");
+  }
 
-    if (!variant.is_active) {
-      throw new Error("Phien ban san pham dang ngung ban");
-    }
-
-    // Lay so luong hien tai trong gio hang de cong don check ton kho
-    const existingItem = await CartItem.findOne({
+  return CartItem.findOneAndUpdate(
+    {
       cart_id: cart._id,
       product_id,
       variant_id,
-    }).lean();
-
-    const nextQuantity = Number(existingItem?.quantity || 0) + qty;
-    if (Number(variant.stock_quantity || 0) < nextQuantity) {
-      throw new Error("Khong du hang trong kho");
-    }
-
-    price = Number(variant.sale_price || 0) > 0 ? variant.sale_price : variant.price;
-    variantObjectId = variant_id;
-  }
-
-  // Luu hoac update CartItem
-  return await CartItem.findOneAndUpdate(
-    {
-      cart_id: cart._id,
-      product_id,
-      variant_id: variantObjectId,
     },
     {
       $inc: { quantity: qty },
-      $set: { price },
+      $set: { price: getVariantPrice(variant) },
     },
-    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
   ).select("-__v");
 };
 
-// Cap nhat so luong cart item
-const updateCartItem = async (itemId, { quantity, price }) => {
+const findOwnedCartItem = async (query, itemId) => {
+  const cart = await Cart.findOne(query).lean();
+
+  if (!cart) {
+    throw new Error("Khong tim thay gio hang");
+  }
+
+  const item = await CartItem.findOne({
+    _id: itemId,
+    cart_id: cart._id,
+  });
+
+  if (!item) {
+    throw new Error("Khong tim thay san pham trong gio hang");
+  }
+
+  return item;
+};
+
+const updateCartItem = async (query, itemId, { quantity }) => {
   const qty = Number(quantity);
-  if (qty < 1) {
+
+  if (!Number.isInteger(qty) || qty < 1) {
     throw new Error("So luong phai lon hon 0");
   }
 
-  const currentItem = await CartItem.findById(itemId).lean();
-  if (!currentItem) {
-    throw new Error("Khong tim thay san pham trong giot hang");
+  const currentItem = await findOwnedCartItem(query, itemId);
+  const variant = await getActiveVariant(
+    currentItem.product_id,
+    currentItem.variant_id
+  );
+
+  if (Number(variant.stock_quantity || 0) < qty) {
+    throw new Error("Khong du hang trong kho");
   }
 
-  // Check ton kho cua variant truoc khi update
-  if (currentItem.variant_id) {
-    const variant = await ProductVariant.findById(currentItem.variant_id).lean();
-    if (variant && Number(variant.stock_quantity || 0) < qty) {
-      throw new Error("Khong du hang trong kho");
-    }
-  }
+  currentItem.quantity = qty;
+  currentItem.price = getVariantPrice(variant);
 
-  const updateData = { quantity: qty };
-  if (price !== undefined) {
-    updateData.price = Number(price);
-  }
-
-  return await CartItem.findByIdAndUpdate(itemId, updateData, {
-    new: true,
-    runValidators: true,
-  }).select("-__v");
+  await currentItem.save();
+  return currentItem;
 };
 
-// Xoa 1 item khoi gio hang
-const deleteCartItem = async (itemId) => {
-  const data = await CartItem.findByIdAndDelete(itemId).select("-__v");
-  if (!data) {
-    throw new Error("Khong tim thay san pham trong giot hang");
-  }
-  return data;
+const deleteCartItem = async (query, itemId) => {
+  const currentItem = await findOwnedCartItem(query, itemId);
+  await currentItem.deleteOne();
+  return currentItem;
 };
 
-// Xoa sach gio hang
 const clearCart = async (query) => {
   const cart = await Cart.findOne(query).lean();
+
   if (!cart) {
     return { deletedCount: 0 };
   }

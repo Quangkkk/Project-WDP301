@@ -171,7 +171,7 @@ function ChatManagementPage() {
                     <div
                       key={getId(conv)}
                       onClick={() => setSelectedConv(conv)}
-                      className={`p-3 rounded-4 cursor-pointer transition ${
+                      className={`p-3 !rounded-4 cursor-pointer transition ${
                         isSelected ? 'bg-blue-600 text-white' : 'bg-white hover:bg-slate-100 border border-slate-100'
                       }`}
                       style={{ cursor: 'pointer' }}
@@ -188,7 +188,7 @@ function ChatManagementPage() {
                         {conv.customer_id?.email}
                       </p>
                       <div className='mt-2 flex justify-between items-center'>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-pill font-bold ${
+                        <span className={`text-[10px] px-2 py-0.5 !rounded-pill font-bold ${
                           conv.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'
                         }`}>
                           {conv.status === 'open' ? 'Open' : 'Closed'}
@@ -213,7 +213,7 @@ function ChatManagementPage() {
                     <div className='relative'>
                       <span className='text-2xl'>👤</span>
                       {/* Hiển thị cơ bản trạng thái online khi connect socket */}
-                      <span className='absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white'></span>
+                      <span className='absolute bottom-0 right-0 block h-2.5 w-2.5 !rounded-full bg-green-500 ring-2 ring-white'></span>
                     </div>
                     <div>
                       <h4 className='m-0 text-sm font-black text-slate-900'>
@@ -236,8 +236,8 @@ function ChatManagementPage() {
                       const isMe = String(msg.sender_id?._id || msg.sender_id) === String(user.user_id)
                       return (
                         <div key={msg._id || index} className={`flex flex-column ${isMe ? 'items-end' : 'items-start'}`}>
-                          <div className={`rounded-4 px-3 py-2 text-sm max-w-[75%] ${
-                            isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-none'
+                          <div className={`!rounded-4 px-3 py-2 text-sm max-w-[75%] ${
+                            isMe ? 'bg-blue-600 text-white !rounded-br-none' : 'bg-white text-slate-800 border border-slate-100 !rounded-bl-none'
                           }`} style={{ shadow: 'sm', wordBreak: 'break-word' }}>
                             {msg.message}
                           </div>
@@ -250,7 +250,7 @@ function ChatManagementPage() {
                   )}
                   {isCustomerTyping && (
                     <div className='flex items-start'>
-                      <div className='bg-slate-200 text-slate-600 rounded-4 px-3 py-2 text-xs italic rounded-bl-none'>
+                      <div className='bg-slate-200 text-slate-600 !rounded-4 px-3 py-2 text-xs italic !rounded-bl-none'>
                         Khách hàng đang gõ phím...
                       </div>
                     </div>
@@ -266,7 +266,7 @@ function ChatManagementPage() {
                       value={inputText}
                       onChange={handleInputChange}
                       placeholder='Nhập nội dung hỗ trợ khách hàng...'
-                      className='rounded-pill px-4 shadow-none'
+                      className='!rounded-pill px-4 shadow-none'
                       disabled={isLoadingChat}
                     />
                     <Button type='submit' disabled={isLoadingChat || !inputText.trim()}>

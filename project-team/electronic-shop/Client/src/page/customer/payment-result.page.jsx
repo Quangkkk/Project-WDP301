@@ -175,13 +175,13 @@ function PaymentResultPage() {
                       </div>
 
                       <span
-                        className={`rounded-pill px-3 py-2 text-sm font-black ${getStatusClass(status)}`}
+                        className={`!rounded-pill px-3 py-2 text-sm font-black ${getStatusClass(status)}`}
                       >
                         {getPaymentStatusLabel(status)}
                       </span>
                     </div>
 
-                    <div className='mb-4 rounded-4 border border-slate-200 bg-slate-50 p-4'>
+                    <div className='mb-4 !rounded-4 border border-slate-200 bg-slate-50 p-4'>
                       <Row className='g-3'>
                         <Col md={6}>
                           <p className='mb-1 text-sm text-slate-500'>
@@ -242,12 +242,12 @@ function PaymentResultPage() {
                     {provider === 'bank_transfer' && (
                       <Row className='g-4 align-items-center'>
                         <Col md={5}>
-                          <div className='rounded-4 border border-orange-100 bg-white p-3 text-center shadow-sm'>
+                          <div className='!rounded-4 border border-orange-100 bg-white p-3 text-center shadow-sm'>
                             {payment?.qr_url ? (
                               <img
                                 src={payment.qr_url}
                                 alt='QR chuyển khoản'
-                                className='img-fluid rounded-3'
+                                className='img-fluid !rounded-3'
                               />
                             ) : (
                               <div className='py-5 text-slate-500'>
@@ -303,7 +303,7 @@ function PaymentResultPage() {
                                 Nội dung chuyển khoản
                               </p>
 
-                              <p className='mb-0 rounded-3 bg-orange-50 px-3 py-2 font-black text-orange-700'>
+                              <p className='mb-0 !rounded-3 bg-orange-50 px-3 py-2 font-black text-orange-700'>
                                 {payment?.transfer_content ||
                                   payment?.payment_code ||
                                   '-'}
@@ -317,7 +317,7 @@ function PaymentResultPage() {
                     {provider === 'zalopay' &&
                       payment?.payment_url &&
                       status !== 'paid' && (
-                        <div className='rounded-4 border border-blue-100 bg-blue-50 p-4'>
+                        <div className='!rounded-4 border border-blue-100 bg-blue-50 p-4'>
                           <h2 className='mb-2 text-xl font-black text-slate-950'>
                             Tiếp tục thanh toán ZaloPay
                           </h2>
@@ -339,7 +339,7 @@ function PaymentResultPage() {
                       )}
 
                     {provider === 'zalopay' && status === 'paid' && (
-                      <div className='rounded-4 border border-emerald-100 bg-emerald-50 p-4'>
+                      <div className='!rounded-4 border border-emerald-100 bg-emerald-50 p-4'>
                         <h2 className='mb-2 text-xl font-black text-emerald-800'>
                           Thanh toán ZaloPay thành công
                         </h2>
@@ -351,7 +351,7 @@ function PaymentResultPage() {
                     )}
 
                     {provider === 'cod' && (
-                      <div className='rounded-4 border border-emerald-100 bg-emerald-50 p-4'>
+                      <div className='!rounded-4 border border-emerald-100 bg-emerald-50 p-4'>
                         <h2 className='mb-2 text-xl font-black text-emerald-800'>
                           Đặt hàng thành công
                         </h2>

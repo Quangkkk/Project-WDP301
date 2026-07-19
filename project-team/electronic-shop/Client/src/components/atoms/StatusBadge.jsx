@@ -62,7 +62,7 @@ function StatusBadge({ value, label, className = '' }) {
 
   return (
     <span
-      className={`rounded-pill px-3 py-2 text-xs font-black uppercase ${config.className} ${className}`}
+      className={`!rounded-pill px-3 py-2 text-xs font-black uppercase ${config.className} ${className}`}
     >
       {label || config.label}
     </span>

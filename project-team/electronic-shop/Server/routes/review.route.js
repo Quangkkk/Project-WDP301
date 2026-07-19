@@ -11,6 +11,9 @@ router.post("/", verifyToken, authorizeRoles("Customer"), review.createReview);
 // Sua review ca nhan (Chi danh cho Customer)
 router.put("/:id", verifyToken, authorizeRoles("Customer"), review.updateReview);
 
+// Xoa review: customer xoa review cua minh, backoffice xoa review vi pham
+router.delete("/:id", verifyToken, review.deleteReview);
+
 // An review vi pham (Danh cho Admin, Manager, Staff)
 router.patch("/admin/reviews/:id/hide", verifyToken, authorizeRoles("Admin", "Manager", "Staff"), review.hideReview);
 

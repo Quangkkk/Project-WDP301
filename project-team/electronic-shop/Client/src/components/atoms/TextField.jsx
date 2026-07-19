@@ -9,7 +9,7 @@ function TextField({ label, id, error, className = '', ...props }) {
       )}
       <input
         id={id}
-        className={`w-full rounded-md border px-4 py-3 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 ${
+        className={`w-full !rounded-md border px-4 py-3 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 ${
           error 
             ? 'border-red-300 focus:border-red-500 focus:ring-red-500 bg-red-50' 
             : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500'

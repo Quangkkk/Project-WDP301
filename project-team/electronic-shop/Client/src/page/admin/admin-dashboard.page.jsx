@@ -267,7 +267,7 @@ function AdminDashboardPage() {
             </div>
             <div className='d-flex flex-column gap-2'>
               {orders.slice(0, 5).map((order) => (
-                <div key={order._id || order.id} className='d-flex justify-content-between align-items-center rounded-4 bg-slate-50 p-3'>
+                <div key={order._id || order.id} className='d-flex justify-content-between align-items-center !rounded-4 bg-slate-50 p-3'>
                   <span className='font-bold text-slate-700'>
                     #{String(order._id || order.id).slice(-6).toUpperCase()} - {order.user_id?.name || order.receiver_name}
                   </span>

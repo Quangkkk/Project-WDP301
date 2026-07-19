@@ -198,9 +198,33 @@ const hideReview = async (reviewId, { hidden_reason }) => {
   return review;
 };
 
+// Xoa review. Customer chi duoc xoa review cua minh; backoffice duoc xoa review vi pham.
+const deleteReview = async (reviewId, currentUser) => {
+  const review = await Review.findById(reviewId);
+
+  if (!review) {
+    throw new Error("Review not found");
+  }
+
+  const role = String(currentUser?.role || "").toUpperCase();
+  const isOwner = String(review.user_id) === String(currentUser?.user_id || "");
+  const isBackOffice = ["ADMIN", "MANAGER", "STAFF"].includes(role);
+
+  if (!isOwner && !isBackOffice) {
+    throw new Error("Access denied");
+  }
+
+  const productId = review.product_id;
+  await review.deleteOne();
+  await updateProductRating(productId);
+
+  return review;
+};
+
 module.exports = {
   createReview,
   getProductReviews,
   updateReview,
+  deleteReview,
   hideReview,
 };

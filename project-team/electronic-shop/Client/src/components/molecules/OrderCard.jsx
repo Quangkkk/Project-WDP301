@@ -20,7 +20,7 @@ function OrderCard({ order, onCancel }) {
             <StatusBadge value={order.payment_status} />
           </div>
         </div>
-        <div className='rounded-4 bg-slate-50 p-3 mb-3'>
+        <div className='!rounded-4 bg-slate-50 p-3 mb-3'>
           {items.length === 0 ? <p className='mb-0 text-sm text-slate-500'>No item detail.</p> : items.map((item) => (
             <div key={getId(item)} className='d-flex justify-content-between gap-3 border-bottom py-2 last:border-0'>
               <span className='text-sm font-semibold text-slate-700'>{item.product_id?.name || 'Product'} x {item.quantity}</span>
@@ -32,7 +32,7 @@ function OrderCard({ order, onCancel }) {
           <p className='mb-0 text-sm text-slate-500'>{order.receiver_name} • {order.receiver_phone} • {order.address_address_line}</p>
           <div className='d-flex align-items-center gap-3'>
             <PriceText value={order.total_amount} className='text-xl font-black text-blue-600' />
-            {canCancel && <button type='button' className='rounded-pill border-0 bg-red-50 px-4 py-2 text-sm font-bold text-red-600' onClick={() => onCancel?.(getId(order))}>Cancel</button>}
+            {canCancel && <button type='button' className='!rounded-pill border-0 bg-red-50 px-4 py-2 text-sm font-bold text-red-600' onClick={() => onCancel?.(getId(order))}>Cancel</button>}
           </div>
         </div>
       </Card.Body>

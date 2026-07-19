@@ -94,6 +94,18 @@ const orderSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    note: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
+    },
+    cancel_reason: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
+    },
     handled_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
