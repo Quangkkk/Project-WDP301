@@ -26,8 +26,8 @@ import {
   createZaloPayPayment,
 } from '../../services/payment.service'
 import { getShippingMethods } from '../../services/shipping.service'
-import { getUserById } from '../../services/user.service'
-import { getCurrentUser, getUserId } from '../../utils/authStorage'
+import { getProfile } from '../../services/user.service'
+import { getCurrentUser } from '../../utils/authStorage'
 import { getCartIdentity } from '../../utils/sessionCart'
 import { formatCurrency, getId, pickArray } from '../../utils/format'
 
@@ -214,8 +214,8 @@ function CheckoutPage() {
           getShippingMethods({ is_active: true }),
         ]
 
-        if (user && getUserId(user)) {
-          requests.push(getUserById(getUserId(user)))
+        if (user) {
+          requests.push(getProfile())
         }
 
         const [cartRes, shippingRes, userRes] = await Promise.all(requests)
@@ -453,114 +453,324 @@ function CheckoutPage() {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
+    if (isSubmitting) {
+      return
+    }
+
     const validationMessage = validate()
 
     if (validationMessage) {
       setError(validationMessage)
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+
+      return
+    }
+
+    setIsSubmitting(true)
+    setError('')
+    setMessage('')
+
+    let createdOrder = null
+    let orderId = ''
+
+    try {
+      const storagePayload =
+        getCheckoutPayloadFromStorage()
+
+      const orderItems = items.map((item) => {
+        const productId = getId(
+          item.product_id || item.product,
+        )
+
+        const variantId = getId(
+          item.variant_id || item.variant,
+        )
+
+        return {
+          product_id: productId,
+          variant_id: variantId,
+          quantity: Math.max(
+            Number(item.quantity || 1),
+            1,
+          ),
+        }
+      })
+
+      const invalidItem = orderItems.find(
+        (item) =>
+          !item.product_id ||
+          !item.variant_id ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity < 1,
+      )
+
+      if (invalidItem) {
+        throw new Error(
+          'Có sản phẩm trong giỏ hàng thiếu thông tin phiên bản. Vui lòng xóa sản phẩm đó và thêm lại vào giỏ hàng.',
+        )
+      }
+
+      const payload = {
+        shipping_method_id:
+          form.shipping_method_id,
+
+        receiver_name:
+          form.receiver_name.trim(),
+
+        receiver_phone:
+          form.receiver_phone.trim(),
+
+        address_province:
+          form.address_province.trim(),
+
+        address_district:
+          form.address_district.trim(),
+
+        address_ward:
+          form.address_ward.trim(),
+
+        address_address_line:
+          form.address_address_line.trim(),
+
+        note:
+          form.note.trim() || undefined,
+
+        payment_method:
+          form.payment_method,
+
+        coupon_code:
+          form.coupon_code.trim() ||
+          undefined,
+
+        cart_id:
+          location.state?.cartId ||
+          storagePayload?.cartId ||
+          getId(cart) ||
+          undefined,
+
+        items: orderItems,
+      }
+
+      console.log(
+        'Payload tạo đơn:',
+        payload,
+      )
+
+      const orderResponse =
+        await createOrder(payload)
+
+      console.log(
+        'Response tạo đơn:',
+        orderResponse,
+      )
+
+      const orderResult =
+        orderResponse?.data ||
+        orderResponse ||
+        {}
+
+      createdOrder =
+        orderResult.order ||
+        orderResponse?.order ||
+        null
+
+      orderId = getId(createdOrder)
+
+      if (!createdOrder || !orderId) {
+        throw new Error(
+          'Backend đã phản hồi nhưng không trả về thông tin đơn hàng.',
+        )
+      }
+
+      sessionStorage.removeItem(
+        CHECKOUT_SELECTED_ITEMS_KEY,
+      )
+    } catch (error) {
+      console.error(
+        'Lỗi tạo đơn hàng:',
+        {
+          url: error?.config?.url,
+          method: error?.config?.method,
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          message:
+            error?.message,
+        },
+      )
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message
+
+      setError(
+        backendMessage ||
+        'Không tạo được đơn hàng.',
+      )
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+
+      setIsSubmitting(false)
+      return
+    }
+
+    // COD: order đã tạo xong thì chuyển trang ngay.
+    if (form.payment_method === 'cod') {
+      navigate(
+        `/payment-result/${orderId}`,
+        {
+          replace: true,
+          state: {
+            order: createdOrder,
+            payment: {
+              provider: 'cod',
+              status:
+                createdOrder.payment_status ||
+                'unpaid',
+              amount:
+                createdOrder.total_amount,
+            },
+          },
+        },
+      )
+
+      setIsSubmitting(false)
       return
     }
 
     try {
-      setIsSubmitting(true)
-      setError('')
-      setMessage('')
+      // Chuyển khoản VietQR
+      if (
+        form.payment_method ===
+        'bank_transfer'
+      ) {
+        const paymentResponse =
+          await createBankTransferPayment(
+            orderId,
+          )
 
-      const storagePayload = getCheckoutPayloadFromStorage()
+        const paymentData =
+          paymentResponse?.data ||
+          paymentResponse ||
+          {}
 
-      const payload = {
-        user_id: getUserId(user),
-        user_address_id: selectedAddressId || undefined,
-        address_id: selectedAddressId || undefined,
-        shipping_method_id: form.shipping_method_id || undefined,
-        receiver_name: form.receiver_name.trim(),
-        receiver_phone: form.receiver_phone.trim(),
-        address_province: form.address_province.trim(),
-        address_district: form.address_district.trim(),
-        address_ward: form.address_ward.trim(),
-        address_address_line: form.address_address_line.trim(),
-        note: form.note.trim(),
-        payment_method: form.payment_method,
-        coupon_code: form.coupon_code.trim() || undefined,
-        cart_id: location.state?.cartId || storagePayload?.cartId || getId(cart),
-        items: items.map((item) => ({
-          product_id: getId(item.product_id),
-          variant_id: getId(item.variant_id) || undefined,
-          quantity: Number(item.quantity || 1),
-        })),
-      }
-
-      const orderResponse = await createOrder(payload)
-      const createdOrder =
-        orderResponse?.data?.order ||
-        orderResponse?.order ||
-        orderResponse?.data ||
-        null
-      const orderId = getId(createdOrder)
-
-      if (!orderId) {
-        throw new Error('Không lấy được mã đơn hàng sau khi tạo đơn.')
-      }
-
-      // Xoa sach selected items trong sessionStorage sau khi da dat hang thanh cong
-      sessionStorage.removeItem(CHECKOUT_SELECTED_ITEMS_KEY)
-
-      // Neu thanh toan bang chuyen khoan (VietQR)
-      if (form.payment_method === 'bank_transfer') {
-        const paymentResponse = await createBankTransferPayment(orderId)
-        const paymentData = paymentResponse?.data || {}
-
-        navigate(`/payment-result/${orderId}`, {
-          replace: true,
-          state: {
-            order: paymentData.order || createdOrder,
-            payment: paymentData.payment || null,
+        navigate(
+          `/payment-result/${orderId}`,
+          {
+            replace: true,
+            state: {
+              order:
+                paymentData.order ||
+                createdOrder,
+              payment:
+                paymentData.payment ||
+                null,
+            },
           },
-        })
+        )
 
         return
       }
 
-      // Neu thanh toan bang ZaloPay
-      if (form.payment_method === 'zalopay') {
-        const paymentResponse = await createZaloPayPayment(orderId)
-        const paymentData = paymentResponse?.data || {}
-        const paymentUrl = paymentData.payment_url || paymentData.order_url
-        const resultOrder = paymentData.order || createdOrder
-        const resultPayment = paymentData.payment || {
-          provider: 'zalopay',
-          status: paymentResponse?.success === false ? 'failed' : 'pending',
-          amount: resultOrder.total_amount,
-          payment_url: paymentUrl,
+      // ZaloPay
+      if (
+        form.payment_method ===
+        'zalopay'
+      ) {
+        const paymentResponse =
+          await createZaloPayPayment(
+            orderId,
+          )
+
+        const paymentData =
+          paymentResponse?.data ||
+          paymentResponse ||
+          {}
+
+        const paymentUrl =
+          paymentData.payment_url ||
+          paymentData.order_url ||
+          paymentData.payment
+            ?.payment_url ||
+          paymentData.zaloResult
+            ?.order_url ||
+          ''
+
+        if (!paymentUrl) {
+          throw new Error(
+            paymentData.zaloResult
+              ?.sub_return_message ||
+            paymentData.zaloResult
+              ?.return_message ||
+            paymentResponse?.message ||
+            'Không lấy được đường dẫn thanh toán ZaloPay.',
+          )
         }
 
-        if (paymentUrl) {
-          window.open(paymentUrl, '_blank', 'noopener,noreferrer')
-        }
-
-        navigate(`/payment-result/${orderId}`, {
-          replace: true,
-          state: {
-            order: resultOrder,
-            payment: resultPayment,
-          },
-        })
+        window.location.assign(
+          paymentUrl,
+        )
 
         return
       }
+    } catch (error) {
+      console.error(
+        'Đơn đã tạo nhưng khởi tạo thanh toán lỗi:',
+        {
+          orderId,
+          url: error?.config?.url,
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          message:
+            error?.message,
+        },
+      )
 
-      navigate(`/payment-result/${orderId}`, {
-        replace: true,
-        state: {
-          order: createdOrder,
-          payment: {
-            provider: 'cod',
-            status: createdOrder.payment_status || 'unpaid',
-            amount: createdOrder.total_amount,
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message
+
+      setError(
+        backendMessage ||
+        'Đơn hàng đã được tạo nhưng chưa khởi tạo được thanh toán.',
+      )
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+
+      // Không tạo lại order vì order trước đã được lưu.
+      navigate(
+        `/payment-result/${orderId}`,
+        {
+          replace: true,
+          state: {
+            order: createdOrder,
+            payment: {
+              provider:
+                form.payment_method,
+              status: 'failed',
+              amount:
+                createdOrder.total_amount,
+            },
+            paymentError:
+              backendMessage,
           },
         },
-      })
-    } catch (error) {
-      setError(getErrorMessage(error, 'Không tạo được đơn hàng.'))
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -1003,8 +1213,8 @@ function CheckoutPage() {
                     <div className='d-flex align-items-start gap-3'>
                       <span
                         className={`mt-1 d-flex align-items-center justify-content-center !rounded-circle border ${isSelected
-                            ? 'border-orange-500'
-                            : 'border-slate-300'
+                          ? 'border-orange-500'
+                          : 'border-slate-300'
                           }`}
                         style={{
                           width: 22,

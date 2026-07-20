@@ -203,7 +203,7 @@ function CartPage() {
                   <span>Chọn tất cả</span>
                 </label>
 
-                <span className='!rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
+                <span className='rounded-pill bg-orange-50 px-3 py-2 text-sm font-black text-orange-700'>
                   Đã chọn {selectedItemIds.length}/{items.length} sản phẩm
                 </span>
               </div>

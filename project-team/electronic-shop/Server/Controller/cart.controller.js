@@ -216,10 +216,34 @@ const clearCart = async (req, res) => {
   }
 };
 
+// const getCartQuery = (req) => {
+//   if (req.user_id) {
+//     return {
+//       user_id: req.user_id,
+//     }
+//   }
+
+//   const sessionId =
+//     req.body?.session_id ||
+//     req.query?.session_id
+
+//   if (
+//     !sessionId ||
+//     !/^guest_[a-zA-Z0-9_]+$/.test(sessionId)
+//   ) {
+//     return null
+//   }
+
+//   return {
+//     session_id: sessionId,
+//   }
+// }
+
 module.exports = {
   getCart,
   addItemToCart,
   updateCartItem,
   deleteCartItem,
   clearCart,
+  // getCartQuery,
 };

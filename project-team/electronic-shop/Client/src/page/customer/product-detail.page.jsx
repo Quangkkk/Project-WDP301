@@ -1022,7 +1022,7 @@ function ProductDetailPage() {
                           type='button'
                           key={currentVariantId}
                           onClick={() => handleSelectVariant(currentVariantId)}
-                          className={`!rounded-4 border px-4 py-3 text-start transition ${
+                          className={`rounded-4 border px-4 py-3 text-start transition ${
                             isSelected
                               ? 'border-orange-500 bg-orange-50 text-orange-700 shadow-sm'
                               : 'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50'

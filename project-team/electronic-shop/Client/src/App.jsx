@@ -47,186 +47,177 @@ function App() {
         }
       >
         <Routes>
-        <Route path='/' element={<HomePage />} />
-        <Route path='/login' element={<LoginPage />} />
-        <Route path='/register' element={<RegisterPage />} />
-        <Route path='/forgot-password' element={<ForgotPasswordPage />} />
-        <Route path='/reset-password/:token' element={<ResetPasswordPage />} />
-        <Route path='/products' element={<ProductListPage />} />
-        <Route path='/products/:id' element={<ProductDetailPage />} />
-        <Route path='/product' element={<Navigate to='/products' replace />} />
-        <Route
-          path='/cart'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route path='/' element={<HomePage />} />
+          <Route path='/login' element={<LoginPage />} />
+          <Route path='/register' element={<RegisterPage />} />
+          <Route path='/forgot-password' element={<ForgotPasswordPage />} />
+          <Route path='/reset-password/:token' element={<ResetPasswordPage />} />
+          <Route path='/products' element={<ProductListPage />} />
+          <Route path='/products/:id' element={<ProductDetailPage />} />
+          <Route path='/product' element={<Navigate to='/products' replace />} />
+          <Route
+            path='/cart' element={<CartPage />}
+          />
 
-        <Route
-          path='/checkout'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
+          <Route
+            path='/checkout'
+            element={
               <CheckoutPage />
-            </ProtectedRoute>
-          }
-        />
+            }
+          />
 
-        <Route
-          path='/payment-result/:orderId'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
+          <Route
+            path='/payment-result/:orderId'
+            element={
               <PaymentResultPage />
-            </ProtectedRoute>
-          }
-        />
+            }
+          />
 
-        <Route
-          path='/orders'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <OrderHistoryPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/orders'
+            element={
+              <ProtectedRoute allowedRoles={customerOnly}>
+                <OrderHistoryPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/orders/:orderId'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <OrderDetailPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/orders/:orderId'
+            element={
+              <ProtectedRoute allowedRoles={customerOnly}>
+                <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/wishlist'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <WishlistPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/wishlist'
+            element={
+              <ProtectedRoute allowedRoles={customerOnly}>
+                <WishlistPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/profile'
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/profile'
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/profile/change-password'
-          element={
-            <ProtectedRoute>
-              <ChangePasswordPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/profile/change-password'
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/support'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <SupportPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/support'
+            element={
+              <ProtectedRoute allowedRoles={customerOnly}>
+                <SupportPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/chat'
-          element={
-            <ProtectedRoute allowedRoles={customerOnly}>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/chat'
+            element={
+              <ProtectedRoute allowedRoles={customerOnly}>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin'
-          element={
-            <ProtectedRoute allowedRoles={backOfficeRoles}>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin'
+            element={
+              <ProtectedRoute allowedRoles={backOfficeRoles}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/products'
-          element={
-            <ProtectedRoute allowedRoles={productManagementRoles}>
-              <ProductManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/products'
+            element={
+              <ProtectedRoute allowedRoles={productManagementRoles}>
+                <ProductManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/categories'
-          element={
-            <ProtectedRoute allowedRoles={productManagementRoles}>
-              <CategoryManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/categories'
+            element={
+              <ProtectedRoute allowedRoles={productManagementRoles}>
+                <CategoryManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/brands'
-          element={
-            <ProtectedRoute allowedRoles={productManagementRoles}>
-              <BrandManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/brands'
+            element={
+              <ProtectedRoute allowedRoles={productManagementRoles}>
+                <BrandManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/coupons'
-          element={
-            <ProtectedRoute allowedRoles={productManagementRoles}>
-              <CouponManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/coupons'
+            element={
+              <ProtectedRoute allowedRoles={productManagementRoles}>
+                <CouponManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/orders'
-          element={
-            <ProtectedRoute allowedRoles={backOfficeRoles}>
-              <OrderManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/orders'
+            element={
+              <ProtectedRoute allowedRoles={backOfficeRoles}>
+                <OrderManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/users'
-          element={
-            <ProtectedRoute allowedRoles={adminOnly}>
-              <UserManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/users'
+            element={
+              <ProtectedRoute allowedRoles={adminOnly}>
+                <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/support'
-          element={
-            <ProtectedRoute allowedRoles={backOfficeRoles}>
-              <SupportManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/support'
+            element={
+              <ProtectedRoute allowedRoles={backOfficeRoles}>
+                <SupportManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path='/admin/chat'
-          element={
-            <ProtectedRoute allowedRoles={backOfficeRoles}>
-              <ChatManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path='/admin/chat'
+            element={
+              <ProtectedRoute allowedRoles={backOfficeRoles}>
+                <ChatManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path='*' element={<Navigate to='/' replace />} />
+          <Route path='*' element={<Navigate to='/' replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

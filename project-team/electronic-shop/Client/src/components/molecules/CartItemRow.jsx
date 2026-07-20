@@ -111,7 +111,7 @@ function QuantityControl({ value, max, disabled, onChange }) {
   }
 
   return (
-    <div className='d-inline-flex align-items-center overflow-hidden !rounded-pill border border-slate-200 bg-white shadow-sm'>
+    <div className='d-inline-flex align-items-center overflow-hidden rounded-pill border border-slate-200 bg-white shadow-sm'>
       <button
         type='button'
         onClick={() => updateValue(Number(value) - 1)}

@@ -21,8 +21,8 @@ const orderSchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      default: null,
     },
     order_code: {
       type: String,
@@ -117,6 +117,17 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
+    },
+    receiver_email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    guest_access_token_hash: {
+      type: String,
+      default: null,
+      select: false,
     },
   },
   {
