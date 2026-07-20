@@ -20,9 +20,11 @@ export const getReviews = async (params = {}) => {
     params: query,
   })
 
-  // Product Detail hiện tại sử dụng pickArray(response),
-  // vì vậy trả trực tiếp mảng reviews.
-  return response.data?.reviews || []
+  return response.data || {
+    reviews: [],
+    pagination: { total: 0, page: 1, limit: 10, pages: 0 },
+    stats: { average_rating: 0, total_review: 0 },
+  }
 }
 
 export const createReview = async (payload) => {

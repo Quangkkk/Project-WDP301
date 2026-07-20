@@ -13,7 +13,10 @@ import PriceText from '../../components/atoms/PriceText'
 
 import { getErrorMessage } from '../../services/api'
 import { getPaymentByOrder } from '../../services/payment.service'
-import { getId } from '../../utils/format'
+import {
+  formatOrderCode,
+  getId,
+} from '../../utils/format'
 
 function getPaymentLabel(provider) {
   const map = {
@@ -54,11 +57,6 @@ function getStatusClass(status) {
   }
 
   return 'bg-orange-50 text-orange-700'
-}
-
-function getOrderCode(order, orderId) {
-  const id = getId(order) || orderId || ''
-  return id ? `#${id.slice(-8).toUpperCase()}` : '-'
 }
 
 function getOrderAmount(order, payment) {
@@ -166,7 +164,7 @@ function PaymentResultPage() {
                     <div className='mb-4 d-flex flex-wrap align-items-start justify-content-between gap-3'>
                       <div>
                         <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
-                          Payment
+                          Thanh toán
                         </p>
 
                         <h1 className='mb-0 text-3xl font-black text-slate-950'>
@@ -189,7 +187,7 @@ function PaymentResultPage() {
                           </p>
 
                           <p className='mb-0 font-black text-slate-950'>
-                            {getOrderCode(order, orderId)}
+                            {formatOrderCode(order || orderId)}
                           </p>
                         </Col>
 

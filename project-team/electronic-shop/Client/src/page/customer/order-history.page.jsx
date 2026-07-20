@@ -14,7 +14,12 @@ import PriceText from '../../components/atoms/PriceText'
 import { getErrorMessage } from '../../services/api'
 import { cancelOrder, getOrders } from '../../services/order.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
-import { formatDate, getId, pickArray } from '../../utils/format'
+import {
+  formatDate,
+  formatOrderCode,
+  getId,
+  pickArray,
+} from '../../utils/format'
 
 const orderTabs = [
   { key: 'all', label: 'Tất cả' },
@@ -62,7 +67,7 @@ function getStatusClass(status) {
 function StatusPill({ children, status }) {
   return (
     <span
-      className={`d-inline-flex align-items-center justify-content-center !rounded-pill px-3 py-2 text-xs font-black ${getStatusClass(status)}`}
+      className={`d-inline-flex align-items-center justify-content-center rounded-pill px-3 py-2 text-xs font-black ${getStatusClass(status)}`}
       style={{
         minWidth: 120,
         whiteSpace: 'nowrap',
@@ -71,11 +76,6 @@ function StatusPill({ children, status }) {
       {children}
     </span>
   )
-}
-
-function getOrderCode(order) {
-  const id = getId(order)
-  return id ? `#${id.slice(-6).toUpperCase()}` : '-'
 }
 
 function getOrderItemsSummary(order) {
@@ -251,7 +251,7 @@ function OrderHistoryPage() {
                           key={tab.key}
                           type='button'
                           onClick={() => setActiveTab(tab.key)}
-                          className={`d-inline-flex align-items-center justify-content-center gap-2 !rounded-4 border px-4 py-3 text-sm font-black shadow-sm transition ${isActive
+                          className={`d-inline-flex align-items-center justify-content-center gap-2 rounded-4 border px-4 py-3 text-sm font-black shadow-sm transition ${isActive
                               ? 'border-orange-500 bg-orange-500 text-white'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                             }`}
@@ -263,7 +263,7 @@ function OrderHistoryPage() {
                           {tab.label}
 
                           <span
-                            className={`d-inline-flex align-items-center justify-content-center !rounded-3 px-2 py-1 text-xs ${isActive
+                            className={`d-inline-flex align-items-center justify-content-center rounded-3 px-2 py-1 text-xs ${isActive
                                 ? 'bg-white text-orange-600'
                                 : 'bg-slate-100 text-slate-500'
                               }`}
@@ -320,7 +320,7 @@ function OrderHistoryPage() {
                         >
                           <div className='px-4 py-4 text-center'>
                             <span className='font-black text-orange-600'>
-                              {getOrderCode(order)}
+                              {formatOrderCode(order)}
                             </span>
                           </div>
 
@@ -401,7 +401,7 @@ function OrderHistoryPage() {
               <p className='mb-0 text-slate-500'>
                 Bạn có chắc chắn muốn hủy đơn{' '}
                 <span className='font-black text-orange-600'>
-                  {cancelTarget ? getOrderCode(cancelTarget) : ''}
+                  {cancelTarget ? formatOrderCode(cancelTarget) : ''}
                 </span>{' '}
                 không? Sau khi hủy, sẽ không thể hoàn tác.
               </p>

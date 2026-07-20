@@ -11,7 +11,8 @@ import { getOrders } from '../../services/order.service'
 import { getProducts } from '../../services/product.service'
 import { getTickets } from '../../services/support.service'
 import { getUsers } from '../../services/user.service'
-import { pickArray } from '../../utils/format'
+import { getCurrentUser, getUserRole } from '../../utils/authStorage'
+import { formatOrderCode, pickArray } from '../../utils/format'
 
 // Bieu do doanh thu bang SVG phu hop React 19 va an toan, khong loi peer dependencies
 function SVGMonthlyChart({ data }) {
@@ -93,6 +94,8 @@ function SVGMonthlyChart({ data }) {
 }
 
 function AdminDashboardPage() {
+  const currentRole = getUserRole(getCurrentUser())
+  const isAdmin = currentRole === 'ADMIN'
   const [data, setData] = useState({ products: [], orders: [], users: [], tickets: [] })
   const [isLoading, setIsLoading] = useState(true)
 
@@ -102,7 +105,7 @@ function AdminDashboardPage() {
       const [products, orders, users, tickets] = await Promise.allSettled([
         getProducts(),
         getOrders(),
-        getUsers(),
+        isAdmin ? getUsers() : Promise.resolve([]),
         getTickets(),
       ])
       if (!mounted) return
@@ -118,21 +121,25 @@ function AdminDashboardPage() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [isAdmin])
 
   const orders = pickArray(data.orders, [])
 
-  // 1. Tinh tong doanh so thuc te (bo don hang da bi huy)
+  const isSuccessfulOrder = (order) =>
+    String(order?.status || '').toLowerCase() === 'completed' &&
+    String(order?.payment_status || '').toLowerCase() === 'paid'
+
+  // Chỉ tính doanh thu của đơn đã hoàn thành và đã thanh toán.
   const totalRevenue = useMemo(() => {
     return orders.reduce((sum, order) => {
-      return String(order.status).toLowerCase() === 'cancelled' ? sum : sum + Number(order.total_amount || 0)
+      return isSuccessfulOrder(order) ? sum + Number(order.total_amount || 0) : sum
     }, 0)
   }, [orders])
 
-  // 2. Dem so san pham da ban duoc (tong so luong items trong cac don hang)
+  // Chỉ tính số lượng đã bán từ đơn hoàn thành và đã thanh toán.
   const totalItemsSold = useMemo(() => {
     return orders.reduce((sum, order) => {
-      if (String(order.status).toLowerCase() === 'cancelled') return sum
+      if (!isSuccessfulOrder(order)) return sum
       const orderItems = order.items || []
       const itemsCount = orderItems.reduce((acc, item) => acc + Number(item.quantity || 0), 0)
       return sum + itemsCount
@@ -148,7 +155,7 @@ function AdminDashboardPage() {
 
   // 4. Du lieu bieu do doanh thu 6 thang gan nhat
   const monthlyRevenueData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
     const result = []
 
     const now = new Date()
@@ -171,9 +178,9 @@ function AdminDashboardPage() {
       })
     }
 
-    // Cong don doanh thu cho tung don hang
+    // Cộng doanh thu theo tháng cho các đơn đã hoàn thành và thanh toán.
     orders.forEach((order) => {
-      if (String(order.status).toLowerCase() === 'cancelled') return
+      if (!isSuccessfulOrder(order)) return
       const date = new Date(order.created_at || order.createdAt)
       const oMonth = date.getMonth()
       const oYear = date.getFullYear()
@@ -188,23 +195,25 @@ function AdminDashboardPage() {
   }, [orders])
 
   return (
-    <DashboardLayout title='Dashboard Overview' description='Tổng quan nhanh về sản phẩm, đơn hàng, doanh thu và support ticket.'>
+    <DashboardLayout title='Tổng quan hệ thống' description='Tổng quan nhanh về sản phẩm, đơn hàng, doanh thu và yêu cầu hỗ trợ.'>
       {isLoading ? (
         <LoadingText />
       ) : (
         <>
           <Row className='g-4 mb-4'>
-            <Col md={6} xl={3}>
-              <StatCard icon='💻' label='Products' value={data.products.length} helper='Total catalog items' />
+            <Col md={6} xl={isAdmin ? 3 : 4}>
+              <StatCard icon='💻' label='Sản phẩm' value={data.products.length} helper='Tổng sản phẩm trong danh mục' />
             </Col>
-            <Col md={6} xl={3}>
-              <StatCard icon='📦' label='Pending Orders' value={pendingOrdersCount} helper='Need processing' />
+            <Col md={6} xl={isAdmin ? 3 : 4}>
+              <StatCard icon='📦' label='Đơn chờ xử lý' value={pendingOrdersCount} helper='Cần được xử lý' />
             </Col>
-            <Col md={6} xl={3}>
-              <StatCard icon='👤' label='Users' value={data.users.length} helper='Registered accounts' />
-            </Col>
-            <Col md={6} xl={3}>
-              <StatCard icon='🛍️' label='Items Sold' value={totalItemsSold} helper='Total units sold' />
+            {isAdmin && (
+              <Col md={6} xl={3}>
+                <StatCard icon='👤' label='Người dùng' value={data.users.length} helper='Tài khoản đã đăng ký' />
+              </Col>
+            )}
+            <Col md={6} xl={isAdmin ? 3 : 4}>
+              <StatCard icon='🛍️' label='Sản phẩm đã bán' value={totalItemsSold} helper='Tổng số lượng đã bán' />
             </Col>
           </Row>
 
@@ -269,7 +278,7 @@ function AdminDashboardPage() {
               {orders.slice(0, 5).map((order) => (
                 <div key={order._id || order.id} className='d-flex justify-content-between align-items-center !rounded-4 bg-slate-50 p-3'>
                   <span className='font-bold text-slate-700'>
-                    #{String(order._id || order.id).slice(-6).toUpperCase()} - {order.user_id?.name || order.receiver_name}
+                    {formatOrderCode(order)} - {order.user_id?.name || order.receiver_name}
                   </span>
                   <div className='d-flex align-items-center gap-2'>
                     <PriceText value={order.total_amount} className='font-black' />

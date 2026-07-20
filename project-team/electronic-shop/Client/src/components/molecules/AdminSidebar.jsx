@@ -20,8 +20,8 @@ const links = [
   { path: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent, allowedRoles: ['ADMIN', 'MANAGER'] },
   { path: '/admin/orders', label: 'Đơn hàng', icon: PackageSearch, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/admin/users', label: 'Người dùng', icon: Users, allowedRoles: ['ADMIN'] },
-  { path: '/admin/support', label: 'Hỗ trợ Tickets', icon: Headset, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/admin/chat', label: 'Live Chat', icon: MessageSquareText, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/support', label: 'Yêu cầu hỗ trợ', icon: Headset, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/chat', label: 'Trò chuyện trực tuyến', icon: MessageSquareText, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
 ]
 
 function AdminSidebar() {
@@ -33,7 +33,7 @@ function AdminSidebar() {
   return (
     <aside className='sticky top-24 w-full !rounded-xl bg-white p-4 shadow-sm border border-slate-200'>
       <p className='px-3 pt-2 pb-4 text-xs font-black uppercase tracking-[0.2em] text-slate-400'>
-        Backoffice
+        Khu quản trị
       </p>
       <nav className='flex flex-col gap-1'>
         {visibleLinks.map((link) => {

@@ -25,10 +25,17 @@ const normalizeRole = (role) =>
     .trim()
     .toUpperCase();
 
-const getShortOrderCode = (orderId) => {
-  return `DH${String(orderId)
-    .slice(-8)
-    .toUpperCase()}`;
+const getPublicOrderCode = (order) => {
+  const storedCode = String(order?.order_code || "")
+    .trim()
+    .replace(/^#/, "")
+    .toUpperCase();
+
+  if (storedCode) {
+    return storedCode;
+  }
+
+  return `TS-${String(order?._id || order).slice(-8).toUpperCase()}`;
 };
 
 const getVietnamDatePrefix = () => {
@@ -149,6 +156,38 @@ const markZaloPayAsPaid = async (
   payment,
   zaloData
 ) => {
+  const order = await Order.findOneAndUpdate(
+    {
+      _id: payment.order_id,
+      status: { $ne: "cancelled" },
+    },
+    {
+      $set: {
+        payment_method: "zalopay",
+        payment_status: "paid",
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!order) {
+    payment.raw_response = mergeRawResponse(
+      payment.raw_response,
+      "latest_status",
+      zaloData
+    );
+    payment.status = "failed";
+    payment.markModified("raw_response");
+    await payment.save();
+
+    throw new Error(
+      "Cancelled order cannot be marked as paid"
+    );
+  }
+
   payment.status = "paid";
 
   payment.paid_at =
@@ -175,14 +214,6 @@ const markZaloPayAsPaid = async (
   );
 
   await payment.save();
-
-  await Order.findByIdAndUpdate(
-    payment.order_id,
-    {
-      payment_method: "zalopay",
-      payment_status: "paid",
-    }
-  );
 
   return payment;
 };
@@ -348,12 +379,22 @@ const createBankTransferPayment = async (
     currentUser
   );
 
+  if (order.status === "cancelled") {
+    throw new Error(
+      "Cancelled order cannot create a payment"
+    );
+  }
+
+  if (order.payment_status === "paid") {
+    throw new Error("Order is already paid");
+  }
+
   const amount = toSafeAmount(
     order.total_amount
   );
 
   const transferContent =
-    getShortOrderCode(order._id);
+    getPublicOrderCode(order);
 
   const qrUrl = buildVietQrUrl({
     amount,
@@ -443,6 +484,16 @@ const createZaloPayPayment = async (
     order,
     currentUser
   );
+
+  if (order.status === "cancelled") {
+    throw new Error(
+      "Cancelled order cannot create a payment"
+    );
+  }
+
+  if (order.payment_status === "paid") {
+    throw new Error("Order is already paid");
+  }
 
   const appId =
     process.env.ZALOPAY_APP_ID;
@@ -543,9 +594,7 @@ const createZaloPayPayment = async (
     {
       itemid: String(order._id),
       itemname:
-        `Order ${getShortOrderCode(
-          order._id
-        )}`,
+        `Order ${getPublicOrderCode(order)}`,
       itemprice: amount,
       itemquantity: 1,
     },
@@ -563,7 +612,7 @@ const createZaloPayPayment = async (
     embed_data: embedData,
     description:
       `Thanh toan don hang ` +
-      getShortOrderCode(order._id),
+      getPublicOrderCode(order),
     bank_code: "",
   };
 
@@ -801,6 +850,10 @@ const confirmBankTransferPayment = async (
     !PRIVILEGED_ROLES.includes(role)
   ) {
     throw new Error("Access denied");
+  }
+
+  if (order.status === "cancelled") {
+    throw new Error("Cancelled order cannot be marked as paid");
   }
 
   const payment =

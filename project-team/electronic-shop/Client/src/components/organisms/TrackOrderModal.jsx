@@ -8,7 +8,10 @@ import Alert from '../atoms/Alert'
 
 import { trackOrder } from '../../services/order.service'
 import { getErrorMessage } from '../../services/api'
-import { formatDate } from '../../utils/format'
+import {
+  formatDate,
+  formatOrderCode,
+} from '../../utils/format'
 
 function TrackOrderModal({ show, onHide }) {
   const [orderCode, setOrderCode] = useState('')
@@ -53,8 +56,14 @@ function TrackOrderModal({ show, onHide }) {
         contact: contact.trim(),
       })
 
-      if (result && result.data) {
-        setOrderResult(result.data)
+      const trackedOrder =
+        result?.data?.order ||
+        result?.order ||
+        result?.data ||
+        null
+
+      if (trackedOrder) {
+        setOrderResult(trackedOrder)
       } else {
         setError('Không tìm thấy đơn hàng nào khớp với thông tin đã nhập.')
       }
@@ -107,7 +116,7 @@ function TrackOrderModal({ show, onHide }) {
                 id='orderCode'
                 value={orderCode}
                 onChange={(e) => setOrderCode(e.target.value)}
-                placeholder='VD: 64C8A2F...'
+                placeholder='VD: TS-835F3AD4 hoặc 835F3AD4'
                 className='mb-4'
               />
               <TextField
@@ -130,7 +139,7 @@ function TrackOrderModal({ show, onHide }) {
               </div>
               <div className='mb-3 flex justify-between'>
                 <span className='text-sm text-slate-500'>Mã đơn hàng:</span>
-                <span className='font-bold text-slate-900'>#{orderResult._id?.slice(-6).toUpperCase()}</span>
+                <span className='font-bold text-slate-900'>{formatOrderCode(orderResult)}</span>
               </div>
               <div className='mb-3 flex justify-between'>
                 <span className='text-sm text-slate-500'>Ngày đặt:</span>

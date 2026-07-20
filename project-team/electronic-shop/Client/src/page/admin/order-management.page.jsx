@@ -14,23 +14,15 @@ import StatusBadge from '../../components/atoms/StatusBadge'
 import { getErrorMessage } from '../../services/api'
 import { getOrders, updateOrder, cancelOrder } from '../../services/order.service'
 import { confirmBankTransferPayment } from '../../services/payment.service'
-import { formatDate, getId, pickArray } from '../../utils/format'
+import { formatDate, formatOrderCode, getId, pickArray } from '../../utils/format'
 
 const orderStatusOptions = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'shipping', label: 'Shipping' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-]
-
-const paymentStatusOptions = [
-  { value: 'unpaid', label: 'Unpaid' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'refunded', label: 'Refunded' },
+  { value: 'pending', label: 'Chờ xác nhận' },
+  { value: 'confirmed', label: 'Đã xác nhận' },
+  { value: 'processing', label: 'Đang xử lý' },
+  { value: 'shipping', label: 'Đang giao' },
+  { value: 'completed', label: 'Hoàn thành' },
+  { value: 'cancelled', label: 'Đã hủy' },
 ]
 
 function getPaymentMethodLabel(method) {
@@ -46,7 +38,6 @@ function getPaymentMethodLabel(method) {
 function OrderManagementPage() {
   const [orders, setOrders] = useState([])
   const [statusDraft, setStatusDraft] = useState({})
-  const [paymentDraft, setPaymentDraft] = useState({})
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loadingId, setLoadingId] = useState('')
@@ -67,11 +58,6 @@ function OrderManagementPage() {
       setStatusDraft(
         Object.fromEntries(
           data.map((order) => [getId(order), order.status || 'pending']),
-        ),
-      )
-      setPaymentDraft(
-        Object.fromEntries(
-          data.map((order) => [getId(order), order.payment_status || 'unpaid']),
         ),
       )
     } catch (error) {
@@ -98,7 +84,6 @@ function OrderManagementPage() {
 
       await updateOrder(orderId, {
         status: statusDraft[orderId],
-        payment_status: paymentDraft[orderId],
       })
 
       setMessage('Đã cập nhật trạng thái đơn hàng.')
@@ -154,8 +139,8 @@ function OrderManagementPage() {
 
   return (
     <DashboardLayout
-      title='Order Management'
-      description='Staff/Manager xử lý order, cập nhật trạng thái đơn hàng và thanh toán.'
+      title='Quản lý đơn hàng'
+      description='Nhân viên và quản lý xử lý đơn hàng, cập nhật trạng thái và thanh toán.'
     >
       <Alert type='danger'>{error}</Alert>
       <Alert type='success'>{message}</Alert>
@@ -165,12 +150,12 @@ function OrderManagementPage() {
           <Table responsive hover className='mb-0 align-middle'>
             <thead>
               <tr>
-                <th className='p-3'>Order</th>
-                <th>Customer</th>
-                <th>Total</th>
-                <th>Payment</th>
-                <th>Status</th>
-                <th style={{ minWidth: 320 }}>Update</th>
+                <th className='p-3'>Đơn hàng</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Thanh toán</th>
+                <th>Trạng thái</th>
+                <th style={{ minWidth: 320 }}>Cập nhật</th>
               </tr>
             </thead>
 
@@ -183,7 +168,7 @@ function OrderManagementPage() {
                 return (
                   <tr key={id}>
                     <td className='p-3'>
-                      <b>#{id.slice(-6).toUpperCase()}</b>
+                      <b>{formatOrderCode(order)}</b>
                       <br />
                       <span className='text-sm text-slate-500'>
                         {formatDate(order.created_at)}
@@ -234,17 +219,6 @@ function OrderManagementPage() {
                               }))
                             }
                           />
-
-                          <SelectField
-                            value={paymentDraft[id] || order.payment_status}
-                            options={paymentStatusOptions}
-                            onChange={(event) =>
-                              setPaymentDraft((prev) => ({
-                                ...prev,
-                                [id]: event.target.value,
-                              }))
-                            }
-                          />
                         </div>
 
                         <div className='d-flex flex-wrap gap-2'>
@@ -253,7 +227,7 @@ function OrderManagementPage() {
                             onClick={() => handleSave(id)}
                             isLoading={loadingId === id}
                           >
-                            Save
+                            Lưu
                           </Button>
 
                           {isBankTransfer && !isPaid && (

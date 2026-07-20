@@ -97,7 +97,10 @@ const createReview = async ({ user_id, order_id, product_id, rating, comment, im
 // Lay danh sach reviews cong khai cua mot san pham kem phan trang va rating trung binh
 const getProductReviews = async (productId, { page = 1, limit = 10 }) => {
   const pageNum = Math.max(Number(page || 1), 1);
-  const limitNum = Math.max(Number(limit || 10), 1);
+  const limitNum = Math.min(
+    Math.max(Number(limit || 10), 1),
+    50
+  );
   const skip = (pageNum - 1) * limitNum;
 
   // Lay reviews public

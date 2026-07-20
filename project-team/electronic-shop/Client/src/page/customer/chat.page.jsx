@@ -472,7 +472,7 @@ function ChatPage() {
         <Container>
           <div className='mb-4'>
             <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
-              Chat
+              Trò chuyện
             </p>
 
             <h1 className='mb-0 text-3xl font-black text-slate-950'>

@@ -96,27 +96,5 @@
     "updated_at": {
       "$date": "2026-06-30T00:00:00.000Z"
     }
-  },
-  {
-    "_id": {
-      "$oid": "665000000000000000001005"
-    },
-    "user_id": {
-      "$oid": "665000000000000000000105"
-    },
-    "order_id": null,
-    "product_id": {
-      "$oid": "665000000000000000000513"
-    },
-    "rating": 5,
-    "comment": "Chuột cầm chắc tay, cuộn rất êm, phù hợp làm việc nhiều giờ.",
-    "images": [],
-    "status": "visible",
-    "created_at": {
-      "$date": "2026-06-30T10:00:00.000Z"
-    },
-    "updated_at": {
-      "$date": "2026-06-30T00:00:00.000Z"
-    }
   }
 ]

@@ -147,7 +147,7 @@ function ChatManagementPage() {
   }
 
   return (
-    <DashboardLayout title='Customer Live Chat' description='Staff trực hỗ trợ, giải đáp thắc mắc của khách hàng theo thời gian thực.'>
+    <DashboardLayout title='Trò chuyện trực tuyến với khách hàng' description='Staff trực hỗ trợ, giải đáp thắc mắc của khách hàng theo thời gian thực.'>
       <Alert type='danger'>{error}</Alert>
 
       <Row className='g-4' style={{ height: 'calc(100vh - 280px)', minHeight: 480 }}>
@@ -156,7 +156,7 @@ function ChatManagementPage() {
           <Card className='card-surface h-100 overflow-hidden' style={{ display: 'flex', flexDirection: 'column' }}>
             <Card.Header className='bg-white py-3 border-bottom border-slate-100 flex justify-between items-center'>
               <h3 className='m-0 text-base font-black text-slate-900'>Danh sách chat</h3>
-              <Button size='sm' variant='outline' onClick={loadConversations}>F5</Button>
+              <Button size='sm' variant='outline' onClick={loadConversations}>Làm mới</Button>
             </Card.Header>
 
             <div className='flex-1 overflow-y-auto p-2 d-flex flex-column gap-1 bg-slate-50' style={{ minHeight: 0 }}>
@@ -191,7 +191,7 @@ function ChatManagementPage() {
                         <span className={`text-[10px] px-2 py-0.5 !rounded-pill font-bold ${
                           conv.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'
                         }`}>
-                          {conv.status === 'open' ? 'Open' : 'Closed'}
+                          {conv.status === 'open' ? 'Đang mở' : 'Đã đóng'}
                         </span>
                       </div>
                     </div>
@@ -219,7 +219,7 @@ function ChatManagementPage() {
                       <h4 className='m-0 text-sm font-black text-slate-900'>
                         {selectedConv.customer_id?.name || 'Khách hàng'}
                       </h4>
-                      <p className='m-0 text-[10px] text-green-600 font-bold'>Online (Chat Room active)</p>
+                      <p className='m-0 text-[10px] text-green-600 font-bold'>Trực tuyến (phòng trò chuyện đang hoạt động)</p>
                     </div>
                   </div>
                 </Card.Header>

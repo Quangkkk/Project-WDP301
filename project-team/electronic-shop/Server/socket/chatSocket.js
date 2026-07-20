@@ -45,14 +45,14 @@ const initChatSocket = (server, allowedOrigins = []) => {
       socket.role = decoded.role;
       return next();
     } catch (error) {
-      return next(new Error("Authentication error: Invalid token"));
+      return next(new Error("Xác thực thất bại: token không hợp lệ"));
     }
   });
 
   io.on("connection", (socket) => {
     const joinConversation = async (conversationId, callback) => {
       try {
-        if (!conversationId) throw new Error("Conversation id is required");
+        if (!conversationId) throw new Error("Thiếu mã cuộc trò chuyện");
 
         await chatService.assertConversationAccess(
           conversationId,

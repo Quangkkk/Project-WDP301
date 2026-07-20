@@ -341,7 +341,6 @@ function ProfilePage() {
 
       const payload = {
         name: form.name.trim(),
-        email: form.email.trim(),
         phone: form.phone.trim(),
       }
 
@@ -615,8 +614,8 @@ function ProfilePage() {
                             name='email'
                             type='email'
                             value={form.email}
-                            disabled={!isEditing || isSaving}
-                            onChange={handleChange}
+                            disabled
+                            readOnly
                           />
                         </Col>
 

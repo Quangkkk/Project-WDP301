@@ -89,7 +89,7 @@ function ChatWidget() {
         }
       } catch (err) {
         if (active) {
-          setError(getErrorMessage(err, 'Khong the ket noi chat ho tro.'))
+          setError(getErrorMessage(err, 'Không thể kết nối trò chuyện hỗ trợ.'))
         }
       } finally {
         if (active) setIsLoading(false)
@@ -129,7 +129,7 @@ function ChatWidget() {
           onClick={() => setIsOpen(true)}
           className='flex h-14 w-14 items-center justify-center !rounded-full bg-blue-600 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-blue-700'
           style={{ border: 'none', cursor: 'pointer' }}
-          aria-label='Chat ho tro'
+          aria-label='Trò chuyện hỗ trợ'
         >
           <span className='text-2xl'>💬</span>
         </button>
@@ -146,8 +146,8 @@ function ChatWidget() {
             <div className='flex items-center gap-2'>
               <span className='text-lg'>🎧</span>
               <div>
-                <h4 className='m-0 text-sm font-black'>Chat ho tro Truc tuyen</h4>
-                <p className='m-0 text-[10px] opacity-75'>Nhan vien ho tro se phan hoi ban ngay</p>
+                <h4 className='m-0 text-sm font-black'>Trò chuyện hỗ trợ trực tuyến</h4>
+                <p className='m-0 text-[10px] opacity-75'>Nhân viên hỗ trợ sẽ phản hồi bạn sớm nhất.</p>
               </div>
             </div>
             <button
@@ -163,10 +163,10 @@ function ChatWidget() {
           <div className='flex-1 p-3 overflow-y-auto bg-slate-50 d-flex flex-column gap-2' style={{ minHeight: 0 }}>
             {error && <div className='alert alert-danger p-2 text-xs'>{error}</div>}
             {isLoading ? (
-              <div className='text-center py-5 text-sm text-slate-400'>Dang ket noi...</div>
+              <div className='text-center py-5 text-sm text-slate-400'>Đang kết nối...</div>
             ) : messages.length === 0 ? (
               <div className='text-center py-5 text-xs text-slate-400'>
-                Hay gui tin nhan de bat dau cuoc tro chuyen voi nhan vien ban hang.
+                Hãy gửi tin nhắn để bắt đầu trò chuyện với nhân viên bán hàng.
               </div>
             ) : (
               messages.map((msg, index) => {
@@ -182,7 +182,7 @@ function ChatWidget() {
                       {msg.message}
                     </div>
                     <span className='text-[9px] text-slate-400 mt-1 px-1'>
-                      {msg.sender_id?.name || (isMe ? 'Ban' : 'Nhan vien')}
+                      {msg.sender_id?.name || (isMe ? 'Bạn' : 'Nhân viên')}
                     </span>
                   </div>
                 )
@@ -192,7 +192,7 @@ function ChatWidget() {
             {isStaffTyping && (
               <div className='flex items-start'>
                 <div className='bg-slate-200 text-slate-600 !rounded-4 px-3 py-2 text-xs italic !rounded-bl-none'>
-                  Nhan vien dang go phim...
+                  Nhân viên đang nhập...
                 </div>
               </div>
             )}
@@ -206,7 +206,7 @@ function ChatWidget() {
               type='text'
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder='Nhap tin nhan...'
+              placeholder='Nhập tin nhắn...'
               className='flex-1 border border-slate-200 !rounded-pill px-3 py-2 text-sm shadow-none focus:outline-none focus:border-blue-600'
               disabled={isLoading}
             />

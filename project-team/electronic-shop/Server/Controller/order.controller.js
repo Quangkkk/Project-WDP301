@@ -152,7 +152,13 @@ const updateOrderById = async (req, res) => {
     let statusCode = 500;
     if (error.message === "Order not found") {
       statusCode = 404;
-    } else if (error.message.includes("Invalid") || error.message === "No data to update") {
+    } else if (
+      error.message.includes("Invalid") ||
+      error.message === "No data to update" ||
+      error.message.includes("Use the cancel order endpoint") ||
+      error.message.includes("cannot be changed") ||
+      error.message.includes("must be paid before completing")
+    ) {
       statusCode = 400;
     }
     return res.status(statusCode).json({
@@ -195,7 +201,12 @@ const cancelOrder = async (req, res) => {
       statusCode = 404;
     } else if (error.message.includes("Access denied")) {
       statusCode = 403;
-    } else if (error.message === "This order cannot be cancelled" || error.message.includes("required")) {
+    } else if (
+      error.message === "This order cannot be cancelled" ||
+      error.message.includes("required") ||
+      error.message.includes("Paid order cannot be cancelled") ||
+      error.message.includes("already changed or cancelled")
+    ) {
       statusCode = 400;
     }
     return res.status(statusCode).json({

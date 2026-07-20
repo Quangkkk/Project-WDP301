@@ -24,6 +24,13 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    order_code: {
+      type: String,
+      default: null,
+      trim: true,
+      uppercase: true,
+      match: /^TS-[A-F0-9]{8}$/,
+    },
     shipping_method_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ShippingMethod",
@@ -118,6 +125,7 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+orderSchema.index({ order_code: 1 }, { unique: true, sparse: true });
 orderSchema.index({ user_id: 1 });
 orderSchema.index({ shipping_method_id: 1 });
 orderSchema.index({ status: 1 });

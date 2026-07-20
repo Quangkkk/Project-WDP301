@@ -1,17 +1,16 @@
 const mongoose = require("mongoose");
-const paymentService = require(
-  "../services/payment.service"
-);
+const paymentService = require("../services/payment.service");
 
-const isValidObjectId = (id) =>
-  mongoose.Types.ObjectId.isValid(
-    String(id || "")
-  );
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(String(id || ""));
+};
 
-const getCurrentUser = (req) => ({
-  user_id: req.user_id,
-  role: req.role,
-});
+const getCurrentUser = (req) => {
+  return {
+    user_id: req.user_id,
+    role: req.role,
+  };
+};
 
 const getClientBaseUrl = () => {
   return (
@@ -22,37 +21,35 @@ const getClientBaseUrl = () => {
 };
 
 const getErrorStatus = (error) => {
-  if (error.message === "Unauthorized") {
+  const message = String(error?.message || "");
+  const normalizedMessage = message.toLowerCase();
+
+  if (message === "Unauthorized") {
     return 401;
   }
 
-  if (error.message === "Access denied") {
+  if (message === "Access denied") {
     return 403;
   }
 
   if (
-    error.message === "Order not found" ||
-    error.message ===
-      "Payment transaction not found" ||
-    error.message ===
+    message === "Order not found" ||
+    message === "Payment transaction not found" ||
+    message ===
       "Bank transfer payment transaction not found"
   ) {
     return 404;
   }
 
   if (
-    error.message.includes(
-      "Missing ZALOPAY"
-    ) ||
-    error.message.includes(
-      "must be greater than 0"
-    ) ||
-    error.message.includes(
-      "does not match"
-    ) ||
-    error.message.includes("required") ||
-    error.message === "Invalid MAC" ||
-    error.message === "Invalid app_id"
+    normalizedMessage.includes("required") ||
+    normalizedMessage.includes("invalid") ||
+    normalizedMessage.includes("missing zalopay") ||
+    normalizedMessage.includes("must be greater than 0") ||
+    normalizedMessage.includes("does not match") ||
+    normalizedMessage.includes("cancelled") ||
+    normalizedMessage.includes("already paid") ||
+    normalizedMessage.includes("cannot be paid")
   ) {
     return 400;
   }
@@ -60,19 +57,19 @@ const getErrorStatus = (error) => {
   return 500;
 };
 
-// Lay payment cua don hang
-const getPaymentByOrder = async (
-  req,
-  res
-) => {
+// ============================================================
+// GET PAYMENT BY ORDER
+// GET /payment/order/:orderId
+// ============================================================
+
+const getPaymentByOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
     if (!isValidObjectId(orderId)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Valid order_id is required",
+        message: "Valid order_id is required",
       });
     }
 
@@ -99,21 +96,22 @@ const getPaymentByOrder = async (
   }
 };
 
-// Tao VietQR
+// ============================================================
+// CREATE BANK TRANSFER / VIETQR PAYMENT
+// POST /payment/bank-transfer
+// ============================================================
+
 const createBankTransferPayment = async (
   req,
   res
 ) => {
   try {
-    const {
-      order_id: orderId,
-    } = req.body;
+    const { order_id: orderId } = req.body;
 
     if (!isValidObjectId(orderId)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Valid order_id is required",
+        message: "Valid order_id is required",
       });
     }
 
@@ -142,21 +140,22 @@ const createBankTransferPayment = async (
   }
 };
 
-// Tao ZaloPay payment
+// ============================================================
+// CREATE ZALOPAY PAYMENT
+// POST /payment/zalopay/create
+// ============================================================
+
 const createZaloPayPayment = async (
   req,
   res
 ) => {
   try {
-    const {
-      order_id: orderId,
-    } = req.body;
+    const { order_id: orderId } = req.body;
 
     if (!isValidObjectId(orderId)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Valid order_id is required",
+        message: "Valid order_id is required",
       });
     }
 
@@ -172,7 +171,7 @@ const createZaloPayPayment = async (
       );
 
     return res.status(200).json({
-      success: result.success,
+      success: Boolean(result.success),
       message: result.success
         ? "Create ZaloPay payment successfully"
         : "ZaloPay payment initialization failed",
@@ -191,13 +190,28 @@ const createZaloPayPayment = async (
   }
 };
 
-// Callback public tu ZaloPay
+// ============================================================
+// ZALOPAY CALLBACK
+// POST /payment/zalopay/callback
+//
+// Route này phải public để ZaloPay có thể gọi vào.
+// Service chịu trách nhiệm kiểm tra MAC, app_id và amount.
+// ============================================================
+
 const handleZaloPayCallback = async (
   req,
   res
 ) => {
   try {
     const { data, mac } = req.body;
+
+    if (!data || !mac) {
+      return res.status(400).json({
+        return_code: 0,
+        return_message:
+          "data and mac are required",
+      });
+    }
 
     const result =
       await paymentService.handleZaloPayCallback(
@@ -218,12 +232,22 @@ const handleZaloPayCallback = async (
       .status(getErrorStatus(error))
       .json({
         return_code: 0,
-        return_message: error.message,
+        return_message:
+          error.message ||
+          "Failed to process ZaloPay callback",
       });
   }
 };
 
-// Admin/Manager/Staff confirm chuyen khoan
+// ============================================================
+// CONFIRM BANK TRANSFER
+// PATCH /payment/order/:orderId/confirm-bank
+//
+// Route nên có:
+// verifyToken
+// authorizeRoles("ADMIN", "MANAGER", "STAFF")
+// ============================================================
+
 const confirmBankTransferPayment = async (
   req,
   res
@@ -234,8 +258,7 @@ const confirmBankTransferPayment = async (
     if (!isValidObjectId(orderId)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Valid order_id is required",
+        message: "Valid order_id is required",
       });
     }
 

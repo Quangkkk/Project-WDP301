@@ -20,6 +20,28 @@ export const formatDate = (value) => {
   }).format(new Date(value))
 }
 
+export const formatOrderCode = (orderOrId) => {
+  const storedCode =
+    typeof orderOrId === 'object' && orderOrId
+      ? orderOrId.order_code || orderOrId.orderCode
+      : ''
+
+  if (storedCode) {
+    const normalizedCode = String(storedCode)
+      .trim()
+      .replace(/^#/, '')
+      .toUpperCase()
+
+    return normalizedCode ? `#${normalizedCode}` : '-'
+  }
+
+  const id = getId(orderOrId)
+
+  return id
+    ? `#TS-${String(id).slice(-8).toUpperCase()}`
+    : '-'
+}
+
 export const getId = (value) => {
   if (!value) return ''
   if (typeof value === 'string') return value

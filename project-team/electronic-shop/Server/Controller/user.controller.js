@@ -182,7 +182,7 @@ const updateProfile = async (req, res) => {
 // Controller them dia chi moi cho user
 const createAddress = async (req, res) => {
   try {
-    const user_id = req.params.userId || req.body.user_id;
+    const user_id = req.user_id;
     const receive_name = req.body.receive_name || req.body.receiver_name;
     const receive_phone = req.body.receive_phone || req.body.receiver_phone;
     const { province, district, ward, address_line, is_default } = req.body;
@@ -229,7 +229,7 @@ const updateAddress = async (req, res) => {
     const receive_phone = req.body.receive_phone || req.body.receiver_phone;
     const { province, district, ward, address_line, is_default } = req.body;
 
-    const data = await userService.updateAddress(addressId, {
+    const data = await userService.updateAddress(addressId, req.user_id, {
       receive_name,
       receive_phone,
       province,
@@ -263,7 +263,7 @@ const deleteAddress = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid address id" });
     }
 
-    const data = await userService.deleteAddress(addressId);
+    const data = await userService.deleteAddress(addressId, req.user_id);
     return res.status(200).json({ success: true, message: "Delete address successfully", data });
   } catch (error) {
     let statusCode = 500;

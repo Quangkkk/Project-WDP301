@@ -204,8 +204,8 @@ const createAddress = async (userId, addressData) => {
 };
 
 // Cap nhat dia chi
-const updateAddress = async (addressId, addressData) => {
-  const address = await UserAddress.findById(addressId);
+const updateAddress = async (addressId, userId, addressData) => {
+  const address = await UserAddress.findOne({ _id: addressId, user_id: userId });
   if (!address) {
     throw new Error("Address not found");
   }
@@ -230,12 +230,19 @@ const updateAddress = async (addressId, addressData) => {
     throw new Error("No data to update");
   }
 
-  return await UserAddress.findByIdAndUpdate(addressId, updateData, { new: true, runValidators: true }).select("-__v");
+  return await UserAddress.findOneAndUpdate(
+    { _id: addressId, user_id: userId },
+    updateData,
+    { new: true, runValidators: true }
+  ).select("-__v");
 };
 
 // Xoa dia chi
-const deleteAddress = async (addressId) => {
-  const address = await UserAddress.findByIdAndDelete(addressId).select("-__v");
+const deleteAddress = async (addressId, userId) => {
+  const address = await UserAddress.findOneAndDelete({
+    _id: addressId,
+    user_id: userId,
+  }).select("-__v");
   if (!address) {
     throw new Error("Address not found");
   }

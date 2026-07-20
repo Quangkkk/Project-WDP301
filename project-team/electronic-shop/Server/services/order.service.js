@@ -47,6 +47,127 @@ const isValidObjectId = (id) =>
     String(id || "")
   );
 
+const normalizeOrderCode = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/^#/, "")
+    .toUpperCase();
+
+const buildOrderCodeFromId = (orderId) =>
+  `TS-${String(orderId).slice(-8).toUpperCase()}`;
+
+const generateUniqueOrderIdentity = async () => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const orderId = new mongoose.Types.ObjectId();
+    const orderCode = buildOrderCodeFromId(orderId);
+    const existed = await Order.exists({ order_code: orderCode });
+
+    if (!existed) {
+      return {
+        orderId,
+        orderCode,
+      };
+    }
+  }
+
+  throw new Error("Unable to generate a unique order code");
+};
+
+const assignOrderCodeIfMissing = async (order) => {
+  if (!order || order.order_code) {
+    return order;
+  }
+
+  const candidate = buildOrderCodeFromId(order._id);
+  const existed = await Order.exists({
+    order_code: candidate,
+    _id: { $ne: order._id },
+  });
+
+  if (!existed) {
+    order.order_code = candidate;
+    await order.save();
+  }
+
+  return order;
+};
+
+const findLegacyOrderBySuffix = async (suffix) => {
+  const matches = await Order.aggregate([
+    {
+      $addFields: {
+        _id_as_string: { $toString: "$_id" },
+      },
+    },
+    {
+      $match: {
+        $expr: {
+          $eq: [
+            {
+              $toUpper: {
+                $substrBytes: ["$_id_as_string", 16, 8],
+              },
+            },
+            suffix,
+          ],
+        },
+      },
+    },
+    { $limit: 2 },
+  ]);
+
+  if (matches.length > 1) {
+    throw new Error(
+      "Order code is ambiguous. Please contact support."
+    );
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  return Order.findById(matches[0]._id);
+};
+
+const findOrderByPublicCode = async (rawCode) => {
+  const normalizedCode = normalizeOrderCode(rawCode);
+
+  if (!normalizedCode) {
+    return null;
+  }
+
+  let order = null;
+
+  if (/^TS-[A-F0-9]{8}$/.test(normalizedCode)) {
+    order = await Order.findOne({ order_code: normalizedCode });
+
+    // Don cu chua co order_code: thu tim bang 8 ky tu cuoi cua MongoDB ObjectId.
+    if (!order) {
+      order = await findLegacyOrderBySuffix(normalizedCode.slice(-8));
+    }
+  } else if (/^[A-F0-9]{8}$/.test(normalizedCode)) {
+    order = await Order.findOne({
+      order_code: `TS-${normalizedCode}`,
+    });
+
+    if (!order) {
+      order = await findLegacyOrderBySuffix(normalizedCode);
+    }
+  } else if (isValidObjectId(normalizedCode)) {
+    order = await Order.findById(normalizedCode);
+  } else {
+    throw new Error(
+      "Invalid order code format. Use TS-XXXXXXXX, XXXXXXXX, or the full Order ID."
+    );
+  }
+
+  if (order && !order.order_code) {
+    await assignOrderCodeIfMissing(order);
+  }
+
+  return order;
+};
+
 // Lay danh sach mat hang tu request hoac gio hang
 const getItemsFromRequestOrCart = async ({
   items,
@@ -375,8 +496,11 @@ const createOrder = async (orderData) => {
   }
 
   const totalAmount = Math.max(subtotal + shippingFee - discountAmount, 0);
+  const { orderId, orderCode } = await generateUniqueOrderIdentity();
 
   const order = await Order.create({
+    _id: orderId,
+    order_code: orderCode,
     user_id,
     shipping_method_id: shipping_method_id || null,
     receiver_name: String(receiver_name).trim(),
@@ -681,12 +805,18 @@ const getOrderById = async (
   };
 };
 
-// Cap nhat don hang
+// Cap nhat don hang. Khong cho cap nhat truc tiep payment_status/payment_method/tong tien.
 const updateOrderById = async (
   id,
   updateFields,
   handledByUserId = null
 ) => {
+  const order = await Order.findById(id);
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
   const allowedFields = [
     "shipping_method_id",
     "receiver_name",
@@ -695,221 +825,262 @@ const updateOrderById = async (
     "address_ward",
     "address_district",
     "address_address_line",
-    "subtotal",
-    "total_amount",
     "status",
-    "payment_method",
-    "payment_status",
-    "coupon_code",
+    "note",
   ];
 
   const updateData = {};
 
   for (const field of allowedFields) {
-    if (
-      updateFields[field] !== undefined
-    ) {
-      updateData[field] =
-        updateFields[field];
+    if (updateFields[field] !== undefined) {
+      updateData[field] = updateFields[field];
     }
   }
 
-  if (
-    updateData.status &&
-    !ORDER_STATUS.includes(
-      updateData.status
-    )
-  ) {
+  if (updateData.status && !ORDER_STATUS.includes(updateData.status)) {
     throw new Error(
-      `Invalid order status. Allowed: ${ORDER_STATUS.join(
-        ", "
-      )}`
+      `Invalid order status. Allowed: ${ORDER_STATUS.join(", ")}`
     );
   }
 
-  if (
-    updateData.payment_status &&
-    !PAYMENT_STATUS.includes(
-      updateData.payment_status
-    )
-  ) {
-    throw new Error(
-      `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(
-        ", "
-      )}`
-    );
+  if (updateData.status === "cancelled") {
+    throw new Error("Use the cancel order endpoint to cancel an order");
   }
 
-  if (
-    updateData.shipping_method_id &&
-    !isValidObjectId(
-      updateData.shipping_method_id
-    )
-  ) {
-    throw new Error(
-      "Invalid shipping_method_id"
-    );
+  if (["completed", "cancelled"].includes(order.status) && updateData.status && updateData.status !== order.status) {
+    throw new Error("Completed or cancelled orders cannot be changed");
+  }
+
+  if (updateData.shipping_method_id && !isValidObjectId(updateData.shipping_method_id)) {
+    throw new Error("Invalid shipping_method_id");
+  }
+
+  if (updateData.note !== undefined) {
+    updateData.note = updateData.note
+      ? String(updateData.note).trim().slice(0, 1000)
+      : null;
+  }
+
+  if (updateData.status === "completed") {
+    if (order.payment_method === "cod") {
+      updateData.payment_status = "paid";
+    } else if (order.payment_status !== "paid") {
+      throw new Error("Online payment must be paid before completing the order");
+    }
   }
 
   if (handledByUserId) {
-    updateData.handled_by =
-      handledByUserId;
+    updateData.handled_by = handledByUserId;
   }
 
-  if (
-    Object.keys(updateData).length === 0
-  ) {
-    throw new Error(
-      "No data to update"
-    );
+  if (Object.keys(updateData).length === 0) {
+    throw new Error("No data to update");
   }
 
-  const data =
-    await Order.findByIdAndUpdate(
-      id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select("-__v");
-
-  if (!data) {
-    throw new Error("Order not found");
-  }
+  const data = await Order.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  }).select("-__v");
 
   return data;
 };
 
-// Huy don hang
+// Huy don hang va hoan lai stock dung mot lan.
 const cancelOrder = async (
   id,
   currentUser,
   cancelReason = null
 ) => {
-  const order =
-    await Order.findById(id);
+  const order = await Order.findById(id);
 
   if (!order) {
     throw new Error("Order not found");
   }
 
-  const role = String(
-    currentUser.role || ""
-  ).toUpperCase();
+  const role = String(currentUser.role || "").toUpperCase();
 
   if (
     role === "CUSTOMER" &&
-    String(order.user_id) !==
-      String(currentUser.user_id)
+    String(order.user_id) !== String(currentUser.user_id)
   ) {
-    throw new Error(
-      "Access denied. You do not have permission."
-    );
+    throw new Error("Access denied. You do not have permission.");
   }
 
-  const isStaff = [
-    "STAFF",
-    "MANAGER",
-    "ADMIN",
-  ].includes(role);
+  const isStaff = ["STAFF", "MANAGER", "ADMIN"].includes(role);
+  const normalizedReason = String(cancelReason || "").trim().slice(0, 1000);
 
-  if (
-    isStaff &&
-    (!cancelReason ||
-      !cancelReason.trim())
-  ) {
-    throw new Error(
-      "Cancel reason is required when cancelled by staff"
-    );
+  if (isStaff && !normalizedReason) {
+    throw new Error("Cancel reason is required when cancelled by staff");
   }
 
-  if (
-    [
-      "shipping",
-      "completed",
-      "cancelled",
-    ].includes(order.status)
-  ) {
-    throw new Error(
-      "This order cannot be cancelled"
-    );
+  if (!["pending", "confirmed", "processing"].includes(order.status)) {
+    throw new Error("This order cannot be cancelled");
   }
 
-  const items = await OrderItem.find({
+  if (order.payment_status === "paid") {
+    throw new Error("Paid order cannot be cancelled directly. Process a refund first.");
+  }
+
+  const nextPaymentStatus =
+    order.payment_status === "pending" ? "failed" : order.payment_status;
+
+  // Claim quyen huy bang update co dieu kien de hai request dong thoi
+  // khong the cung hoan kho hai lan.
+  const cancelledOrder = await Order.findOneAndUpdate(
+    {
+      _id: id,
+      status: order.status,
+      payment_status: { $ne: "paid" },
+    },
+    {
+      $set: {
+        status: "cancelled",
+        payment_status: nextPaymentStatus,
+        cancel_reason: normalizedReason || null,
+        handled_by: isStaff ? currentUser.user_id : order.handled_by,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!cancelledOrder) {
+    throw new Error("Order was already changed or cancelled");
+  }
+
+  const PaymentTransaction = require("../models/PaymentTransaction.model");
+  const restoredStock = [];
+  const pendingPayments = await PaymentTransaction.find({
     order_id: id,
-  });
+    status: "pending",
+  })
+    .select("_id")
+    .lean();
 
-  for (const item of items) {
-    if (item.variant_id) {
-      await ProductVariant.findByIdAndUpdate(
+  try {
+    const items = await OrderItem.find({ order_id: id }).lean();
+
+    // Hoàn kho tuần tự để biết chính xác phiên bản nào đã được cập nhật.
+    // Nếu một bước sau đó lỗi, các thay đổi đã thực hiện sẽ được đảo ngược.
+    for (const item of items) {
+      if (!item.variant_id) continue;
+
+      const quantity = Number(item.quantity || 0);
+      if (quantity <= 0) continue;
+
+      const updatedVariant = await ProductVariant.findByIdAndUpdate(
         item.variant_id,
         {
-          $inc: {
-            stock_quantity:
-              item.quantity,
-          },
+          $inc: { stock_quantity: quantity },
+        },
+        {
+          new: true,
+        }
+      );
+
+      if (!updatedVariant) {
+        throw new Error("Product variant not found");
+      }
+
+      restoredStock.push({
+        variant_id: item.variant_id,
+        quantity,
+      });
+    }
+
+    if (pendingPayments.length > 0) {
+      await PaymentTransaction.updateMany(
+        {
+          _id: { $in: pendingPayments.map((payment) => payment._id) },
+        },
+        {
+          $set: { status: "failed" },
         }
       );
     }
-  }
+  } catch (error) {
+    // Đảo ngược phần tồn kho đã hoàn thành trước khi xảy ra lỗi.
+    for (const restoredItem of [...restoredStock].reverse()) {
+      try {
+        await ProductVariant.findByIdAndUpdate(
+          restoredItem.variant_id,
+          {
+            $inc: { stock_quantity: -restoredItem.quantity },
+          }
+        );
+      } catch (rollbackError) {
+        console.error(
+          "[order.cancelOrder.rollbackStock]",
+          rollbackError.message
+        );
+      }
+    }
 
-  order.status = "cancelled";
+    // Khôi phục các giao dịch đang chờ nếu chúng đã bị đổi trạng thái.
+    if (pendingPayments.length > 0) {
+      try {
+        await PaymentTransaction.updateMany(
+          {
+            _id: { $in: pendingPayments.map((payment) => payment._id) },
+          },
+          {
+            $set: { status: "pending" },
+          }
+        );
+      } catch (rollbackError) {
+        console.error(
+          "[order.cancelOrder.rollbackPayment]",
+          rollbackError.message
+        );
+      }
+    }
 
-  if (cancelReason && String(cancelReason).trim()) {
-    order.cancel_reason = String(cancelReason).trim().slice(0, 1000);
-  }
-
-  await order.save();
-
-  try {
-    const User = require(
-      "../models/User.model"
+    await Order.findOneAndUpdate(
+      { _id: id, status: "cancelled" },
+      {
+        $set: {
+          status: order.status,
+          payment_status: order.payment_status,
+          cancel_reason: order.cancel_reason || null,
+          handled_by: order.handled_by || null,
+        },
+      }
     );
 
-    const customer =
-      await User.findById(
-        order.user_id
-      );
+    throw error;
+  }
 
-    if (
-      customer &&
-      customer.email
-    ) {
-      const sendMail = require(
-        "../mailtrap/nodemailer"
-      );
+  try {
+    const User = require("../models/User.model");
+    const displayOrderCode =
+      cancelledOrder.order_code || buildOrderCodeFromId(cancelledOrder._id);
+    const customer = await User.findById(cancelledOrder.user_id);
+
+    if (customer?.email) {
+      const sendMail = require("../mailtrap/nodemailer");
 
       await sendMail({
         email: customer.email,
-        subject:
-          `Don hang #${order._id} cua ban da bi huy`,
+        subject: `Don hang #${displayOrderCode} cua ban da bi huy`,
         html: `
           <p>Xin chao <b>${customer.name}</b>,</p>
-          <p>
-            Don hang <b>#${order._id}</b>
-            cua ban da bi huy.
-          </p>
+          <p>Don hang <b>#${displayOrderCode}</b> cua ban da bi huy.</p>
           ${
-            order.cancel_reason
-              ? `<p><b>Ly do:</b> ${order.cancel_reason}</p>`
+            cancelledOrder.cancel_reason
+              ? `<p><b>Ly do:</b> ${cancelledOrder.cancel_reason}</p>`
               : ""
           }
-          <p>
-            San pham trong don hang da duoc
-            hoan lai kho.
-          </p>
+          <p>San pham trong don hang da duoc hoan lai kho.</p>
         `,
       });
     }
   } catch (error) {
-    console.error(
-      "Failed to send order cancel email:",
-      error.message
-    );
+    console.error("Failed to send order cancel email:", error.message);
   }
 
-  return order;
+  return cancelledOrder;
 };
 
 // Tra cuu don hang cho guest
@@ -923,24 +1094,18 @@ const trackGuestOrder = async ({
     );
   }
 
-  if (!isValidObjectId(order_code)) {
-    throw new Error(
-      "Invalid order_code format. Must be a valid Order ID."
-    );
-  }
+  const orderDocument = await findOrderByPublicCode(order_code);
 
-  const order = await Order.findById(
-    order_code
-  )
-    .populate(
-      "user_id",
-      "email name"
-    )
-    .lean();
-
-  if (!order) {
+  if (!orderDocument) {
     throw new Error("Order not found");
   }
+
+  await orderDocument.populate(
+    "user_id",
+    "email name"
+  );
+
+  const order = orderDocument.toObject();
 
   const contactClean = String(contact)
     .trim()

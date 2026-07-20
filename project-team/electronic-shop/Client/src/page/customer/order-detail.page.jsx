@@ -18,7 +18,11 @@ import { cancelOrder, getOrderById } from '../../services/order.service'
 import { getPaymentByOrder } from '../../services/payment.service'
 import { addToWishlist } from '../../services/wishlist.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
-import { formatDate, getId } from '../../utils/format'
+import {
+  formatDate,
+  formatOrderCode,
+  getId,
+} from '../../utils/format'
 
 function getOrderStatusLabel(status) {
     const map = {
@@ -160,7 +164,7 @@ function buildProductChatMessage(item, order, orderId) {
     const variantText = getVariantText(item)
     const quantity = Number(item.quantity || 1)
     const unitPrice = Number(item.unit_price || item.price || 0)
-    const orderCode = getOrderCode(order, orderId)
+    const orderCode = formatOrderCode(order || orderId)
 
     return [
         `Shop ơi, tôi muốn hỏi về sản phẩm trong đơn ${orderCode}:`,
@@ -172,11 +176,6 @@ function buildProductChatMessage(item, order, orderId) {
     ]
         .filter(Boolean)
         .join('\n')
-}
-
-function getOrderCode(order, orderId) {
-    const id = getId(order) || orderId || ''
-    return id ? `#${id.slice(-8).toUpperCase()}` : '-'
 }
 
 function canCancelOrder(order) {
@@ -383,7 +382,7 @@ const handleChatWithShop = (item) => {
                         <button
                             type='button'
                             onClick={() => navigate('/orders')}
-                            className='mb-3 d-inline-flex align-items-center gap-2 !rounded-pill border bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                            className='mb-3 d-inline-flex align-items-center gap-2 rounded-pill border bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                         >
                             <i className='bi bi-arrow-left' />
                             Quay lại
@@ -396,7 +395,7 @@ const handleChatWithShop = (item) => {
                                 </p>
 
                                 <h1 className='mb-0 text-3xl font-normal text-slate-900'>
-                                    {getOrderCode(order, orderId)}
+                                    {formatOrderCode(order)}
                                 </h1>
                             </div>
 
@@ -451,7 +450,7 @@ const handleChatWithShop = (item) => {
 
                                         <Row className='g-3'>
                                             <Col md={5}>
-                                                <div className='h-100 !rounded-4 border border-slate-100 bg-slate-50 p-3'>
+                                                <div className='h-100 rounded-4 border border-slate-100 bg-slate-50 p-3'>
                                                     <p className='mb-1 text-xs font-black uppercase text-slate-400'>
                                                         Người nhận
                                                     </p>
@@ -467,7 +466,7 @@ const handleChatWithShop = (item) => {
                                             </Col>
 
                                             <Col md={7}>
-                                                <div className='h-100 !rounded-4 border border-slate-100 bg-slate-50 p-3'>
+                                                <div className='h-100 rounded-4 border border-slate-100 bg-slate-50 p-3'>
                                                     <p className='mb-1 text-xs font-black uppercase text-slate-400'>
                                                         Địa chỉ nhận hàng
                                                     </p>
@@ -639,7 +638,7 @@ const handleChatWithShop = (item) => {
                                         </div>
 
                                         <div className='mb-3 d-flex justify-content-between gap-3'>
-                                            <span className='text-slate-500'>Voucher</span>
+                                            <span className='text-slate-500'>Mã giảm giá</span>
 
                                             <span
                                                 className={`text-end font-semibold ${order.coupon_code ? 'text-orange-600' : 'text-slate-400'
@@ -747,7 +746,7 @@ const handleChatWithShop = (item) => {
                             <p className='mb-0 text-slate-500'>
                                 Bạn có chắc chắn muốn hủy đơn{' '}
                                 <span className='font-normal text-orange-600'>
-                                    {getOrderCode(order, orderId)}
+                                    {formatOrderCode(order || orderId)}
                                 </span>{' '}
                                 không? Sau khi hủy, đơn hàng sẽ chuyển sang trạng thái đã hủy.
                             </p>

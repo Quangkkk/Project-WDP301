@@ -25,8 +25,8 @@ export const getProductImage = (product, variant = getMainVariant(product)) => {
 }
 
 export const getProductSubtitle = (product) => {
-  const brandName = getEntityName(product?.brand_id, 'Brand')
-  const categoryName = getEntityName(product?.category_id, 'Electronic')
+  const brandName = getEntityName(product?.brand_id, 'Thương hiệu')
+  const categoryName = getEntityName(product?.category_id, 'Điện tử')
   return `${brandName} • ${categoryName}`
 }
 

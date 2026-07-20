@@ -80,13 +80,13 @@ function getBrandInfo(product) {
   if (brand && typeof brand === 'object') {
     return {
       id: getId(brand) || brand.name || brand.brand_name || '',
-      name: brand.name || brand.brand_name || 'Brand',
+      name: brand.name || brand.brand_name || 'Thương hiệu',
     }
   }
 
   return {
     id: brand || product?.brand_name || 'unknown-brand',
-    name: product?.brand_name || 'Brand',
+    name: product?.brand_name || 'Thương hiệu',
   }
 }
 
@@ -97,13 +97,13 @@ function getCategoryInfo(product) {
   if (category && typeof category === 'object') {
     return {
       id: getId(category) || category.name || category.category_name || '',
-      name: category.name || category.category_name || 'Electronic',
+      name: category.name || category.category_name || 'Điện tử',
     }
   }
 
   return {
     id: category || product?.category_name || 'unknown-category',
-    name: product?.category_name || 'Electronic',
+    name: product?.category_name || 'Điện tử',
   }
 }
 
@@ -570,7 +570,7 @@ function WishlistPage() {
           <div className='mb-4 d-flex flex-wrap align-items-end justify-content-between gap-3'>
             <div>
               <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
-                Wishlist
+                Danh sách yêu thích
               </p>
 
               <h1 className='mb-2 text-4xl font-black text-slate-950'>

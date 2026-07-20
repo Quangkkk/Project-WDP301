@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { label: 'Home', path: '/' },
-  { label: 'Products', path: '/products' },
-  { label: 'Cart', path: '/cart' },
-  { label: 'Orders', path: '/orders' },
-  { label: 'Support', path: '/support' },
+  { label: 'Trang chủ', path: '/' },
+  { label: 'Sản phẩm', path: '/products' },
+  { label: 'Giỏ hàng', path: '/cart' },
+  { label: 'Đơn hàng', path: '/orders' },
+  { label: 'Hỗ trợ', path: '/support' },
 ]
 
 function NavMenu() {

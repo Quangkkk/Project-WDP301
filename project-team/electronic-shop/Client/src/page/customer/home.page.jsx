@@ -83,9 +83,9 @@ function HomePage() {
       <section className='page-section'>
         <Container>
           <SectionHeading
-            eyebrow='Featured products'
+            eyebrow='Sản phẩm nổi bật'
             title='Sản phẩm nổi bật'
-            action={<Link to='/products'><Button variant='secondary'>View all</Button></Link>}
+            action={<Link to='/products'><Button variant='secondary'>Xem tất cả</Button></Link>}
           />
           <ProductGrid products={products.slice(0, 8)} isLoading={isLoading} />
         </Container>

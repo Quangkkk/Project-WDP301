@@ -4,7 +4,13 @@ import { Search, X, LayoutGrid, ShoppingCart, Truck } from 'lucide-react'
 
 import BrandLogo from '../atoms/BrandLogo'
 import HeaderActions from '../molecules/HeaderActions'
-import { clearAuth, getCurrentUser, getUserRole, isAuthenticated } from '../../utils/authStorage'
+import {
+  AUTH_UPDATED_EVENT,
+  clearAuth,
+  getCurrentUser,
+  getUserRole,
+  isAuthenticated,
+} from '../../utils/authStorage'
 import { getCategories } from '../../services/product.service'
 import { pickArray } from '../../utils/format'
 import TrackOrderModal from './TrackOrderModal'
@@ -54,7 +60,7 @@ function HeaderSearch({ className = '' }) {
             type='button'
             className='shrink-0 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none !rounded-full p-1 hover:bg-slate-100'
             onClick={handleClear}
-            aria-label='Clear search'
+            aria-label='Xóa nội dung tìm kiếm'
           >
             <X className='w-4 h-4' />
           </button>
@@ -192,10 +198,31 @@ function CartButton() {
 
 function Header() {
   const navigate = useNavigate()
-  const user = getCurrentUser()
-  const loggedIn = isAuthenticated()
-  const role = getUserRole(user)
+  const [authState, setAuthState] = useState(() => ({
+    user: getCurrentUser(),
+    loggedIn: isAuthenticated(),
+  }))
   const [showTrackModal, setShowTrackModal] = useState(false)
+
+  useEffect(() => {
+    const refreshAuth = () => {
+      setAuthState({
+        user: getCurrentUser(),
+        loggedIn: isAuthenticated(),
+      })
+    }
+
+    window.addEventListener(AUTH_UPDATED_EVENT, refreshAuth)
+    window.addEventListener('storage', refreshAuth)
+
+    return () => {
+      window.removeEventListener(AUTH_UPDATED_EVENT, refreshAuth)
+      window.removeEventListener('storage', refreshAuth)
+    }
+  }, [])
+
+  const { user, loggedIn } = authState
+  const role = getUserRole(user)
 
   const handleLogout = () => {
     clearAuth()
