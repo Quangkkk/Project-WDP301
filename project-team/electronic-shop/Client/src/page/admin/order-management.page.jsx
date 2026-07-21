@@ -145,17 +145,17 @@ function OrderManagementPage() {
       <Alert type='danger'>{error}</Alert>
       <Alert type='success'>{message}</Alert>
 
-      <Card className='card-surface'>
+      <Card className='card-surface border-0 shadow-sm' style={{ borderRadius: '16px', overflow: 'hidden' }}>
         <Card.Body className='p-0'>
           <Table responsive hover className='mb-0 align-middle'>
-            <thead>
+            <thead style={{ backgroundColor: '#f8fafc' }}>
               <tr>
-                <th className='p-3'>Đơn hàng</th>
-                <th>Khách hàng</th>
-                <th>Tổng tiền</th>
-                <th>Thanh toán</th>
-                <th>Trạng thái</th>
-                <th style={{ minWidth: 320 }}>Cập nhật</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0'>Đơn hàng</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0'>Khách hàng</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0 text-center'>Tổng tiền</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0 text-center'>Thanh toán</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0 text-center'>Trạng thái</th>
+                <th className='p-4 text-xs font-black text-slate-400 uppercase tracking-wider border-0 text-center' style={{ minWidth: '280px' }}>Hành động</th>
               </tr>
             </thead>
 
@@ -166,49 +166,55 @@ function OrderManagementPage() {
                 const isPaid = order.payment_status === 'paid'
 
                 return (
-                  <tr key={id}>
-                    <td className='p-3'>
-                      <b>{formatOrderCode(order)}</b>
-                      <br />
-                      <span className='text-sm text-slate-500'>
-                        {formatDate(order.created_at)}
-                      </span>
+                  <tr key={id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td className='p-4'>
+                      <div className='d-flex flex-column'>
+                        <span className='font-black text-slate-900 text-base'>
+                          {formatOrderCode(order)}
+                        </span>
+                        <span className='text-xs font-bold text-slate-400 mt-1'>
+                          {formatDate(order.created_at)}
+                        </span>
+                      </div>
                     </td>
 
-                    <td>
-                      <span className='font-bold text-slate-900'>
-                        {order.user_id?.name || order.receiver_name}
-                      </span>
-                      <br />
-                      <span className='text-sm text-slate-500'>
-                        {order.receiver_phone}
-                      </span>
+                    <td className='p-4'>
+                      <div className='d-flex flex-column'>
+                        <span className='font-black text-slate-800'>
+                          {order.user_id?.name || order.receiver_name}
+                        </span>
+                        <span className='text-xs font-bold text-slate-500 mt-1 d-flex align-items-center gap-1'>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                          {order.receiver_phone}
+                        </span>
+                      </div>
                     </td>
 
-                    <td>
-                      <PriceText
-                        value={order.total_amount}
-                        className='font-black text-orange-600'
-                      />
+                    <td className='p-4 text-center'>
+                      <div className='d-inline-flex px-3 py-1 bg-orange-50 rounded-lg border border-orange-100'>
+                        <PriceText
+                          value={order.total_amount}
+                          className='font-black text-orange-600 text-base'
+                        />
+                      </div>
                     </td>
 
-                    <td>
-                      <div className='d-flex flex-column gap-1'>
-                        <span className='text-sm font-bold text-slate-700'>
+                    <td className='p-4 text-center'>
+                      <div className='d-flex flex-column align-items-center gap-2'>
+                        <span className='text-xs font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-md uppercase'>
                           {getPaymentMethodLabel(order.payment_method)}
                         </span>
-
                         <StatusBadge value={order.payment_status} />
                       </div>
                     </td>
 
-                    <td>
+                    <td className='p-4 text-center'>
                       <StatusBadge value={order.status} />
                     </td>
 
-                    <td>
-                      <div className='d-flex flex-column gap-2'>
-                        <div className='d-flex gap-2 align-items-center'>
+                    <td className='p-4'>
+                      <div className='d-flex flex-column align-items-center gap-2'>
+                        <div style={{ width: '100%', maxWidth: '200px' }}>
                           <SelectField
                             value={statusDraft[id] || order.status}
                             options={orderStatusOptions}
@@ -218,14 +224,16 @@ function OrderManagementPage() {
                                 [id]: event.target.value,
                               }))
                             }
+                            className='form-select-sm border-slate-200 shadow-sm font-bold text-slate-700'
                           />
                         </div>
 
-                        <div className='d-flex flex-wrap gap-2'>
+                        <div className='d-flex gap-2 w-100 justify-content-center'>
                           <Button
                             size='sm'
                             onClick={() => handleSave(id)}
                             isLoading={loadingId === id}
+                            className='px-4'
                           >
                             Lưu
                           </Button>
@@ -237,7 +245,7 @@ function OrderManagementPage() {
                               onClick={() => handleConfirmBank(id)}
                               isLoading={loadingId === id}
                             >
-                              Xác nhận đã chuyển khoản
+                              Đã nhận tiền
                             </Button>
                           )}
                         </div>
