@@ -3,9 +3,11 @@ const SupportTicket = require("../models/SupportTicket.model");
 const TicketMessage = require("../models/TicketMessage.model");
 const Order = require("../models/Orders.model");
 const User = require("../models/User.model");
+const ChatConversation = require("../models/ChatConversation.model");
+const ChatMessage = require("../models/ChatMessage.model");
 
 // Customer tao ticket ho tro moi
-const createTicket = async (customerId, { subject, description, order_id }) => {
+const createTicket = async (customerId, { subject, description, order_id, category }) => {
   if (!subject || !subject.trim()) {
     throw new Error("Subject is required");
   }
@@ -23,8 +25,39 @@ const createTicket = async (customerId, { subject, description, order_id }) => {
     order_id: order_id || null,
     subject: subject.trim(),
     description: description || null,
+    category: category || "general",
     status: "open",
   });
+
+  return ticket;
+};
+
+const createTicketFromChat = async (staffId, chatId, { subject, category }) => {
+  const conversation = await ChatConversation.findById(chatId);
+  if (!conversation) {
+    throw new Error("Chat conversation not found");
+  }
+
+  const chatMessages = await ChatMessage.find({ conversation_id: chatId }).sort({ created_at: 1 });
+  
+  let description = "Ticket được tạo từ cuộc hội thoại Chat.\n\n--- Nội dung Chat ---\n";
+  chatMessages.forEach(msg => {
+    const role = String(msg.sender_id) === String(conversation.customer_id) ? "Khách hàng" : "Nhân viên";
+    description += `[${role}]: ${msg.message || '(Gửi tệp đính kèm)'}\n`;
+  });
+
+  const ticket = await SupportTicket.create({
+    user_id: conversation.customer_id,
+    assigned_staff_id: staffId,
+    subject: subject || "Hỗ trợ từ Chat",
+    description: description,
+    category: category || "general",
+    status: "in_progress",
+  });
+
+  // Có thể tự động đóng chat nếu muốn, ở đây ta chỉ tạo ticket
+  conversation.status = 'closed';
+  await conversation.save();
 
   return ticket;
 };
@@ -64,8 +97,11 @@ const getTicketDetails = async (ticketId, userId, role) => {
 };
 
 // Them tin nhan vao ticket
-const addMessage = async (ticketId, senderId, message, role) => {
-  if (!message || !message.trim()) {
+const addMessage = async (ticketId, senderId, message, attachments = [], role) => {
+  const cleanMessage = String(message || "").trim();
+  const cleanAttachments = Array.isArray(attachments) ? attachments : [];
+
+  if (!cleanMessage && cleanAttachments.length === 0) {
     throw new Error("Message content cannot be empty");
   }
 
@@ -82,7 +118,8 @@ const addMessage = async (ticketId, senderId, message, role) => {
   const ticketMsg = await TicketMessage.create({
     ticket_id: ticketId,
     sender_id: senderId,
-    message: message.trim(),
+    message: cleanMessage,
+    attachments: cleanAttachments,
   });
 
   // Cap nhat thoi gian cap nhat cuoc tro chuyen
@@ -168,6 +205,7 @@ const updateTicketStatus = async (ticketId, { status }) => {
 
 module.exports = {
   createTicket,
+  createTicketFromChat,
   getCustomerTickets,
   getTicketDetails,
   addMessage,

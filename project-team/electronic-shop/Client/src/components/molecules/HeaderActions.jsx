@@ -7,17 +7,24 @@ import {
   MessageCircle,
   Receipt,
   User,
+  LayoutDashboard,
 } from 'lucide-react'
 
 function getRoleLabel(role) {
   const value = String(role || '').toUpperCase()
-
-  if (value === 'ADMIN') return 'Admin'
-  if (value === 'MANAGER') return 'Manager'
-  if (value === 'STAFF') return 'Staff'
-  if (value === 'CUSTOMER') return 'Customer'
-
+  if (value === 'ADMIN') return 'Quản trị viên'
+  if (value === 'MANAGER') return 'Quản lý'
+  if (value === 'STAFF') return 'Nhân viên'
+  if (value === 'CUSTOMER') return 'Khách hàng'
   return value || 'User'
+}
+
+function getRoleBadgeStyle(role) {
+  const value = String(role || '').toUpperCase()
+  if (value === 'ADMIN') return { background: '#fef3c7', color: '#d97706' }
+  if (value === 'MANAGER') return { background: '#dbeafe', color: '#1d4ed8' }
+  if (value === 'STAFF') return { background: '#d1fae5', color: '#065f46' }
+  return { background: '#f1f5f9', color: '#64748b' }
 }
 
 function getUserName(user) {
@@ -82,15 +89,25 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
   const avatar = getUserAvatar(user)
   const initial = String(name).trim().charAt(0).toUpperCase() || 'U'
   const roleLabel = getRoleLabel(role || user?.role || user?.role_code)
+  const roleBadgeStyle = getRoleBadgeStyle(role || user?.role || user?.role_code)
+  const roleUpper = String(role || user?.role || user?.role_code || '').toUpperCase()
+  const isBackOffice = ['ADMIN', 'MANAGER', 'STAFF'].includes(roleUpper)
   const closeMenu = () => setIsOpen(false)
 
-  const menuItems = [
+  // Menu items theo role
+  const customerMenuItems = [
     { to: '/profile', label: 'Hồ sơ của tôi', icon: User },
     { to: '/orders', label: 'Đơn mua', icon: Receipt },
     { to: '/wishlist', label: 'Yêu thích', icon: Heart },
     { to: '/chat', label: 'Nhắn tin', icon: MessageCircle },
     { to: '/support', label: 'Hỗ trợ', icon: Headphones },
   ]
+
+  const backOfficeMenuItems = [
+    { to: '/staff', label: 'Bảng điều khiển', icon: LayoutDashboard },
+  ]
+
+  const menuItems = isBackOffice ? backOfficeMenuItems : customerMenuItems
 
   return (
     <div className='relative' ref={dropdownRef}>
@@ -144,7 +161,15 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
               <div className='min-w-0'>
                 <div className='truncate text-sm font-bold text-slate-900'>{name}</div>
                 {email && <div className='truncate text-xs text-slate-500'>{email}</div>}
-                <div className='mt-1 text-xs font-semibold text-orange-600'>{roleLabel}</div>
+                {/* Badge vai trò */}
+                <span style={{
+                  ...roleBadgeStyle,
+                  fontSize: 10, fontWeight: 700,
+                  padding: '1px 8px', borderRadius: 999,
+                  display: 'inline-block', marginTop: 3,
+                }}>
+                  {roleLabel}
+                </span>
               </div>
             </div>
           </div>

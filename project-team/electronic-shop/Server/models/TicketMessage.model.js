@@ -14,8 +14,21 @@ const ticketMessageSchema = new mongoose.Schema(
     },
     message: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+    },
+    attachments: {
+      type: [
+        {
+          original_name: String,
+          filename: String,
+          mime_type: String,
+          size: Number,
+          url: String,
+          type: { type: String, enum: ["image", "file"], default: "file" },
+        }
+      ],
+      default: [],
     },
   },
   {

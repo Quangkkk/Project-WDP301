@@ -241,6 +241,7 @@ function Header() {
 
   const { user, loggedIn } = authState
   const role = getUserRole(user)
+  const isBackOffice = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
 
   const handleLogout = () => {
     const currentPath = `${location.pathname}${location.search}${location.hash}`
@@ -271,31 +272,36 @@ function Header() {
               <BrandLogo />
             </div>
 
-            {/* Search */}
-            <div className='flex-1 flex justify-center px-2 md:px-6'>
-              <div className='w-full max-w-lg'>
-                <HeaderSearch />
-              </div>
-            </div>
+            {/* Các phần tử chỉ hiển thị cho Customer */}
+            {!isBackOffice && (
+              <>
+                {/* Search */}
+                <div className='flex-1 flex justify-center px-2 md:px-6'>
+                  <div className='w-full max-w-lg'>
+                    <HeaderSearch />
+                  </div>
+                </div>
 
+                <div className='flex shrink-0 items-center gap-3'>
+                  <button
+                    onClick={() => setShowTrackModal(true)}
+                    className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                    title='Tra cứu đơn hàng'
+                  >
+                    <Truck className='w-5 h-5' />
+                    <span className='hidden xl:inline'>Tra cứu đơn</span>
+                  </button>
+                  <CategoryDropdown />
+                  <CartButton />
+                </div>
+              </>
+            )}
+
+            {/* Spacer khi là back-office */}
+            {isBackOffice && <div className='flex-1' />}
+
+            {/* User actions - luôn hiển thị */}
             <div className='flex shrink-0 items-center gap-3'>
-              {!loggedIn && (
-                <button
-                  type='button'
-                  onClick={() => setShowTrackModal(true)}
-                  className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
-                  title='Tra cứu đơn hàng'
-                >
-                  <Truck className='h-5 w-5' />
-
-                  <span className='hidden xl:inline'>
-                    Tra cứu đơn
-                  </span>
-                </button>
-              )}
-
-              <CategoryDropdown />
-              <CartButton />
               <HeaderActions
                 loggedIn={loggedIn}
                 user={user}

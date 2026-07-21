@@ -152,7 +152,7 @@ function LoginPage() {
 
       // Các role quản trị luôn vào dashboard, không quay lại trang public trước đó.
       if (BACK_OFFICE_ROLES.includes(role)) {
-        navigate('/admin', { replace: true })
+        navigate('/staff', { replace: true })
         return
       }
 

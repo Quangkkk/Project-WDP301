@@ -145,7 +145,7 @@ function App() {
           />
 
           <Route
-            path='/admin'
+            path='/staff'
             element={
               <ProtectedRoute allowedRoles={backOfficeRoles}>
                 <AdminDashboardPage />
@@ -154,7 +154,7 @@ function App() {
           />
 
           <Route
-            path='/admin/products'
+            path='/staff/products'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <ProductManagementPage />
@@ -163,7 +163,7 @@ function App() {
           />
 
           <Route
-            path='/admin/categories'
+            path='/staff/categories'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <CategoryManagementPage />
@@ -172,7 +172,7 @@ function App() {
           />
 
           <Route
-            path='/admin/brands'
+            path='/staff/brands'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <BrandManagementPage />
@@ -181,7 +181,7 @@ function App() {
           />
 
           <Route
-            path='/admin/coupons'
+            path='/staff/coupons'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <CouponManagementPage />
@@ -190,7 +190,7 @@ function App() {
           />
 
           <Route
-            path='/admin/orders'
+            path='/staff/orders'
             element={
               <ProtectedRoute allowedRoles={backOfficeRoles}>
                 <OrderManagementPage />
@@ -199,7 +199,7 @@ function App() {
           />
 
           <Route
-            path='/admin/users'
+            path='/staff/users'
             element={
               <ProtectedRoute allowedRoles={adminOnly}>
                 <UserManagementPage />
@@ -208,7 +208,7 @@ function App() {
           />
 
           <Route
-            path='/admin/support'
+            path='/staff/support'
             element={
               <ProtectedRoute allowedRoles={backOfficeRoles}>
                 <SupportManagementPage />
@@ -217,7 +217,7 @@ function App() {
           />
 
           <Route
-            path='/admin/chat'
+            path='/staff/chat'
             element={
               <ProtectedRoute allowedRoles={backOfficeRoles}>
                 <ChatManagementPage />

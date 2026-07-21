@@ -1,5 +1,6 @@
 import MainLayout from './MainLayout'
 import AdminSidebar from '../molecules/AdminSidebar'
+import StaffNotificationWidget from '../organisms/StaffNotificationWidget'
 
 function DashboardLayout({ title, description, children }) {
   return (
@@ -35,6 +36,8 @@ function DashboardLayout({ title, description, children }) {
           </div>
         </div>
       </section>
+      {/* Widget thông báo cho Staff/Admin - chỉ hiển thị khi có role phù hợp */}
+      <StaffNotificationWidget />
     </MainLayout>
   )
 }

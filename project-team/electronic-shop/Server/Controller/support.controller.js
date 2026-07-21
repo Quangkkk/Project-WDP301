@@ -1,4 +1,7 @@
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const supportService = require("../services/support.service");
 const SupportTicket = require("../models/SupportTicket.model");
 const TicketMessage = require("../models/TicketMessage.model");
@@ -6,9 +9,90 @@ const TicketMessage = require("../models/TicketMessage.model");
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 const normalizeRole = (role) => String(role || "").toUpperCase();
 
+const SUPPORT_UPLOAD_DIR = path.join(__dirname, "../uploads/support");
+fs.mkdirSync(SUPPORT_UPLOAD_DIR, { recursive: true });
+
+const allowedMimeTypes = [
+  "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+  "application/pdf", "text/plain", "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/zip", "application/x-zip-compressed",
+];
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, SUPPORT_UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "");
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+
+const uploader = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+  fileFilter: (req, file, cb) => {
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      return cb(new Error("Định dạng file không được hỗ trợ."));
+    }
+    return cb(null, true);
+  },
+}).array("files", 5);
+
+const uploadSupportFiles = (req, res, next) => {
+  uploader(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.code === "LIMIT_FILE_SIZE" ? "File không được vượt quá 10MB." : error.message || "Không tải được file lên.",
+      });
+    }
+    return next();
+  });
+};
+
+const uploadSupportAttachments = async (req, res) => {
+  const baseUrl = (process.env.SERVER_URL || process.env.API_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+  const data = (req.files || []).map((file) => ({
+    original_name: file.originalname || file.filename,
+    filename: file.filename,
+    mime_type: file.mimetype,
+    size: file.size,
+    url: `${baseUrl}/uploads/support/${file.filename}`,
+    type: String(file.mimetype || "").startsWith("image/") ? "image" : "file",
+  }));
+  return res.status(201).json({ success: true, message: "Đã tải file lên.", data });
+};
+
+const createTicketFromChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { subject, category } = req.body;
+
+    if (!isValidObjectId(chatId)) {
+      return res.status(400).json({ success: false, message: "Invalid chat id" });
+    }
+
+    const data = await supportService.createTicketFromChat(req.user_id, chatId, { subject, category });
+
+    return res.status(201).json({
+      success: true,
+      message: "Chuyển hội thoại thành ticket thành công",
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create ticket from chat",
+      error: error.message,
+    });
+  }
+};
+
 const createTicket = async (req, res) => {
   try {
-    const { subject, description, order_id } = req.body;
+    const { subject, description, order_id, category } = req.body;
 
     if (!subject || !String(subject).trim()) {
       return res.status(400).json({
@@ -28,6 +112,7 @@ const createTicket = async (req, res) => {
       subject,
       description,
       order_id,
+      category,
     });
 
     return res.status(201).json({
@@ -143,8 +228,33 @@ const createMessage = async (req, res) => {
       id,
       req.user_id,
       req.body.message,
+      req.body.attachments,
       req.role
     );
+
+    // Phát sự kiện thông báo nếu nhân viên phản hồi ticket
+    const io = req.app.get("io");
+    if (io) {
+      const roleUpper = String(req.role).toUpperCase();
+      const SupportTicket = require("../models/SupportTicket.model");
+      
+      if (["ADMIN", "MANAGER", "STAFF"].includes(roleUpper)) {
+        // Staff gửi -> Báo cho Customer
+        const ticket = await SupportTicket.findById(id).lean();
+        if (ticket) {
+          io.to(`user_${ticket.user_id}`).emit("customer_receive_ticket_message", {
+            ticketId: id,
+            message: data
+          });
+        }
+      } else if (roleUpper === "CUSTOMER") {
+        // Customer gửi -> Báo cho Staff
+        io.to("staff_room").emit("staff_receive_ticket_message", {
+          ticketId: id,
+          message: data
+        });
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -374,7 +484,10 @@ const deleteTicket = async (req, res) => {
 };
 
 module.exports = {
+  uploadSupportFiles,
+  uploadSupportAttachments,
   createTicket,
+  createTicketFromChat,
   getTickets,
   getCustomerTickets,
   getAdminTickets,

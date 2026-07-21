@@ -20,9 +20,11 @@ import {
   getTicketById,
   getTickets,
   updateTicket,
+  uploadSupportFiles
 } from '../../services/support.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import { formatDate, getId, pickArray } from '../../utils/format'
+import MessageAttachments from '../../components/molecules/MessageAttachments'
 
 const ticketTabs = [
   { key: 'all', label: 'Tất cả' },
@@ -110,7 +112,11 @@ function SupportPage() {
   const [createForm, setCreateForm] = useState({
     subject: '',
     description: '',
+    category: 'general'
   })
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
@@ -242,6 +248,7 @@ function SupportPage() {
         user_id: currentUserId,
         subject: createForm.subject.trim(),
         description: createForm.description.trim(),
+        category: createForm.category,
         status: 'open',
       })
 
@@ -250,6 +257,7 @@ function SupportPage() {
       setCreateForm({
         subject: '',
         description: '',
+        category: 'general'
       })
       setIsCreateModalOpen(false)
       setMessage('Đã gửi ticket hỗ trợ.')
@@ -271,29 +279,51 @@ function SupportPage() {
 
     if (!selectedTicket) return
 
-    if (!newMessage.trim()) {
-      setError('Vui lòng nhập nội dung tin nhắn.')
+    if (!newMessage.trim() && selectedFiles.length === 0) {
+      setError('Vui lòng nhập nội dung tin nhắn hoặc đính kèm file.')
       return
     }
 
     try {
       setIsSending(true)
+      setIsUploading(selectedFiles.length > 0)
       setError('')
       setMessage('')
+
+      let uploadedAttachments = []
+      if (selectedFiles.length > 0) {
+        const uploadResponse = await uploadSupportFiles(selectedFiles)
+        uploadedAttachments = uploadResponse?.data || []
+      }
 
       await createTicketMessage(getId(selectedTicket), {
         sender_id: currentUserId,
         message: newMessage.trim(),
+        attachments: uploadedAttachments
       })
 
       setNewMessage('')
+      setSelectedFiles([])
       await loadTicketDetail(getId(selectedTicket))
       await loadTickets()
     } catch (error) {
       setError(getErrorMessage(error, 'Không gửi được tin nhắn.'))
     } finally {
       setIsSending(false)
+      setIsUploading(false)
     }
+  }
+
+  const handleSelectFiles = (event) => {
+    const files = Array.from(event.target.files || [])
+    if (!files.length) return
+    const validFiles = files.slice(0, 5)
+    setSelectedFiles((prev) => [...prev, ...validFiles].slice(0, 5))
+    event.target.value = ''
+  }
+
+  const handleRemoveFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleCloseTicket = async () => {
@@ -419,7 +449,9 @@ function SupportPage() {
                                   {ticket.subject}
                                 </h4>
 
-                                <StatusPill status={ticket.status} />
+                                <div className='d-flex align-items-center gap-2'>
+                                  <StatusPill status={ticket.status} />
+                                </div>
                               </div>
 
                               <p className='mb-2 text-sm text-slate-500'>
@@ -555,6 +587,7 @@ function SupportPage() {
                                     <p className='mb-0 whitespace-pre-line text-sm'>
                                       {item.message}
                                     </p>
+                                    <MessageAttachments attachments={item.attachments || []} isMine={isMine} />
                                   </div>
                                 </div>
                               )
@@ -572,25 +605,60 @@ function SupportPage() {
                           </div>
                         ) : (
                           <Form onSubmit={handleSendMessage}>
-                            <div className='d-flex align-items-end gap-2'>
+                            {selectedFiles.length > 0 && (
+                              <div className='mb-2 d-flex flex-wrap gap-2'>
+                                {selectedFiles.map((file, index) => (
+                                  <div
+                                    key={`${file.name}-${index}`}
+                                    className='d-flex align-items-center gap-2 !rounded-pill border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700'
+                                  >
+                                    <i className={file.type.startsWith('image/') ? 'bi bi-image' : 'bi bi-paperclip'} />
+                                    <span>{file.name}</span>
+                                    <button
+                                      type='button'
+                                      onClick={() => handleRemoveFile(index)}
+                                      className='border-0 bg-transparent p-0 text-red-500'
+                                      title='Bỏ file'
+                                    >
+                                      <i className='bi bi-x-lg' />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <input
+                              ref={fileInputRef}
+                              type='file'
+                              multiple
+                              accept='image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip'
+                              onChange={handleSelectFiles}
+                              className='d-none'
+                            />
+                            <div className='d-flex align-items-center gap-2'>
+                              <button
+                                type='button'
+                                onClick={() => fileInputRef.current?.click()}
+                                className='d-flex align-items-center justify-content-center !rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                                style={{ width: 40, height: 40, minWidth: 40 }}
+                                title='Đính kèm ảnh/file'
+                              >
+                                <i className='bi bi-paperclip fs-5' />
+                              </button>
                               <Form.Control
-                                as='textarea'
-                                rows={2}
+                                type='text'
                                 value={newMessage}
                                 onChange={(event) => setNewMessage(event.target.value)}
                                 placeholder='Nhập tin nhắn hỗ trợ...'
-                                className='!rounded-4 border-slate-200 text-sm shadow-sm'
-                                style={{
-                                  resize: 'none',
-                                }}
+                                className='!rounded-pill px-4 shadow-none flex-1'
+                                disabled={isSending || isUploading}
                               />
 
                               <Button
                                 type='submit'
-                                isLoading={isSending}
+                                disabled={isSending || isUploading || (!newMessage.trim() && selectedFiles.length === 0)}
                                 className='px-4'
                               >
-                                Gửi
+                                {isUploading ? 'Đang gửi...' : 'Gửi'}
                               </Button>
                             </div>
                           </Form>
@@ -627,6 +695,18 @@ function SupportPage() {
               className='mb-3'
             />
 
+            <div className='mb-3 d-flex gap-3'>
+              <Form.Group className='flex-1'>
+                <Form.Label className='mb-2 text-sm font-bold text-slate-700'>Danh mục</Form.Label>
+                <Form.Select name='category' value={createForm.category} onChange={handleCreateChange} className='!rounded-4 shadow-sm text-sm'>
+                  <option value="general">Hỗ trợ chung</option>
+                  <option value="warranty">Bảo hành / Đổi trả</option>
+                  <option value="technical">Kỹ thuật</option>
+                  <option value="shipping">Vận chuyển</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
+            
             <Form.Group>
               <Form.Label className='mb-2 text-sm font-bold text-slate-700'>
                 Nội dung
