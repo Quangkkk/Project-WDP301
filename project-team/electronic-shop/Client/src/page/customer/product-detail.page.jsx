@@ -21,7 +21,7 @@ import {
   checkWishlist,
   getProductWishlistCount as fetchProductWishlistCount,
 } from '../../services/wishlist.service'
-import { getCurrentUser, getUserId, isAuthenticated } from '../../utils/authStorage'
+import { getCurrentUser, getUserId, getUserRole, isAuthenticated } from '../../utils/authStorage'
 import { getCartIdentity } from '../../utils/sessionCart'
 import { getId, pickData } from '../../utils/format'
 import {
@@ -517,6 +517,8 @@ function ProductDetailPage() {
 
   const user = getCurrentUser()
   const currentUserId = getUserId(user)
+  const role = getUserRole(user)
+  const isEmployee = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
 
   const loadWishlistStatus = async (productId) => {
     if (!productId) {
@@ -1030,38 +1032,42 @@ function ProductDetailPage() {
                 </div>
               )}
 
-              <div className='mb-4'>
-                <p className='mb-3 font-bold text-slate-700'>Số lượng</p>
+              {!isEmployee && (
+                <>
+                  <div className='mb-4'>
+                    <p className='mb-3 font-bold text-slate-700'>Số lượng</p>
 
-                <div className='d-flex flex-wrap align-items-center gap-3'>
-                  <QuantityInput
-                    value={quantity}
-                    max={stock || 99}
-                    disabled={isOutOfStock}
-                    onChange={setQuantity}
-                  />
+                    <div className='d-flex flex-wrap align-items-center gap-3'>
+                      <QuantityInput
+                        value={quantity}
+                        max={stock || 99}
+                        disabled={isOutOfStock}
+                        onChange={setQuantity}
+                      />
 
-                  {isOutOfStock ? (
-                    <span className='text-sm font-bold text-red-500'>
-                      Sản phẩm đã hết hàng
-                    </span>
-                  ) : (
-                    <span className='text-sm font-bold text-slate-500'>
-                      Còn {formatNumber(stock)} sản phẩm
-                    </span>
-                  )}
-                </div>
-              </div>
+                      {isOutOfStock ? (
+                        <span className='text-sm font-bold text-red-500'>
+                          Sản phẩm đã hết hàng
+                        </span>
+                      ) : (
+                        <span className='text-sm font-bold text-slate-500'>
+                          Còn {formatNumber(stock)} sản phẩm
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-              <div className='d-flex flex-wrap gap-3'>
-                <Button
-                  isLoading={isAdding}
-                  disabled={isOutOfStock || isCheckingOut}
-                  onClick={handleAddToCart}
-                >
-                  Thêm vào giỏ hàng
-                </Button>
-              </div>
+                  <div className='d-flex flex-wrap gap-3'>
+                    <Button
+                      isLoading={isAdding}
+                      disabled={isOutOfStock || isCheckingOut}
+                      onClick={handleAddToCart}
+                    >
+                      Thêm vào giỏ hàng
+                    </Button>
+                  </div>
+                </>
+              )}
             </Col>
           </Row>
 

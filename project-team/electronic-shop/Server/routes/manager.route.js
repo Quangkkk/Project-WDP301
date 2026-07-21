@@ -11,6 +11,12 @@ router.use(verifyToken, authorizeRoles("Manager", "Admin"));
 // Manager xem danh sach Staff
 router.get("/staff", manager.getStaffList);
 
+// Manager tao tai khoan Staff moi
+router.post("/staff", manager.createStaff);
+
+// Manager khoa / mo khoa tai khoan Staff
+router.patch("/staff/:id/status", manager.toggleStaffStatus);
+
 // Manager xem hieu suat cua 1 Staff cu the
 router.get("/staff/:id/performance", manager.getStaffPerformance);
 

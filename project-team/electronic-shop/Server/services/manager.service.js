@@ -11,7 +11,7 @@ const getStaffList = async () => {
   }
 
   return await User.find({ role_id: staffRole._id })
-    .select("-hash_pass")
+    .select("-hash_pass -email_otp -email_otp_expires -reset_password_token -reset_password_expires")
     .populate("role_id", "name code")
     .lean();
 };

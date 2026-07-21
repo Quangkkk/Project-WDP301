@@ -118,10 +118,13 @@ const login = async ({ email, password }) => {
     throw new Error("Account has not been verified");
   }
 
+  // Cap nhat thoi gian dang nhap lan cuoi
+  await User.findByIdAndUpdate(user._id, { last_login: new Date() })
+
   // Tao token
   const token = buildToken(user, user.role_id);
 
-  // Lay thong tin user an toan de tra ve
+  // Lay thong tin user an toan de tra ve (bao gom last_login vua cap nhat)
   const data = await User.findById(user._id)
     .select(safeSelect)
     .populate("role_id", "name code");

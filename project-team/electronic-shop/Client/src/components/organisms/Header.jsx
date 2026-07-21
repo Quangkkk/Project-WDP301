@@ -193,10 +193,14 @@ function CategoryDropdown() {
   )
 }
 
-function CartButton() {
+function CartButton({ role }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isActive = location.pathname === '/cart'
+
+  if (['ADMIN', 'MANAGER', 'STAFF'].includes(role)) {
+    return null
+  }
 
   return (
     <button
@@ -295,7 +299,7 @@ function Header() {
               )}
 
               <CategoryDropdown />
-              <CartButton />
+              <CartButton role={role} />
               <HeaderActions
                 loggedIn={loggedIn}
                 user={user}
