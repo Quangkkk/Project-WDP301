@@ -13,7 +13,7 @@ function DashboardLayout({ title, description, children }) {
             <Col lg={3}><AdminSidebar /></Col>
             <Col lg={9}>
               <div className='mb-4'>
-                <p className='mb-2 text-sm font-black uppercase tracking-[0.25em] text-blue-600'>Management</p>
+                <p className='mb-2 text-sm font-black uppercase tracking-[0.25em] text-blue-600'>Quản lý</p>
                 <h1 className='mb-2 text-4xl font-black text-slate-950'>{title}</h1>
                 {description && <p className='mb-0 text-slate-500'>{description}</p>}
               </div>

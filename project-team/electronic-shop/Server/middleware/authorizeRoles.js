@@ -6,6 +6,13 @@ const authorizeRoles = (...allowedRoles) => {
       String(role).toUpperCase()
     );
 
+    // Debugging logs for role authorization
+    try {
+      console.log("[authorizeRoles] userRole=", userRole, "allowed=", normalizedAllowedRoles, "req.role=", req.role, "req.user.role=", req.user?.role)
+    } catch (e) {
+      // ignore
+    }
+
     if (!userRole) {
       return res.status(403).json({
         success: false,

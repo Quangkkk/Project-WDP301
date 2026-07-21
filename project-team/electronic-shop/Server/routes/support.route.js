@@ -11,19 +11,19 @@ router.get("/tickets/:id", verifyToken, support.getTicketById);
 router.put(
   "/tickets/:id",
   verifyToken,
-  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  authorizeRoles("ADMIN", "STAFF"),
   support.updateTicketById
 );
 router.delete(
   "/tickets/:id",
   verifyToken,
-  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  authorizeRoles("ADMIN", "STAFF"),
   support.deleteTicketById
 );
 router.post(
   "/tickets/:ticketId/messages",
   verifyToken,
-  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+  authorizeRoles("ADMIN", "STAFF"),
   support.createTicketMessage
 );
 

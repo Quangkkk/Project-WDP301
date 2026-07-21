@@ -39,7 +39,7 @@ const getCustomerRole = async () => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, img_url } = req.body;
+    const { name, email, password, phone, img_url, gender, dob } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -51,12 +51,21 @@ const register = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     const existedUser = await User.findOne({ email: normalizedEmail });
-
     if (existedUser) {
       return res.status(409).json({
         success: false,
-        message: "Email already exists",
+        message: "Email đã tồn tại trong hệ thống",
       });
+    }
+
+    if (phone && phone.trim()) {
+      const existedPhone = await User.findOne({ phone: phone.trim() });
+      if (existedPhone) {
+        return res.status(409).json({
+          success: false,
+          message: "Số điện thoại đã tồn tại trong hệ thống",
+        });
+      }
     }
 
     const role = await getCustomerRole();
@@ -68,8 +77,10 @@ const register = async (req, res) => {
       name,
       email: normalizedEmail,
       hash_pass,
-      phone: phone || null,
-      img_url: img_url || null,
+      phone: phone?.trim() || undefined,
+      img_url: img_url || undefined,
+      gender: gender || undefined,
+      dob: dob || undefined,
       status: "unverified",
     });
 
@@ -83,9 +94,18 @@ const register = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Register Error:", error);
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0];
+      const fieldName = field === 'phone' ? 'Số điện thoại' : field === 'email' ? 'Email' : field;
+      return res.status(409).json({
+        success: false,
+        message: `${fieldName} đã tồn tại trong hệ thống`,
+      });
+    }
     return res.status(500).json({
       success: false,
-      message: "Failed to register",
+      message: error.message || "Failed to register",
       error: error.message,
     });
   }

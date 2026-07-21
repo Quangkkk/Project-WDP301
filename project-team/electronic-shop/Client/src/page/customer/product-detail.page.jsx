@@ -263,7 +263,35 @@ function ProductReviews({ reviews, isLoading, error }) {
     <div className='mt-5'>
       <Card className='overflow-hidden border-0 bg-white shadow-sm'>
         <Card.Body className='p-0'>
-            
+          {/* Section header */}
+          <div className='border-bottom bg-orange-50 px-4 py-4 d-flex flex-wrap align-items-center justify-content-between gap-3'>
+            <div>
+              <p className='mb-2 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
+                Phản hồi khách hàng
+              </p>
+              <h2 className='mb-0 text-3xl font-black text-slate-950'>Đánh giá sản phẩm</h2>
+            </div>
+
+            {reviews.length > 0 && (
+              <div className='rounded-4 bg-white px-4 py-3 text-center shadow-sm'>
+                <p className='mb-0 text-3xl font-black text-amber-500'>
+                  {averageRating.toFixed(1)}
+                </p>
+                <div className='d-flex justify-content-center gap-1 my-1'>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span
+                      key={s}
+                      className={s <= Math.round(averageRating) ? 'text-amber-500' : 'text-slate-300'}
+                      style={{ fontSize: 14 }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className='mb-0 text-xs font-bold text-slate-500'>{reviews.length} đánh giá</p>
+              </div>
+            )}
+          </div>
 
           <div className='p-4 p-lg-5'>
             <Alert type='warning'>{error}</Alert>
@@ -274,9 +302,7 @@ function ProductReviews({ reviews, isLoading, error }) {
               <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
                 <div className='mb-3 text-4xl'>💬</div>
 
-                <h3 className='mb-2 text-xl font-black text-slate-900'>
-                  Chưa có đánh giá
-                </h3>
+                <h3 className='mb-2 text-xl font-black text-slate-900'>Chưa có đánh giá</h3>
 
                 <p className='mb-0 text-slate-500'>
                   Sản phẩm này hiện chưa có feedback từ khách hàng.
@@ -500,7 +526,7 @@ function ProductDetailPage() {
     const user = getCurrentUser()
     const identity = getCartIdentity(user)
 
-    await addItemToCart({
+    return await addItemToCart({
       ...identity,
       product_id: getId(product),
       variant_id: getId(selectedVariant) || null,
@@ -530,9 +556,19 @@ function ProductDetailPage() {
       setMessage('')
       setError('')
 
-      await addSelectedItemToCart()
+      const response = await addSelectedItemToCart()
+      const addedItem = response?.data
+      const addedItemId = getId(addedItem)
 
-      navigate('/checkout')
+      const checkoutPayload = {
+        selectedItemIds: addedItemId ? [addedItemId] : [],
+      }
+
+      sessionStorage.setItem('electronic_shop_checkout_items', JSON.stringify(checkoutPayload))
+
+      navigate('/checkout', {
+        state: checkoutPayload,
+      })
     } catch (error) {
       setError(getErrorMessage(error, 'Không thể chuyển sang trang thanh toán.'))
     } finally {

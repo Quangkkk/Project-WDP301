@@ -89,7 +89,13 @@ const updateUserById = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ success: false, message: "Invalid user id" });
 
-    const allowedFields = ["role_id", "name", "email", "phone", "img_url", "status"];
+    // Check if the user is updating themselves or if they are admin/manager
+    const userRoleCode = String(req.user.role_code || req.user.role || "").toUpperCase();
+    if (userRoleCode !== "ADMIN" && userRoleCode !== "MANAGER" && String(req.user_id) !== String(id)) {
+      return res.status(403).json({ success: false, message: "Access denied. You can only update your own profile." });
+    }
+
+    const allowedFields = ["role_id", "name", "email", "phone", "img_url", "status", "gender", "dob"];
     const updateData = {};
     for (const field of allowedFields) if (req.body[field] !== undefined) updateData[field] = req.body[field];
 

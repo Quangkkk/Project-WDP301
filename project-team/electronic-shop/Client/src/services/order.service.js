@@ -5,6 +5,11 @@ export const createOrder = async (payload) => {
   return response.data
 }
 
+export const getMyOrders = async (params = {}) => {
+  const response = await api.get('/order/my', { params })
+  return response.data
+}
+
 export const getOrders = async (params = {}) => {
   const response = await api.get('/order', { params })
   return response.data

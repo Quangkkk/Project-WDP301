@@ -36,6 +36,7 @@ function AdminDashboardPage() {
 
   const revenue = useMemo(() => data.orders.reduce((sum, order) => String(order.status).toLowerCase() === 'cancelled' ? sum : sum + Number(order.total_amount || 0), 0), [data.orders])
   const activeOrders = data.orders.filter((order) => ['pending', 'confirmed', 'processing', 'shipping'].includes(String(order.status).toLowerCase()))
+  const staffCount = data.users.filter((u) => String(u.role_id?.code || '').toLowerCase() === 'staff').length
 
   return (
     <DashboardLayout title='Dashboard Overview' description='Tổng quan nhanh về sản phẩm, đơn hàng, doanh thu và support ticket.'>
@@ -43,7 +44,7 @@ function AdminDashboardPage() {
         <Row className='g-4 mb-4'>
           <Col md={6} xl={3}><StatCard icon='💻' label='Products' value={data.products.length} helper='Total catalog items' /></Col>
           <Col md={6} xl={3}><StatCard icon='📦' label='Active Orders' value={activeOrders.length} helper='Need processing' /></Col>
-          <Col md={6} xl={3}><StatCard icon='👤' label='Users' value={data.users.length} helper='Registered accounts' /></Col>
+          <Col md={6} xl={3}><StatCard icon='👔' label='Staff' value={staffCount} helper='Active staff members' /></Col>
           <Col md={6} xl={3}><StatCard icon='🎧' label='Tickets' value={data.tickets.length} helper='Support requests' /></Col>
         </Row>
         <Card className='card-surface'><Card.Body className='p-4'>

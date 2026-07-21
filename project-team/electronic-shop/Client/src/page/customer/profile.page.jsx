@@ -21,6 +21,7 @@ import {
   updateUser,
 } from '../../services/user.service'
 import { getCurrentUser, getUserId, updateStoredUser } from '../../utils/authStorage'
+import { format } from 'date-fns'
 
 const initialAddressForm = {
   receiver_name: '',
@@ -133,6 +134,8 @@ function ProfilePage() {
     email: '',
     phone: '',
     img_url: '',
+    gender: '',
+    dob: '',
   })
 
   const [addresses, setAddresses] = useState([])
@@ -171,6 +174,8 @@ function ProfilePage() {
       email: user?.email || '',
       phone: user?.phone || '',
       img_url: user?.img_url || '',
+      gender: user?.gender || '',
+      dob: user?.dob ? format(new Date(user?.dob), 'yyyy-MM-dd') : '',
     })
   }
 
@@ -292,6 +297,8 @@ function ProfilePage() {
       email: profile?.email || '',
       phone: profile?.phone || '',
       img_url: profile?.img_url || '',
+      gender: profile?.gender || '',
+      dob: profile?.dob ? format(new Date(profile?.dob), 'yyyy-MM-dd') : '',
     })
   }
 
@@ -333,6 +340,16 @@ function ProfilePage() {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
+    if (!form.name.trim()) {
+      setError('Vui lòng nhập họ và tên.')
+      return
+    }
+
+    if (!form.email.trim()) {
+      setError('Vui lòng nhập email hợp lệ.')
+      return
+    }
+
     try {
       setIsSaving(true)
       setError('')
@@ -342,6 +359,8 @@ function ProfilePage() {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        gender: form.gender || null,
+        dob: form.dob || null,
       }
 
       if (form.img_url) {
@@ -359,6 +378,8 @@ function ProfilePage() {
         email: updatedUser?.email || '',
         phone: updatedUser?.phone || '',
         img_url: updatedUser?.img_url || '',
+        gender: updatedUser?.gender || '',
+        dob: updatedUser?.dob ? format(new Date(updatedUser?.dob), 'yyyy-MM-dd') : '',
       })
 
       setAvatarPreview('')
@@ -619,6 +640,33 @@ function ProfilePage() {
                         </Col>
 
                         <Col md={6}>
+                          <SelectField
+                            label='Giới tính'
+                            name='gender'
+                            value={form.gender}
+                            disabled={!isEditing || isSaving}
+                            onChange={handleChange}
+                            options={[
+                              { value: '', label: 'Chưa cập nhật' },
+                              { value: 'male', label: 'Nam' },
+                              { value: 'female', label: 'Nữ' },
+                              { value: 'other', label: 'Khác' },
+                            ]}
+                          />
+                        </Col>
+
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className='text-sm font-bold text-slate-700'>Ngày sinh</Form.Label>
+                            <Form.Control
+                              type='date'
+                              name='dob'
+                              value={form.dob}
+                              disabled={!isEditing || isSaving}
+                              onChange={handleChange}
+                              className='rounded-3 border-slate-200 px-3 py-2 text-slate-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
+                            />
+                          </Form.Group>
                         </Col>
                       </Row>
 

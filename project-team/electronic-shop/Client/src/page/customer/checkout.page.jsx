@@ -36,6 +36,7 @@ const CHECKOUT_SELECTED_ITEMS_KEY = 'electronic_shop_checkout_items'
 const initialForm = {
   receiver_name: '',
   receiver_phone: '',
+  receiver_email: '',
   address_province: '',
   address_district: '',
   address_ward: '',
@@ -81,7 +82,8 @@ function filterCheckoutItems(allItems, locationState) {
     return allItems
   }
 
-  return allItems.filter((item) => selectedItemIds.includes(getCartItemId(item)))
+  const filtered = allItems.filter((item) => selectedItemIds.includes(getCartItemId(item)))
+  return filtered.length > 0 ? filtered : allItems
 }
 
 function getAddressId(address) {
@@ -146,6 +148,7 @@ function buildAddressForm(address, currentUser) {
   return {
     receiver_name: getAddressReceiverName(address) || currentUser?.name || '',
     receiver_phone: getAddressReceiverPhone(address) || currentUser?.phone || '',
+    receiver_email: currentUser?.email || '',
     address_province: getAddressProvince(address),
     address_district: getAddressDistrict(address),
     address_ward: getAddressWard(address),
@@ -162,6 +165,7 @@ function CheckoutPage() {
     ...initialForm,
     receiver_name: user?.name || '',
     receiver_phone: user?.phone || '',
+    receiver_email: user?.email || '',
   })
 
   const [items, setItems] = useState([])
@@ -209,26 +213,38 @@ function CheckoutPage() {
         setError('')
         setMessage('')
 
-        const requests = [
-          getCart(getCartIdentity(user)),
-          getShippingMethods({ is_active: true }),
-        ]
+        let cartData = {}
+        let methods = []
+        let loadedAddresses = []
 
-        if (user && getUserId(user)) {
-          requests.push(getUserById(getUserId(user)))
+        try {
+          const cartRes = await getCart(getCartIdentity(user))
+          cartData = cartRes?.data || {}
+        } catch (err) {
+          console.error('Failed to fetch cart', err)
         }
 
-        const [cartRes, shippingRes, userRes] = await Promise.all(requests)
+        try {
+          const shippingRes = await getShippingMethods({ is_active: true })
+          methods = pickArray(shippingRes, [])
+        } catch (err) {
+          console.error('Failed to fetch shipping methods', err)
+        }
+
+        if (user && getUserId(user)) {
+          try {
+            const userRes = await getUserById(getUserId(user))
+            const userData = userRes?.data || {}
+            loadedAddresses = userData.addresses || userData.user_addresses || []
+          } catch (err) {
+            console.error('Failed to fetch user addresses', err)
+          }
+        }
 
         if (!mounted) return
 
-        const cartData = cartRes?.data || {}
-        const methods = pickArray(shippingRes, [])
         const allItems = cartData.items || []
         const checkoutItems = filterCheckoutItems(allItems, location.state)
-
-        const userData = userRes?.data || {}
-        const loadedAddresses = userData.addresses || userData.user_addresses || []
 
         const defaultAddress =
           loadedAddresses.find((address) => isDefaultAddress(address)) ||
@@ -259,10 +275,6 @@ function CheckoutPage() {
       } catch (error) {
         if (!mounted) return
 
-        setCart(null)
-        setItems([])
-        setShippingMethods([])
-        setAddresses([])
         setError(getErrorMessage(error, 'Không tải được dữ liệu thanh toán từ backend.'))
       } finally {
         if (mounted) setIsLoading(false)
@@ -381,6 +393,7 @@ function CheckoutPage() {
       ...prev,
       receiver_name: user?.name || prev.receiver_name,
       receiver_phone: user?.phone || prev.receiver_phone,
+      receiver_email: user?.email || prev.receiver_email,
       address_province: '',
       address_district: '',
       address_ward: '',
@@ -420,10 +433,6 @@ function CheckoutPage() {
   }
 
   const validate = () => {
-    if (!user) {
-      return 'Backend hiện tại yêu cầu đăng nhập để tạo đơn hàng. Vui lòng đăng nhập trước khi thanh toán.'
-    }
-
     const requiredFields = [
       'receiver_name',
       'receiver_phone',
@@ -474,6 +483,7 @@ function CheckoutPage() {
         shipping_method_id: form.shipping_method_id || undefined,
         receiver_name: form.receiver_name.trim(),
         receiver_phone: form.receiver_phone.trim(),
+        receiver_email: form.receiver_email.trim() || user?.email || 'guest@example.com',
         address_province: form.address_province.trim(),
         address_district: form.address_district.trim(),
         address_ward: form.address_ward.trim(),

@@ -85,7 +85,11 @@ function LoginPage() {
       saveAuth({ token, user })
 
       const role = getUserRole(user)
-      const fallbackPath = ['ADMIN', 'MANAGER', 'STAFF'].includes(role) ? '/admin' : '/'
+      let fallbackPath = '/'
+
+      if (['ADMIN', 'MANAGER', 'STAFF'].includes(role)) {
+        fallbackPath = '/admin'
+      }
 
       navigate(redirectPath || fallbackPath, { replace: true })
     } catch (error) {

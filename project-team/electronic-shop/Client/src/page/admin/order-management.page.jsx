@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
+import Form from 'react-bootstrap/Form'
 
 import DashboardLayout from '../../components/templates/DashboardLayout'
 import Alert from '../../components/atoms/Alert'
@@ -185,27 +186,33 @@ function OrderManagementPage() {
                     <td>
                       <div className='d-flex flex-column gap-2'>
                         <div className='d-flex gap-2 align-items-center'>
-                          <SelectField
+                          <Form.Select
+                            size='sm'
+                            className='rounded-2 shadow-sm border-slate-200'
                             value={statusDraft[id] || order.status}
-                            options={orderStatusOptions}
                             onChange={(event) =>
                               setStatusDraft((prev) => ({
                                 ...prev,
                                 [id]: event.target.value,
                               }))
                             }
-                          />
+                          >
+                            {orderStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                          </Form.Select>
 
-                          <SelectField
+                          <Form.Select
+                            size='sm'
+                            className='rounded-2 shadow-sm border-slate-200'
                             value={paymentDraft[id] || order.payment_status}
-                            options={paymentStatusOptions}
                             onChange={(event) =>
                               setPaymentDraft((prev) => ({
                                 ...prev,
                                 [id]: event.target.value,
                               }))
                             }
-                          />
+                          >
+                            {paymentStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                          </Form.Select>
                         </div>
 
                         <div className='d-flex flex-wrap gap-2'>

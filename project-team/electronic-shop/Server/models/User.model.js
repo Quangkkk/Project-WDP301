@@ -21,13 +21,18 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      default: null,
       trim: true,
     },
     img_url: {
       type: String,
-      default: null,
       trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+    },
+    dob: {
+      type: Date,
     },
     hash_pass: {
       type: String,

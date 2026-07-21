@@ -255,6 +255,7 @@ const createOrder = async (req, res) => {
       payment_status,
       receiver_name,
       receiver_phone,
+      receiver_email,
       address_province,
       address_ward,
       address_district,
@@ -268,10 +269,12 @@ const createOrder = async (req, res) => {
       coupon_code,
     } = req.body;
 
-    if (!user_id || !isValidObjectId(user_id)) {
+    const targetUserId = req.user_id || user_id || null;
+
+    if (targetUserId && !isValidObjectId(targetUserId)) {
       return res.status(400).json({
         success: false,
-        message: "Valid user_id is required",
+        message: "Invalid user_id",
       });
     }
 
@@ -333,24 +336,29 @@ const createOrder = async (req, res) => {
     const finalItems = await getItemsFromRequestOrCart({
       items,
       cart_id,
-      user_id,
+      user_id: targetUserId,
     });
 
     const { orderItems, subtotal } = await buildOrderItems(finalItems);
 
     const { coupon, discountAmount } = await calculateDiscount(
       coupon_code,
-      user_id,
+      targetUserId,
       subtotal
     );
 
     const totalAmount = Math.max(subtotal + shippingFee - discountAmount, 0);
 
+    const finalReceiverEmail =
+      String(receiver_email || req.user?.email || "guest@example.com").trim() ||
+      "guest@example.com";
+
     const order = await Order.create({
-      user_id,
+      user_id: targetUserId || null,
       shipping_method_id: shipping_method_id || null,
       receiver_name,
       receiver_phone,
+      receiver_email: finalReceiverEmail,
       address_province: province,
       address_ward: ward,
       address_district: district,
@@ -381,11 +389,11 @@ const createOrder = async (req, res) => {
       }
     }
 
-    if (coupon) {
+    if (coupon && targetUserId) {
       await CouponUsage.findOneAndUpdate(
         {
           coupon_id: coupon._id,
-          user_id,
+          user_id: targetUserId,
         },
         {
           $inc: {
@@ -685,10 +693,19 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    if (["shipping", "completed", "cancelled"].includes(order.status)) {
+    // Prevent cancelling after the order has been shipped or completed
+    if (["shipping", "completed"].includes(order.status)) {
       return res.status(400).json({
         success: false,
-        message: "This order cannot be cancelled",
+        message: "This order cannot be cancelled after it has been shipped or completed",
+      });
+    }
+
+    // If already cancelled, return informative response
+    if (order.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "This order is already cancelled",
       });
     }
 
@@ -721,9 +738,84 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user_id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { status, payment_status } = req.query;
+    const filter = { user_id: userId };
+
+    if (status) {
+      if (!ORDER_STATUS.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid order status. Allowed: ${ORDER_STATUS.join(", ")}`,
+        });
+      }
+      filter.status = status;
+    }
+
+    if (payment_status) {
+      if (!PAYMENT_STATUS.includes(payment_status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(", ")}`,
+        });
+      }
+      filter.payment_status = payment_status;
+    }
+
+    const orders = await Order.find(filter)
+      .populate("shipping_method_id", "name base_fee estimate_days is_active")
+      .select("-__v")
+      .sort({ created_at: -1 })
+      .lean();
+
+    const orderIds = orders.map((order) => order._id);
+
+    const items = await OrderItem.find({ order_id: { $in: orderIds } })
+      .populate("product_id", "name sku status")
+      .populate("variant_id", "sku variant_value image price sale_price")
+      .select("-__v")
+      .lean();
+
+    const itemsByOrder = items.reduce((map, item) => {
+      const key = String(item.order_id);
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+      return map;
+    }, {});
+
+    const data = orders.map((order) => ({
+      ...order,
+      items: itemsByOrder[String(order._id)] || [],
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get orders",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getAllOrders,
+  getMyOrders,
   getOrderById,
   updateOrderById,
   cancelOrder,

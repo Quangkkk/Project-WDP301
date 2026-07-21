@@ -71,6 +71,7 @@ app.use("/support", routers.support);
 app.use("/chat", routers.chat);
 app.use("/wishlist", routers.wishlist);
 app.use("/payment", routers.payment);
+app.use("/analytics", routers.analytics);
 
 app.use((req, res) => {
   return res.status(404).json({

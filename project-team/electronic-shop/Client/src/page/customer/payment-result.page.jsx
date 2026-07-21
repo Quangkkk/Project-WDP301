@@ -13,6 +13,7 @@ import PriceText from '../../components/atoms/PriceText'
 
 import { getErrorMessage } from '../../services/api'
 import { getPaymentByOrder } from '../../services/payment.service'
+import { getCurrentUser } from '../../utils/authStorage'
 import { getId } from '../../utils/format'
 
 function getPaymentLabel(provider) {
@@ -75,6 +76,7 @@ function PaymentResultPage() {
   const { orderId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const user = getCurrentUser()
 
   const [order, setOrder] = useState(location.state?.order || null)
   const [payment, setPayment] = useState(location.state?.payment || null)
@@ -144,8 +146,8 @@ function PaymentResultPage() {
                       Đơn hàng không tồn tại hoặc chưa có dữ liệu thanh toán.
                     </p>
 
-                    <Button type='button' onClick={() => navigate('/orders')}>
-                      Xem đơn hàng của tôi
+                    <Button type='button' onClick={() => navigate(user ? '/orders' : '/products')}>
+                      {user ? 'Xem đơn hàng của tôi' : 'Về trang sản phẩm'}
                     </Button>
                   </Card.Body>
                 </Card>
@@ -364,9 +366,11 @@ function PaymentResultPage() {
                     )}
 
                     <div className='mt-4 d-flex flex-wrap gap-2'>
-                      <Button type='button' onClick={() => navigate('/orders')}>
-                        Xem đơn hàng
-                      </Button>
+                      {user && (
+                        <Button type='button' onClick={() => navigate('/orders')}>
+                          Xem đơn hàng
+                        </Button>
+                      )}
 
                       <Button
                         type='button'

@@ -13,6 +13,7 @@ const support = require("./support.route.js");
 const chat = require("./chat.route.js");
 const wishlist = require("./wishlist.route.js");
 const payment = require("./payment.route.js");
+const analytics = require("./analytics.route.js");
 
 module.exports = {
   auth,
@@ -30,4 +31,5 @@ module.exports = {
   chat,
   wishlist,
   payment,
+  analytics,
 };

@@ -22,7 +22,8 @@ const orderSchema = new mongoose.Schema(
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
+      default: null,
     },
     shipping_method_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +38,12 @@ const orderSchema = new mongoose.Schema(
     receiver_phone: {
       type: String,
       required: true,
+      trim: true,
+    },
+    receiver_email: {
+      type: String,
+      required: false,
+      default: "",
       trim: true,
     },
     address_province: {
