@@ -143,6 +143,26 @@ const getProductReviews = async (productId, { page = 1, limit = 10 }) => {
   };
 };
 
+
+// Lay tat ca review cua customer dang dang nhap.
+// Co the loc theo order_id de kiem tra san pham nao trong don da duoc danh gia.
+const getMyReviews = async (userId, { order_id } = {}) => {
+  const filter = {
+    user_id: userId,
+  };
+
+  if (order_id) {
+    filter.order_id = order_id;
+  }
+
+  return Review.find(filter)
+    .select(
+      "_id user_id order_id product_id rating comment images status created_at updated_at"
+    )
+    .sort({ created_at: -1 })
+    .lean();
+};
+
 // Chinh sua review (chi cho phep nguoi viet review sua)
 const updateReview = async (reviewId, userId, { rating, comment, images }) => {
   const review = await Review.findById(reviewId);
@@ -227,6 +247,7 @@ const deleteReview = async (reviewId, currentUser) => {
 module.exports = {
   createReview,
   getProductReviews,
+  getMyReviews,
   updateReview,
   deleteReview,
   hideReview,

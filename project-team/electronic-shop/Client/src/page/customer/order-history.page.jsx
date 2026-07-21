@@ -13,6 +13,7 @@ import PriceText from '../../components/atoms/PriceText'
 
 import { getErrorMessage } from '../../services/api'
 import { cancelOrder, getOrders } from '../../services/order.service'
+import { getMyReviews } from '../../services/review.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import {
   formatDate,
@@ -164,6 +165,69 @@ function getOrderSearchText(order) {
   )
 }
 
+
+function getProductIdFromOrderItem(item) {
+  const product =
+    item?.product_id ||
+    item?.product ||
+    item?.productId
+
+  if (typeof product === 'string') {
+    return product
+  }
+
+  return getId(product) || ''
+}
+
+function getOrderReviewKey(orderId, productId) {
+  return `${String(orderId || '')}:${String(productId || '')}`
+}
+
+function buildReviewedProductKeys(reviews) {
+  return new Set(
+    (Array.isArray(reviews) ? reviews : [])
+      .map((review) => {
+        const reviewOrderId = getId(review?.order_id || review?.order)
+        const reviewProductId = getId(review?.product_id || review?.product)
+
+        if (!reviewOrderId || !reviewProductId) {
+          return ''
+        }
+
+        return getOrderReviewKey(reviewOrderId, reviewProductId)
+      })
+      .filter(Boolean),
+  )
+}
+
+function hasUnreviewedProduct(order, reviewedProductKeys) {
+  if (order?.status !== 'completed') {
+    return false
+  }
+
+  const orderId = getId(order)
+  const items = Array.isArray(order?.items) ? order.items : []
+
+  const productIds = [
+    ...new Set(
+      items
+        .map(getProductIdFromOrderItem)
+        .filter(Boolean),
+    ),
+  ]
+
+  if (!orderId || productIds.length === 0) {
+    return false
+  }
+
+  return productIds.some(
+    (productId) =>
+      !reviewedProductKeys.has(
+        getOrderReviewKey(orderId, productId),
+      ),
+  )
+}
+
 function canCancelOrder(order) {
   return ['pending', 'confirmed', 'processing'].includes(order?.status)
 }
@@ -180,6 +244,7 @@ function OrderHistoryPage() {
   const [cancelTarget, setCancelTarget] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [reviewedProductKeys, setReviewedProductKeys] = useState(new Set())
 
   const loadOrders = async () => {
     if (!user) {
@@ -191,11 +256,17 @@ function OrderHistoryPage() {
       setIsLoading(true)
       setError('')
 
-      const response = await getOrders({
-        user_id: getUserId(user),
-      })
+      const [ordersResponse, reviews] = await Promise.all([
+        getOrders({
+          user_id: getUserId(user),
+        }),
+        getMyReviews(),
+      ])
 
-      setOrders(pickArray(response, []))
+      setOrders(pickArray(ordersResponse, []))
+      setReviewedProductKeys(
+        buildReviewedProductKeys(reviews),
+      )
     } catch (error) {
       setError(getErrorMessage(error, 'Không tải được lịch sử đơn hàng.'))
     } finally {
@@ -237,6 +308,24 @@ function OrderHistoryPage() {
       return getOrderSearchText(order).includes(normalizedKeyword)
     })
   }, [orders, activeTab, searchKeyword])
+
+
+  const handleOpenReview = (event, order) => {
+    event.stopPropagation()
+
+    const orderId = getId(order)
+
+    if (!orderId) {
+      setError('Không tìm thấy mã đơn hàng để đánh giá.')
+      return
+    }
+
+    navigate(`/orders/${orderId}`, {
+      state: {
+        openReview: true,
+      },
+    })
+  }
 
   const handleOpenCancelModal = (event, order) => {
     event.stopPropagation()
@@ -316,22 +405,6 @@ function OrderHistoryPage() {
                   className='flex-grow-1 border-0 bg-transparent px-3 py-3 text-sm text-slate-800 outline-none'
                   aria-label='Tìm kiếm đơn hàng'
                 />
-
-                {/* {searchKeyword && (
-                  <button
-                    type='button'
-                    onClick={() => setSearchKeyword('')}
-                    className='me-2 d-flex align-items-center justify-content-center !rounded-circle border-0 bg-slate-100 text-slate-500 transition hover:bg-orange-100 hover:text-orange-600'
-                    style={{
-                      width: 34,
-                      height: 34,
-                      minWidth: 34,
-                    }}
-                    aria-label='Xóa tìm kiếm'
-                  >
-                    <i className='bi bi-x-lg' />
-                  </button>
-                )} */}
               </div>
             </div>
 
@@ -504,10 +577,25 @@ function OrderHistoryPage() {
                                 type='button'
                                 variant='danger'
                                 className='!rounded-pill px-4 py-2 text-sm'
-                                onClick={(event) => handleOpenCancelModal(event, order)}
+                                onClick={(event) =>
+                                  handleOpenCancelModal(event, order)
+                                }
                                 isLoading={loadingId === orderId}
                               >
                                 Hủy
+                              </Button>
+                            ) : hasUnreviewedProduct(
+                                order,
+                                reviewedProductKeys,
+                              ) ? (
+                              <Button
+                                type='button'
+                                className='!rounded-pill px-4 py-2 text-sm'
+                                onClick={(event) =>
+                                  handleOpenReview(event, order)
+                                }
+                              >
+                                Đánh giá
                               </Button>
                             ) : (
                               <span className='text-sm text-slate-400'>—</span>

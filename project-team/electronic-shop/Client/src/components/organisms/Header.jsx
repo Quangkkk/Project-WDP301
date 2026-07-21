@@ -193,10 +193,14 @@ function CategoryDropdown() {
   )
 }
 
-function CartButton() {
+function CartButton({ role }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isActive = location.pathname === '/cart'
+
+  if (['ADMIN', 'MANAGER', 'STAFF'].includes(role)) {
+    return null
+  }
 
   return (
     <button
@@ -302,6 +306,23 @@ function Header() {
 
             {/* User actions - luôn hiển thị */}
             <div className='flex shrink-0 items-center gap-3'>
+              {!loggedIn && (
+                <button
+                  type='button'
+                  onClick={() => setShowTrackModal(true)}
+                  className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                  title='Tra cứu đơn hàng'
+                >
+                  <Truck className='h-5 w-5' />
+
+                  <span className='hidden xl:inline'>
+                    Tra cứu đơn
+                  </span>
+                </button>
+              )}
+
+              <CategoryDropdown />
+              <CartButton role={role} />
               <HeaderActions
                 loggedIn={loggedIn}
                 user={user}

@@ -73,6 +73,46 @@ const getProductReviews = async (req, res) => {
   }
 };
 
+
+// Lay review cua customer dang dang nhap.
+// Frontend dung API nay de chi hien nut "Danh gia" cho san pham chua duoc review.
+const getMyReviews = async (req, res) => {
+  try {
+    const userId = req.user_id;
+    const { order_id } = req.query;
+
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
+    if (order_id && !isValidObjectId(order_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order_id",
+      });
+    }
+
+    const data = await reviewService.getMyReviews(userId, {
+      order_id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get your reviews",
+      error: error.message,
+    });
+  }
+};
+
 // Controller sua review ca nhan cua Customer
 const updateReview = async (req, res) => {
   try {
@@ -178,6 +218,7 @@ const hideReview = async (req, res) => {
 module.exports = {
   createReview,
   getProductReviews,
+  getMyReviews,
   updateReview,
   deleteReview,
   hideReview,

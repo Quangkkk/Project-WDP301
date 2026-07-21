@@ -8,20 +8,24 @@ import {
   PackageSearch, 
   Users, 
   Headset, 
-  MessageSquareText 
+  MessageSquareText,
+  BarChart3,
+  Users2
 } from 'lucide-react'
 import { getCurrentUser, getUserRole } from '../../utils/authStorage'
 
 const links = [
-  { path: '/staff', label: 'Tổng quan', icon: LayoutDashboard, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/staff/products', label: 'Sản phẩm', icon: MonitorSmartphone, allowedRoles: ['ADMIN', 'MANAGER'] },
-  { path: '/staff/categories', label: 'Danh mục', icon: Layers, allowedRoles: ['ADMIN', 'MANAGER'] },
-  { path: '/staff/brands', label: 'Thương hiệu', icon: Tags, allowedRoles: ['ADMIN', 'MANAGER'] },
-  { path: '/staff/coupons', label: 'Mã giảm giá', icon: TicketPercent, allowedRoles: ['ADMIN', 'MANAGER'] },
-  { path: '/staff/orders', label: 'Đơn hàng', icon: PackageSearch, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/staff/users', label: 'Người dùng', icon: Users, allowedRoles: ['ADMIN'] },
-  { path: '/staff/support', label: 'Yêu cầu hỗ trợ', icon: Headset, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/staff/chat', label: 'Trò chuyện trực tuyến', icon: MessageSquareText, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin', label: 'Tổng quan', icon: LayoutDashboard, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/products', label: 'Sản phẩm', icon: MonitorSmartphone, allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/admin/categories', label: 'Danh mục', icon: Layers, allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/admin/brands', label: 'Thương hiệu', icon: Tags, allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent, allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/admin/revenue', label: 'Doanh thu', icon: BarChart3, allowedRoles: ['MANAGER'] },
+  { path: '/admin/staff', label: 'Quản lý nhân viên', icon: Users2, allowedRoles: ['MANAGER'] },
+  { path: '/admin/orders', label: 'Đơn hàng', icon: PackageSearch, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/users', label: 'Người dùng', icon: Users, allowedRoles: ['ADMIN'] },
+  { path: '/admin/support', label: 'Yêu cầu hỗ trợ', icon: Headset, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/chat', label: 'Trò chuyện trực tuyến', icon: MessageSquareText, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
 ]
 
 function AdminSidebar() {
