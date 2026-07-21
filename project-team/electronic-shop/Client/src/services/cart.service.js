@@ -32,8 +32,11 @@ export const updateCartItem = async (itemId, payload) => {
   return response.data
 }
 
-export const deleteCartItem = async (itemId) => {
-  const response = await api.delete(`/cart/item/${itemId}`)
+export const deleteCartItem = async (itemId, identity) => {
+  const response = await api.delete(`/cart/item/${itemId}`, {
+    params: cleanIdentity(identity),
+  })
+
   return response.data
 }
 

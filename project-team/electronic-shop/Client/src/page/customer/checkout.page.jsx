@@ -27,8 +27,11 @@ import {
 } from '../../services/payment.service'
 import { getShippingMethods } from '../../services/shipping.service'
 import { getProfile } from '../../services/user.service'
-import { getCurrentUser } from '../../utils/authStorage'
-import { getCartIdentity } from '../../utils/sessionCart'
+import { getCurrentUser, getUserId } from '../../utils/authStorage'
+import {
+  getCartIdentity,
+  saveGuestOrderToken,
+} from '../../utils/sessionCart'
 import { formatCurrency, getId, pickArray } from '../../utils/format'
 
 const CHECKOUT_SELECTED_ITEMS_KEY = 'electronic_shop_checkout_items'
@@ -36,6 +39,7 @@ const CHECKOUT_SELECTED_ITEMS_KEY = 'electronic_shop_checkout_items'
 const initialForm = {
   receiver_name: '',
   receiver_phone: '',
+  receiver_email: '',
   address_province: '',
   address_district: '',
   address_ward: '',
@@ -146,6 +150,7 @@ function buildAddressForm(address, currentUser) {
   return {
     receiver_name: getAddressReceiverName(address) || currentUser?.name || '',
     receiver_phone: getAddressReceiverPhone(address) || currentUser?.phone || '',
+    receiver_email: currentUser?.email || '',
     address_province: getAddressProvince(address),
     address_district: getAddressDistrict(address),
     address_ward: getAddressWard(address),
@@ -162,6 +167,7 @@ function CheckoutPage() {
     ...initialForm,
     receiver_name: user?.name || '',
     receiver_phone: user?.phone || '',
+    receiver_email: user?.email || '',
   })
 
   const [items, setItems] = useState([])
@@ -228,6 +234,7 @@ function CheckoutPage() {
         const checkoutItems = filterCheckoutItems(allItems, location.state)
 
         const userData = userRes?.data || {}
+        const profileUser = userData.user || userData.profile || user || null
         const loadedAddresses = userData.addresses || userData.user_addresses || []
 
         const defaultAddress =
@@ -245,7 +252,7 @@ function CheckoutPage() {
 
           setForm((prev) => ({
             ...prev,
-            ...buildAddressForm(defaultAddress, user),
+            ...buildAddressForm(defaultAddress, profileUser),
             shipping_method_id: getId(methods[0]) || '',
           }))
         } else {
@@ -253,6 +260,9 @@ function CheckoutPage() {
 
           setForm((prev) => ({
             ...prev,
+            receiver_name: profileUser?.name || prev.receiver_name,
+            receiver_phone: profileUser?.phone || prev.receiver_phone,
+            receiver_email: profileUser?.email || prev.receiver_email,
             shipping_method_id: getId(methods[0]) || '',
           }))
         }
@@ -381,6 +391,7 @@ function CheckoutPage() {
       ...prev,
       receiver_name: user?.name || prev.receiver_name,
       receiver_phone: user?.phone || prev.receiver_phone,
+      receiver_email: user?.email || prev.receiver_email,
       address_province: '',
       address_district: '',
       address_ward: '',
@@ -393,6 +404,11 @@ function CheckoutPage() {
   }
 
   const handleApplyCoupon = async () => {
+    if (!user) {
+      setError('Khách vãng lai cần đăng nhập để sử dụng mã giảm giá.')
+      return
+    }
+
     if (!form.coupon_code.trim()) {
       setError('Vui lòng nhập mã giảm giá.')
       return
@@ -420,10 +436,6 @@ function CheckoutPage() {
   }
 
   const validate = () => {
-    if (!user) {
-      return 'Backend hiện tại yêu cầu đăng nhập để tạo đơn hàng. Vui lòng đăng nhập trước khi thanh toán.'
-    }
-
     const requiredFields = [
       'receiver_name',
       'receiver_phone',
@@ -434,8 +446,21 @@ function CheckoutPage() {
     ]
 
     for (const field of requiredFields) {
-      if (!form[field].trim()) {
+      if (!String(form[field] || '').trim()) {
         return 'Vui lòng nhập đầy đủ thông tin giao hàng.'
+      }
+    }
+
+    if (!user) {
+      const guestEmail = String(form.receiver_email || '').trim()
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+      if (!guestEmail) {
+        return 'Vui lòng nhập email để nhận thông tin và tra cứu đơn hàng.'
+      }
+
+      if (!emailPattern.test(guestEmail)) {
+        return 'Email người nhận không hợp lệ.'
       }
     }
 
@@ -476,6 +501,7 @@ function CheckoutPage() {
 
     let createdOrder = null
     let orderId = ''
+    let guestAccessToken = ''
 
     try {
       const storagePayload =
@@ -514,7 +540,11 @@ function CheckoutPage() {
         )
       }
 
+      const identity = getCartIdentity(user)
+
       const payload = {
+        ...(!user ? { session_id: identity.session_id } : {}),
+
         shipping_method_id:
           form.shipping_method_id,
 
@@ -523,6 +553,10 @@ function CheckoutPage() {
 
         receiver_phone:
           form.receiver_phone.trim(),
+
+        ...(!user
+          ? { receiver_email: form.receiver_email.trim().toLowerCase() }
+          : {}),
 
         address_province:
           form.address_province.trim(),
@@ -543,8 +577,9 @@ function CheckoutPage() {
           form.payment_method,
 
         coupon_code:
-          form.coupon_code.trim() ||
-          undefined,
+          user && form.coupon_code.trim()
+            ? form.coupon_code.trim()
+            : undefined,
 
         cart_id:
           location.state?.cartId ||
@@ -579,11 +614,19 @@ function CheckoutPage() {
         null
 
       orderId = getId(createdOrder)
+      guestAccessToken =
+        orderResult.guest_access_token ||
+        orderResponse?.guest_access_token ||
+        ''
 
       if (!createdOrder || !orderId) {
         throw new Error(
           'Backend đã phản hồi nhưng không trả về thông tin đơn hàng.',
         )
+      }
+
+      if (guestAccessToken) {
+        saveGuestOrderToken(orderId, guestAccessToken)
       }
 
       sessionStorage.removeItem(
@@ -656,6 +699,7 @@ function CheckoutPage() {
         const paymentResponse =
           await createBankTransferPayment(
             orderId,
+            guestAccessToken,
           )
 
         const paymentData =
@@ -689,6 +733,7 @@ function CheckoutPage() {
         const paymentResponse =
           await createZaloPayPayment(
             orderId,
+            guestAccessToken,
           )
 
         const paymentData =
@@ -933,6 +978,19 @@ function CheckoutPage() {
                             />
                           </Col>
 
+                          {!user && (
+                            <Col xs={12}>
+                              <TextField
+                                label='Email nhận thông báo và tra cứu đơn'
+                                name='receiver_email'
+                                type='email'
+                                value={form.receiver_email}
+                                onChange={handleChange}
+                                required
+                              />
+                            </Col>
+                          )}
+
                           <Col md={4}>
                             <SelectField
                               label='Tỉnh / Thành phố'
@@ -1095,7 +1153,8 @@ function CheckoutPage() {
                         ))}
                       </div>
 
-                      <div className='mt-3 d-flex align-items-center gap-2'>
+                      {user && (
+                        <div className='mt-3 d-flex align-items-center gap-2'>
                         <TextField
                           name='coupon_code'
                           placeholder='Mã giảm giá'
@@ -1112,7 +1171,8 @@ function CheckoutPage() {
                         >
                           Áp dụng
                         </Button>
-                      </div>
+                        </div>
+                      )}
 
                       <div className='mt-4 d-flex justify-content-between'>
                         <span className='text-slate-500'>Tạm tính</span>

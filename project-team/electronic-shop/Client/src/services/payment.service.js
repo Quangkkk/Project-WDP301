@@ -1,22 +1,58 @@
 import api from './api'
 
-export const getPaymentByOrder = async (orderId) => {
-  const response = await api.get(`/payment/order/${orderId}`)
-  return response.data
+const getGuestHeaders = (guestOrderToken = '') => {
+  const token = String(guestOrderToken || '').trim()
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    'X-Guest-Order-Token': token,
+  }
 }
 
-export const createBankTransferPayment = async (orderId) => {
-  const response = await api.post('/payment/bank-transfer', {
-    order_id: orderId,
+export const getPaymentByOrder = async (
+  orderId,
+  guestOrderToken = '',
+) => {
+  const response = await api.get(`/payment/order/${orderId}`, {
+    headers: getGuestHeaders(guestOrderToken),
   })
 
   return response.data
 }
 
-export const createZaloPayPayment = async (orderId) => {
-  const response = await api.post('/payment/zalopay/create', {
-    order_id: orderId,
-  })
+export const createBankTransferPayment = async (
+  orderId,
+  guestOrderToken = '',
+) => {
+  const response = await api.post(
+    '/payment/bank-transfer',
+    {
+      order_id: orderId,
+    },
+    {
+      headers: getGuestHeaders(guestOrderToken),
+    },
+  )
+
+  return response.data
+}
+
+export const createZaloPayPayment = async (
+  orderId,
+  guestOrderToken = '',
+) => {
+  const response = await api.post(
+    '/payment/zalopay/create',
+    {
+      order_id: orderId,
+    },
+    {
+      headers: getGuestHeaders(guestOrderToken),
+    },
+  )
 
   return response.data
 }

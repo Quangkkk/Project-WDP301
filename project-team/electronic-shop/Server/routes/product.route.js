@@ -3,22 +3,49 @@ const product = require("../Controller/product.controller");
 const review = require("../Controller/review.controller");
 const verifyToken = require("../middleware/verifyToken");
 const authorizeRoles = require("../middleware/authorizeRoles");
+const productUpload = require("../middleware/productUpload");
 
 const router = express.Router();
+const productManagers = [
+  verifyToken,
+  authorizeRoles("ADMIN", "MANAGER"),
+];
 
-// Routes xem danh sach va chi tiet san pham (Public - khong can login)
+
+const uploadSingleProductImage = (req, res, next) => {
+  productUpload.single("image")(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Không tải được ảnh sản phẩm.",
+      });
+    }
+
+    return next();
+  });
+};
+
+// Public.
 router.get("/", product.getAllProducts);
 router.get("/category/:id", product.getProductByCategory);
 router.get("/brand/:id", product.getProductByBrand);
-router.get("/:id", product.getProductById);
-router.get("/:id/reviews", review.getProductReviews);
 
-// Routes quan ly san pham va variants (Chi ADMIN hoac MANAGER)
-router.post("/", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.createProduct);
-router.post("/:productId/variants", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.createVariant);
-router.put("/variant/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.updateVariant);
-router.delete("/variant/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.deleteVariant);
-router.put("/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.updateProductById);
-router.delete("/:id", verifyToken, authorizeRoles("ADMIN", "MANAGER"), product.deleteProductById);
+// Upload dat truoc /:id de khong bi nhan nham la product id.
+router.post(
+  "/upload-image",
+  ...productManagers,
+  uploadSingleProductImage,
+  product.uploadProductImage
+);
+
+router.post("/", ...productManagers, product.createProduct);
+router.post("/:productId/variants", ...productManagers, product.createVariant);
+router.put("/variant/:id", ...productManagers, product.updateVariant);
+router.delete("/variant/:id", ...productManagers, product.deleteVariant);
+router.put("/:id", ...productManagers, product.updateProductById);
+router.delete("/:id", ...productManagers, product.deleteProductById);
+
+router.get("/:id/reviews", review.getProductReviews);
+router.get("/:id", product.getProductById);
 
 module.exports = router;

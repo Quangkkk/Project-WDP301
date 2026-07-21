@@ -22,6 +22,7 @@ import {
   getProductWishlistCount as fetchProductWishlistCount,
 } from '../../services/wishlist.service'
 import { getCurrentUser, getUserId, isAuthenticated } from '../../utils/authStorage'
+import { getCartIdentity } from '../../utils/sessionCart'
 import { getId, pickData } from '../../utils/format'
 import {
   getProductImage,
@@ -709,17 +710,7 @@ function ProductDetailPage() {
     setError('')
   }
 
-  const redirectToLogin = () => {
-    navigate('/login', {
-      state: { from: `/products/${id}` },
-    })
-  }
-
   const addSelectedItemToCart = async () => {
-    if (!isAuthenticated() || !currentUserId) {
-      throw new Error('AUTH_REQUIRED')
-    }
-
     const selectedVariantId = getId(selectedVariant)
 
     if (!selectedVariantId) {
@@ -727,6 +718,7 @@ function ProductDetailPage() {
     }
 
     await addItemToCart({
+      ...getCartIdentity(user),
       product_id: getId(product),
       variant_id: selectedVariantId,
       quantity,
@@ -734,11 +726,6 @@ function ProductDetailPage() {
   }
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated() || !currentUserId) {
-      redirectToLogin()
-      return
-    }
-
     try {
       setIsAdding(true)
       setMessage('')

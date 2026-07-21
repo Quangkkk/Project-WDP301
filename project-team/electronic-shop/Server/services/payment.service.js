@@ -69,28 +69,55 @@ const getQueryEndpoint = () =>
   process.env.ZALOPAY_QUERY_ENDPOINT ||
   "https://sb-openapi.zalopay.vn/v2/query";
 
-const assertOrderAccess = (
-  order,
-  currentUser
-) => {
-  if (!currentUser?.user_id) {
-    throw new Error("Unauthorized");
+const hashGuestToken = (token) =>
+  crypto
+    .createHash("sha256")
+    .update(String(token || ""))
+    .digest("hex");
+
+const safeEqualHex = (left, right) => {
+  const leftBuffer = Buffer.from(String(left || ""), "utf8");
+  const rightBuffer = Buffer.from(String(right || ""), "utf8");
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    leftBuffer.length > 0 &&
+    crypto.timingSafeEqual(leftBuffer, rightBuffer)
+  );
+};
+
+const assertOrderAccess = (order, currentUser = {}) => {
+  const role = normalizeRole(currentUser.role);
+
+  if (PRIVILEGED_ROLES.includes(role)) {
+    return;
   }
 
-  const role = normalizeRole(
-    currentUser.role
-  );
+  if (order.user_id) {
+    if (
+      currentUser.user_id &&
+      String(order.user_id) === String(currentUser.user_id)
+    ) {
+      return;
+    }
 
-  const isOwner =
-    String(order.user_id) ===
-    String(currentUser.user_id);
+    throw new Error(currentUser.user_id ? "Access denied" : "Unauthorized");
+  }
 
-  const isPrivileged =
-    PRIVILEGED_ROLES.includes(role);
+  const suppliedHash = hashGuestToken(currentUser.guest_order_token);
 
-  if (!isOwner && !isPrivileged) {
+  if (!safeEqualHex(suppliedHash, order.guest_access_token_hash)) {
     throw new Error("Access denied");
   }
+};
+
+const findOrderForAccess = async (orderId) =>
+  Order.findById(orderId).select("+guest_access_token_hash");
+
+const toSafeOrderObject = (order) => {
+  const result = order?.toObject ? order.toObject() : { ...order };
+  delete result.guest_access_token_hash;
+  return result;
 };
 
 const mergeRawResponse = (
@@ -315,7 +342,7 @@ const getPaymentByOrder = async (
   } = {}
 ) => {
   let order =
-    await Order.findById(orderId);
+    await findOrderForAccess(orderId);
 
   if (!order) {
     throw new Error("Order not found");
@@ -355,7 +382,7 @@ const getPaymentByOrder = async (
   }
 
   return {
-    order: order.toObject(),
+    order: toSafeOrderObject(order),
     payment: payment
       ? payment.toObject()
       : null,
@@ -368,7 +395,7 @@ const createBankTransferPayment = async (
   currentUser
 ) => {
   const order =
-    await Order.findById(orderId);
+    await findOrderForAccess(orderId);
 
   if (!order) {
     throw new Error("Order not found");
@@ -460,7 +487,7 @@ const createBankTransferPayment = async (
   await order.save();
 
   return {
-    order,
+    order: toSafeOrderObject(order),
     payment,
   };
 };
@@ -474,7 +501,7 @@ const createZaloPayPayment = async (
   }
 ) => {
   const order =
-    await Order.findById(orderId);
+    await findOrderForAccess(orderId);
 
   if (!order) {
     throw new Error("Order not found");
@@ -561,7 +588,7 @@ const createZaloPayPayment = async (
       return {
         success: true,
         reused: true,
-        order: refreshedOrder,
+        order: toSafeOrderObject(refreshedOrder),
         payment: refreshed,
         payment_url:
           refreshed.payment_url,
@@ -603,7 +630,7 @@ const createZaloPayPayment = async (
   const zaloOrder = {
     app_id: Number(appId),
     app_user: String(
-      order.user_id
+      order.user_id || `guest_${order._id}`
     ).slice(0, 50),
     app_trans_id: appTransId,
     app_time: appTime,
@@ -719,7 +746,7 @@ const createZaloPayPayment = async (
   return {
     success: isSuccess,
     zaloResult,
-    order,
+    order: toSafeOrderObject(order),
     payment,
     payment_url: paymentUrl,
     qr_url: qrUrl,

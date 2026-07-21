@@ -17,6 +17,8 @@ import {
   formatOrderCode,
   getId,
 } from '../../utils/format'
+import { getCurrentUser } from '../../utils/authStorage'
+import { getGuestOrderToken } from '../../utils/sessionCart'
 
 function getPaymentLabel(provider) {
   const map = {
@@ -73,6 +75,7 @@ function PaymentResultPage() {
   const { orderId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const currentUser = getCurrentUser()
 
   const [order, setOrder] = useState(location.state?.order || null)
   const [payment, setPayment] = useState(location.state?.payment || null)
@@ -101,7 +104,8 @@ function PaymentResultPage() {
       setIsLoading(true)
       setError('')
 
-      const response = await getPaymentByOrder(orderId)
+      const guestOrderToken = getGuestOrderToken(orderId)
+      const response = await getPaymentByOrder(orderId, guestOrderToken)
       const data = response?.data || {}
 
       setOrder(data.order || null)
@@ -142,8 +146,11 @@ function PaymentResultPage() {
                       Đơn hàng không tồn tại hoặc chưa có dữ liệu thanh toán.
                     </p>
 
-                    <Button type='button' onClick={() => navigate('/orders')}>
-                      Xem đơn hàng của tôi
+                    <Button
+                      type='button'
+                      onClick={() => navigate(currentUser ? '/orders' : '/products')}
+                    >
+                      {currentUser ? 'Xem đơn hàng của tôi' : 'Tiếp tục mua sắm'}
                     </Button>
                   </Card.Body>
                 </Card>
@@ -362,8 +369,11 @@ function PaymentResultPage() {
                     )}
 
                     <div className='mt-4 d-flex flex-wrap gap-2'>
-                      <Button type='button' onClick={() => navigate('/orders')}>
-                        Xem đơn hàng
+                      <Button
+                        type='button'
+                        onClick={() => navigate(currentUser ? '/orders' : '/products')}
+                      >
+                        {currentUser ? 'Xem đơn hàng' : 'Tiếp tục mua sắm'}
                       </Button>
 
                       <Button

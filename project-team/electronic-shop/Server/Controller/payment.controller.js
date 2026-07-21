@@ -6,10 +6,18 @@ const isValidObjectId = (id) => {
 };
 
 const getCurrentUser = (req) => {
-  return {
-    user_id: req.user_id,
-    role: req.role,
+  const currentUser = {
+    user_id: req.user_id || null,
+    role: req.role || null,
   };
+
+  const guestOrderToken = req.headers?.["x-guest-order-token"];
+
+  if (guestOrderToken) {
+    currentUser.guest_order_token = guestOrderToken;
+  }
+
+  return currentUser;
 };
 
 const getClientBaseUrl = () => {

@@ -1,3 +1,4 @@
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
@@ -8,6 +9,8 @@ const reviewService = require("../services/review.service");
 const wishlistService = require("../services/wishlist.service");
 const paymentService = require("../services/payment.service");
 const paymentController = require("../Controller/payment.controller");
+const orderController = require("../Controller/order.controller");
+const productController = require("../Controller/product.controller");
 const Order = require("../models/Orders.model");
 
 test("all main routers can be loaded", () => {
@@ -50,6 +53,9 @@ test("critical backend services expose the expected methods", () => {
 test("order schema stores checkout note and cancellation reason", () => {
   assert.ok(Order.schema.path("note"));
   assert.ok(Order.schema.path("cancel_reason"));
+  assert.ok(Order.schema.path("receiver_email"));
+  assert.ok(Order.schema.path("guest_access_token_hash"));
+  assert.equal(Order.schema.path("user_id").options.required, undefined);
 });
 
 test("order status enums do not accept arbitrary values", () => {
@@ -109,4 +115,163 @@ test("payment controller forwards the authenticated user to the service", async 
     user_id: req.user_id,
     role: req.role,
   });
+});
+
+test("order controller uses token user id and ignores spoofed checkout identity", async () => {
+  const originalMethod = orderService.createOrder;
+  let receivedPayload = null;
+
+  orderService.createOrder = async (payload) => {
+    receivedPayload = payload;
+    return { order: { _id: "665000000000000000001201" } };
+  };
+
+  const req = {
+    user_id: "665000000000000000000102",
+    body: {
+      user_id: "665000000000000000000999",
+      session_id: "guest_12345678",
+      receiver_name: "Customer",
+    },
+  };
+
+  const response = {
+    statusCode: 200,
+    payload: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.payload = payload;
+      return this;
+    },
+  };
+
+  try {
+    await orderController.createOrder(req, response);
+  } finally {
+    orderService.createOrder = originalMethod;
+  }
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(receivedPayload.user_id, req.user_id);
+  assert.equal(receivedPayload.session_id, undefined);
+});
+
+test("order controller forwards guest session and email without a user id", async () => {
+  const originalMethod = orderService.createOrder;
+  let receivedPayload = null;
+
+  orderService.createOrder = async (payload) => {
+    receivedPayload = payload;
+    return {
+      order: { _id: "665000000000000000001202" },
+      guest_access_token: "guest-token",
+    };
+  };
+
+  const req = {
+    user_id: null,
+    body: {
+      user_id: "665000000000000000000999",
+      session_id: "guest_12345678",
+      receiver_email: "guest@example.com",
+    },
+  };
+
+  const response = {
+    statusCode: 200,
+    payload: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.payload = payload;
+      return this;
+    },
+  };
+
+  try {
+    await orderController.createOrder(req, response);
+  } finally {
+    orderService.createOrder = originalMethod;
+  }
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(receivedPayload.user_id, undefined);
+  assert.equal(receivedPayload.session_id, req.body.session_id);
+  assert.equal(receivedPayload.receiver_email, req.body.receiver_email);
+});
+
+test("payment controller forwards a guest order token", async () => {
+  const orderId = "665000000000000000001201";
+  const originalMethod = paymentService.getPaymentByOrder;
+  let receivedCurrentUser = null;
+
+  paymentService.getPaymentByOrder = async (_id, currentUser) => {
+    receivedCurrentUser = currentUser;
+    return { order: { _id: orderId }, payment: null };
+  };
+
+  const req = {
+    params: { orderId },
+    headers: { "x-guest-order-token": "guest-token" },
+  };
+
+  const response = {
+    statusCode: 200,
+    payload: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.payload = payload;
+      return this;
+    },
+  };
+
+  try {
+    await paymentController.getPaymentByOrder(req, response);
+  } finally {
+    paymentService.getPaymentByOrder = originalMethod;
+  }
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(receivedCurrentUser.guest_order_token, "guest-token");
+});
+
+test("product image upload controller returns the public upload URL", async () => {
+  const req = {
+    protocol: "http",
+    get: () => "localhost:8080",
+    file: {
+      filename: "product-demo.png",
+      mimetype: "image/png",
+      size: 1234,
+    },
+  };
+
+  const response = {
+    statusCode: 200,
+    payload: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload) {
+      this.payload = payload;
+      return this;
+    },
+  };
+
+  await productController.uploadProductImage(req, response);
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(
+    response.payload.data.url,
+    "http://localhost:8080/uploads/products/product-demo.png"
+  );
 });

@@ -30,6 +30,25 @@ export const createVariant = async (productId, payload) => {
   return response.data
 }
 
+export const updateVariant = async (variantId, payload) => {
+  const response = await api.put(`/product/variant/${variantId}`, payload)
+  return response.data
+}
+
+export const deleteVariant = async (variantId) => {
+  const response = await api.delete(`/product/variant/${variantId}`)
+  return response.data
+}
+
+export const uploadProductImage = async (file) => {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const response = await api.post('/product/upload-image', formData)
+
+  return response.data
+}
+
 export const getCategories = async (params = { status: 'active' }) => {
   const response = await api.get('/category', { params })
   return response.data

@@ -123,6 +123,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Email người nhận không hợp lệ."],
     },
     guest_access_token_hash: {
       type: String,
@@ -135,6 +136,15 @@ const orderSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
+
+orderSchema.pre("validate", function validateOrderOwner() {
+  if (!this.user_id && !this.guest_access_token_hash) {
+    this.invalidate(
+      "guest_access_token_hash",
+      "Đơn hàng guest phải có mã truy cập."
+    );
+  }
+});
 
 orderSchema.index({ order_code: 1 }, { unique: true, sparse: true });
 orderSchema.index({ user_id: 1 });

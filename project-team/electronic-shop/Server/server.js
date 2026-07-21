@@ -57,7 +57,7 @@ app.use((req, res, next) => {
 
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type,Authorization"
+    "Content-Type,Authorization,X-Guest-Order-Token"
   );
 
   if (req.method === "OPTIONS") {

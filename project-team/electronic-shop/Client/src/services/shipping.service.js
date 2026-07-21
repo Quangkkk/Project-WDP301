@@ -1,7 +1,10 @@
 import api from './api'
 
-export const getShippingMethods = async () => {
-  const response = await api.get('/shipping-method')
+export const getShippingMethods = async (params = {}) => {
+  const response = await api.get('/shipping-method', {
+    params,
+  })
+
   return response.data
 }
 

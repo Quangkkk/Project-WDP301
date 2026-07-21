@@ -1,6 +1,8 @@
+const crypto = require("crypto");
 const mongoose = require("mongoose");
 
 const Order = require("../models/Orders.model");
+const User = require("../models/User.model");
 const OrderItem = require(
   "../models/OrderItem.model"
 );
@@ -46,6 +48,33 @@ const isValidObjectId = (id) =>
   mongoose.Types.ObjectId.isValid(
     String(id || "")
   );
+
+
+const normalizeSessionId = (value) => String(value || "").trim();
+
+const isValidGuestSessionId = (value) =>
+  /^guest_[A-Za-z0-9_-]{8,120}$/.test(normalizeSessionId(value));
+
+const buildCartIdentityQuery = ({ user_id, session_id }) => {
+  if (isValidObjectId(user_id)) {
+    return { user_id };
+  }
+
+  if (isValidGuestSessionId(session_id)) {
+    return { session_id: normalizeSessionId(session_id) };
+  }
+
+  return null;
+};
+
+const createGuestAccessToken = () => {
+  const token = crypto.randomBytes(32).toString("hex");
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  return { token, hash };
+};
+
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const normalizeOrderCode = (value) =>
   String(value || "")
@@ -173,6 +202,7 @@ const getItemsFromRequestOrCart = async ({
   items,
   cart_id,
   user_id,
+  session_id,
 }) => {
   if (
     Array.isArray(items) &&
@@ -186,9 +216,15 @@ const getItemsFromRequestOrCart = async ({
       throw new Error("Invalid cart_id");
     }
 
+    const identityQuery = buildCartIdentityQuery({ user_id, session_id });
+
+    if (!identityQuery) {
+      throw new Error("Cart identity is required");
+    }
+
     const cart = await Cart.findOne({
       _id: cart_id,
-      user_id,
+      ...identityQuery,
     });
 
     if (!cart) {
@@ -211,10 +247,10 @@ const getItemsFromRequestOrCart = async ({
     }));
   }
 
-  if (user_id) {
-    const cart = await Cart.findOne({
-      user_id,
-    });
+  const identityQuery = buildCartIdentityQuery({ user_id, session_id });
+
+  if (identityQuery) {
+    const cart = await Cart.findOne(identityQuery);
 
     if (cart) {
       const cartItems = await CartItem.find({
@@ -241,21 +277,19 @@ const getItemsFromRequestOrCart = async ({
 const removeOrderedItemsFromCart = async ({
   cart_id,
   user_id,
+  session_id,
   orderedItems,
   hasExplicitItems,
 }) => {
-  let cart = null;
+  const identityQuery = buildCartIdentityQuery({ user_id, session_id });
 
-  if (cart_id) {
-    cart = await Cart.findOne({
-      _id: cart_id,
-      user_id,
-    });
-  } else {
-    cart = await Cart.findOne({
-      user_id,
-    });
+  if (!identityQuery) {
+    return;
   }
+
+  const cart = cart_id
+    ? await Cart.findOne({ _id: cart_id, ...identityQuery })
+    : await Cart.findOne(identityQuery);
 
   if (!cart) {
     return;
@@ -407,10 +441,12 @@ const rollbackStock = async (stockChanges) => {
 const createOrder = async (orderData) => {
   const {
     user_id,
+    session_id,
     shipping_method_id,
     payment_method = "cod",
     receiver_name,
     receiver_phone,
+    receiver_email,
     address_province,
     address_ward,
     address_district,
@@ -425,9 +461,39 @@ const createOrder = async (orderData) => {
     note,
   } = orderData;
 
-  if (!user_id || !isValidObjectId(user_id)) {
+  const isAuthenticatedOrder = Boolean(user_id);
+
+  if (isAuthenticatedOrder && !isValidObjectId(user_id)) {
     throw new Error("Valid user_id is required");
   }
+
+  if (!isAuthenticatedOrder && !isValidGuestSessionId(session_id)) {
+    throw new Error("Valid guest session_id is required");
+  }
+
+  let finalReceiverEmail = normalizeEmail(receiver_email);
+
+  if (isAuthenticatedOrder) {
+    const customer = await User.findById(user_id).select("email").lean();
+
+    if (!customer) {
+      throw new Error("User not found");
+    }
+
+    finalReceiverEmail = normalizeEmail(customer.email);
+  }
+
+  if (!isValidEmail(finalReceiverEmail)) {
+    throw new Error(
+      isAuthenticatedOrder
+        ? "Customer account email is invalid"
+        : "Valid receiver_email is required for guest checkout"
+    );
+  }
+
+  const guestAccess = isAuthenticatedOrder
+    ? { token: null, hash: null }
+    : createGuestAccessToken();
 
   const normalizedPaymentMethod = String(payment_method || "cod").toLowerCase();
   const allowedPaymentMethods = ["cod", "bank_transfer", "zalopay"];
@@ -477,6 +543,7 @@ const createOrder = async (orderData) => {
     items,
     cart_id,
     user_id,
+    session_id,
   });
 
   const { orderItems, subtotal } = await buildOrderItems(finalItems);
@@ -485,6 +552,10 @@ const createOrder = async (orderData) => {
   let coupon = null;
 
   if (coupon_code) {
+    if (!isAuthenticatedOrder) {
+      throw new Error("Guest checkout cannot use coupon");
+    }
+
     const validated = await couponService.validateCoupon({
       code: coupon_code,
       user_id,
@@ -501,10 +572,12 @@ const createOrder = async (orderData) => {
   const order = await Order.create({
     _id: orderId,
     order_code: orderCode,
-    user_id,
+    user_id: isAuthenticatedOrder ? user_id : null,
     shipping_method_id: shipping_method_id || null,
     receiver_name: String(receiver_name).trim(),
     receiver_phone: String(receiver_phone).trim(),
+    receiver_email: finalReceiverEmail,
+    guest_access_token_hash: guestAccess.hash,
     address_province: String(province).trim(),
     address_ward: String(ward).trim(),
     address_district: String(district).trim(),
@@ -597,6 +670,7 @@ const createOrder = async (orderData) => {
     await removeOrderedItemsFromCart({
       cart_id,
       user_id,
+      session_id,
       orderedItems: finalItems,
       hasExplicitItems,
     });
@@ -610,6 +684,7 @@ const createOrder = async (orderData) => {
     subtotal,
     shipping_fee: shippingFee,
     discount_amount: discountAmount,
+    guest_access_token: guestAccess.token,
   };
 };
 
@@ -1116,7 +1191,7 @@ const trackGuestOrder = async ({
   ).trim();
 
   const emailClean = String(
-    order.user_id?.email || ""
+    order.receiver_email || order.user_id?.email || ""
   )
     .trim()
     .toLowerCase();

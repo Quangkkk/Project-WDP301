@@ -111,7 +111,7 @@ function CartPage() {
       setError('')
       setMessage('')
 
-      await updateCartItem(itemId, { quantity })
+      await updateCartItem(itemId, { ...identity, quantity })
 
       setItems((prev) =>
         prev.map((item) =>
@@ -135,7 +135,7 @@ function CartPage() {
       setError('')
       setMessage('')
 
-      await deleteCartItem(itemId)
+      await deleteCartItem(itemId, identity)
 
       setItems((prev) => prev.filter((item) => getCartItemId(item) !== itemId))
       setSelectedItemIds((prev) => prev.filter((id) => id !== itemId))
@@ -157,6 +157,8 @@ function CartPage() {
       CHECKOUT_SELECTED_ITEMS_KEY,
       JSON.stringify({
         selectedItemIds,
+        cartId: cart?._id || cart?.id || '',
+        sessionId: identity.session_id || '',
       }),
     )
 
@@ -164,6 +166,8 @@ function CartPage() {
     navigate('/checkout', {
       state: {
         selectedItemIds,
+        cartId: cart?._id || cart?.id || '',
+        sessionId: identity.session_id || '',
       },
     })
   }

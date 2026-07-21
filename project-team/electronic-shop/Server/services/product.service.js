@@ -24,6 +24,73 @@ const buildVariantPayload = (body, productId) => ({
   is_active: body.is_active !== undefined ? body.is_active : body.status ? body.status === "active" : true,
 });
 
+const normalizeVariantSku = (sku) => String(sku || "").trim().toUpperCase();
+
+const validateVariantPayloads = async (variants, { excludeVariantIds = [] } = {}) => {
+  if (!Array.isArray(variants) || variants.length === 0) {
+    throw new Error("Sản phẩm phải có ít nhất một phiên bản");
+  }
+
+  const normalizedSkus = [];
+
+  for (const [index, variant] of variants.entries()) {
+    if (!variant.sku || !variant.variant_value || variant.price === undefined) {
+      throw new Error(
+        `Phiên bản ${index + 1} phải có SKU, tên phiên bản và giá bán`
+      );
+    }
+
+    const normalizedSku = normalizeVariantSku(variant.sku);
+    if (!normalizedSku) {
+      throw new Error(`SKU phiên bản ${index + 1} không hợp lệ`);
+    }
+
+    const price = Number(variant.price);
+    const salePrice = Number(variant.sale_price || 0);
+    const stockQuantity = Number(variant.stock_quantity || 0);
+
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error(`Giá bán của phiên bản ${index + 1} không hợp lệ`);
+    }
+
+    if (!Number.isFinite(salePrice) || salePrice < 0) {
+      throw new Error(`Giá khuyến mãi của phiên bản ${index + 1} không hợp lệ`);
+    }
+
+    if (salePrice > 0 && salePrice > price) {
+      throw new Error(
+        `Giá khuyến mãi của phiên bản ${index + 1} không được lớn hơn giá gốc`
+      );
+    }
+
+    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+      throw new Error(`Tồn kho của phiên bản ${index + 1} không hợp lệ`);
+    }
+
+    normalizedSkus.push(normalizedSku);
+  }
+
+  if (new Set(normalizedSkus).size !== normalizedSkus.length) {
+    throw new Error("SKU phiên bản không được trùng nhau trong cùng sản phẩm");
+  }
+
+  const duplicateFilter = {
+    sku: { $in: normalizedSkus },
+  };
+
+  if (excludeVariantIds.length > 0) {
+    duplicateFilter._id = { $nin: excludeVariantIds };
+  }
+
+  const duplicatedVariant = await ProductVariant.findOne(duplicateFilter)
+    .select("sku")
+    .lean();
+
+  if (duplicatedVariant) {
+    throw new Error(`SKU phiên bản ${duplicatedVariant.sku} đã tồn tại`);
+  }
+};
+
 // Tao san pham moi va cac variant kem theo
 const createProduct = async (productData) => {
   const {
@@ -41,24 +108,33 @@ const createProduct = async (productData) => {
   } = productData;
 
   if (!brand_id || !category_id || !name || !sku) {
-    throw new Error("brand_id, category_id, name and sku are required");
+    throw new Error("Vui lòng nhập đầy đủ thương hiệu, danh mục, tên và SKU sản phẩm");
   }
 
   const [brand, category] = await Promise.all([
     Brand.findById(brand_id),
     Category.findById(category_id),
   ]);
-  if (!brand) throw new Error("Brand not found");
-  if (!category) throw new Error("Category not found");
+  if (!brand) throw new Error("Không tìm thấy thương hiệu");
+  if (!category) throw new Error("Không tìm thấy danh mục");
 
   const existedSku = await Product.findOne({ sku: String(sku).toUpperCase().trim() });
-  if (existedSku) throw new Error("Product SKU already exists");
+  if (existedSku) throw new Error("SKU sản phẩm đã tồn tại");
+
+  const variantPayloads = (Array.isArray(variants) ? variants : []).map(
+    (variant) => ({
+      ...buildVariantPayload(variant),
+      sku: normalizeVariantSku(variant.sku),
+    })
+  );
+
+  await validateVariantPayloads(variantPayloads);
 
   const product = await Product.create({
     brand_id,
     category_id,
     name,
-    sku,
+    sku: String(sku).trim().toUpperCase(),
     description: description || null,
     total_review: total_review ?? 0,
     average_rating: average_rating ?? 0,
@@ -68,15 +144,18 @@ const createProduct = async (productData) => {
   });
 
   let createdVariants = [];
-  if (Array.isArray(variants) && variants.length > 0) {
-    const payload = variants.map((variant) => {
-      const variantPayload = buildVariantPayload(variant, product._id);
-      if (!variantPayload.sku || !variantPayload.variant_value || variantPayload.price === undefined) {
-        throw new Error("Each variant must have sku, variant_value and price");
-      }
-      return variantPayload;
-    });
-    createdVariants = await ProductVariant.insertMany(payload);
+
+  try {
+    createdVariants = await ProductVariant.insertMany(
+      variantPayloads.map((variant) => ({
+        ...variant,
+        product_id: product._id,
+      }))
+    );
+  } catch (error) {
+    // Tránh để lại sản phẩm rỗng nếu tạo phiên bản thất bại.
+    await Product.findByIdAndDelete(product._id);
+    throw error;
   }
 
   return { product, variants: createdVariants };
@@ -206,7 +285,7 @@ const getProductById = async (id) => {
     .select("-__v");
 
   if (!product) {
-    throw new Error("Product not found");
+    throw new Error("Không tìm thấy sản phẩm");
   }
 
   const variants = await ProductVariant.find({ product_id: id }).select("-__v").sort({ created_at: -1 });
@@ -235,15 +314,15 @@ const updateProductById = async (id, updateFields) => {
 
   if (updateData.brand_id) {
     const brand = await Brand.findById(updateData.brand_id);
-    if (!brand) throw new Error("Brand not found");
+    if (!brand) throw new Error("Không tìm thấy thương hiệu");
   }
   if (updateData.category_id) {
     const category = await Category.findById(updateData.category_id);
-    if (!category) throw new Error("Category not found");
+    if (!category) throw new Error("Không tìm thấy danh mục");
   }
 
   if (Object.keys(updateData).length === 0) {
-    throw new Error("No data to update");
+    throw new Error("Không có dữ liệu để cập nhật");
   }
 
   const data = await Product.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
@@ -252,7 +331,7 @@ const updateProductById = async (id, updateFields) => {
     .select("-__v");
 
   if (!data) {
-    throw new Error("Product not found");
+    throw new Error("Không tìm thấy sản phẩm");
   }
 
   return data;
@@ -262,7 +341,7 @@ const updateProductById = async (id, updateFields) => {
 const deleteProductById = async (id) => {
   const data = await Product.findByIdAndDelete(id).select("-__v");
   if (!data) {
-    throw new Error("Product not found");
+    throw new Error("Không tìm thấy sản phẩm");
   }
 
   await ProductVariant.deleteMany({ product_id: id });
@@ -273,13 +352,18 @@ const deleteProductById = async (id) => {
 const createVariant = async (productId, variantData) => {
   const product = await Product.findById(productId);
   if (!product) {
-    throw new Error("Product not found");
+    throw new Error("Không tìm thấy sản phẩm");
   }
 
-  const payload = buildVariantPayload(variantData, productId);
+  const payload = {
+    ...buildVariantPayload(variantData, productId),
+    sku: normalizeVariantSku(variantData.sku),
+  };
   if (!payload.sku || !payload.variant_value || payload.price === undefined) {
-    throw new Error("sku, variant_value and price are required");
+    throw new Error("Vui lòng nhập SKU, tên phiên bản và giá bán");
   }
+
+  await validateVariantPayloads([payload]);
 
   return await ProductVariant.create(payload);
 };
@@ -303,6 +387,10 @@ const updateVariant = async (variantId, variantData) => {
   for (const field of allowedFields) {
     if (variantData[field] !== undefined) updateData[field] = variantData[field];
   }
+
+  if (updateData.sku !== undefined) {
+    updateData.sku = normalizeVariantSku(updateData.sku);
+  }
   if (variantData.variant_name !== undefined && updateData.variant_value === undefined) {
     updateData.variant_value = variantData.variant_name;
   }
@@ -316,12 +404,26 @@ const updateVariant = async (variantId, variantData) => {
   }
 
   if (Object.keys(updateData).length === 0) {
-    throw new Error("No data to update");
+    throw new Error("Không có dữ liệu để cập nhật");
   }
+
+  const currentVariant = await ProductVariant.findById(variantId).lean();
+  if (!currentVariant) {
+    throw new Error("Không tìm thấy phiên bản sản phẩm");
+  }
+
+  const payloadForValidation = {
+    ...currentVariant,
+    ...updateData,
+  };
+
+  await validateVariantPayloads([payloadForValidation], {
+    excludeVariantIds: [variantId],
+  });
 
   const data = await ProductVariant.findByIdAndUpdate(variantId, updateData, { new: true, runValidators: true }).select("-__v");
   if (!data) {
-    throw new Error("Product variant not found");
+    throw new Error("Không tìm thấy phiên bản sản phẩm");
   }
 
   return data;
@@ -331,7 +433,7 @@ const updateVariant = async (variantId, variantData) => {
 const deleteVariant = async (variantId) => {
   const data = await ProductVariant.findByIdAndDelete(variantId).select("-__v");
   if (!data) {
-    throw new Error("Product variant not found");
+    throw new Error("Không tìm thấy phiên bản sản phẩm");
   }
   return data;
 };

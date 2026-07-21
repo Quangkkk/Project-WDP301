@@ -3,59 +3,65 @@ const orderService = require("../services/order.service");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// Controller tao don hang moi
+// Controller tao don hang moi cho customer hoac guest
 const createOrder = async (req, res) => {
   try {
     const orderData = { ...req.body };
 
-    // Uu tien gan user_id tu token de dam bao an toan
+    // Khong tin user_id frontend gui len. Neu co token thi lay user_id tu token.
     if (req.user_id) {
       orderData.user_id = req.user_id;
-    }
-
-    if (!orderData.user_id || !isValidObjectId(orderData.user_id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid user_id is required",
-      });
+      delete orderData.session_id;
+    } else {
+      delete orderData.user_id;
     }
 
     const result = await orderService.createOrder(orderData);
 
     return res.status(201).json({
       success: true,
-      message: "Create order successfully",
+      message: "Tạo đơn hàng thành công.",
       data: result,
     });
   } catch (error) {
     console.error("[order.createOrder]", error);
+
+    const message = String(error?.message || "");
     let statusCode = 500;
+
     if (
-      error.message === "Shipping method not found" ||
-      error.message === "Product not found" ||
-      error.message === "Variant not found" ||
-      error.message === "Coupon not found"
+      message === "Shipping method not found" ||
+      message === "Product not found" ||
+      message === "Variant not found" ||
+      message === "Coupon not found" ||
+      message === "User not found"
     ) {
       statusCode = 404;
     } else if (
-      error.message === "Cart is empty" ||
-      error.message.includes("is inactive") ||
-      error.message.includes("Not enough stock") ||
-      error.message.includes("must not be negative") ||
-      error.message.includes("price is invalid") ||
-      error.message.includes("variant_id") ||
-      error.message.includes("Invalid payment method") ||
-      error.message.includes("Coupon") ||
-      error.message.includes("Minimum order") ||
-      error.message.includes("limit reached") ||
-      error.message.includes("Missing")
+      message === "Cart is empty" ||
+      message.includes("inactive") ||
+      message.includes("Not enough stock") ||
+      message.includes("must not be negative") ||
+      message.includes("price is invalid") ||
+      message.includes("variant_id") ||
+      message.includes("Invalid payment method") ||
+      message.includes("Coupon") ||
+      message.includes("Minimum order") ||
+      message.includes("limit reached") ||
+      message.includes("Missing") ||
+      message.includes("required") ||
+      message.includes("guest session") ||
+      message.includes("receiver_email") ||
+      message.includes("cannot use coupon") ||
+      message.includes("Cart identity")
     ) {
       statusCode = 400;
     }
+
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to create order",
-      error: error.message,
+      message: message || "Không tạo được đơn hàng.",
+      error: message,
     });
   }
 };
