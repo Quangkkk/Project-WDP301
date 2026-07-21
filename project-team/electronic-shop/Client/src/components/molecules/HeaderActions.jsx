@@ -103,8 +103,9 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
     { to: '/support', label: 'Hỗ trợ', icon: Headphones },
   ]
 
+  const backOfficePath = roleUpper === 'STAFF' ? '/staff' : roleUpper === 'MANAGER' ? '/manager' : '/admin'
   const backOfficeMenuItems = [
-    { to: '/staff', label: 'Bảng điều khiển', icon: LayoutDashboard },
+    { to: backOfficePath, label: 'Bảng điều khiển', icon: LayoutDashboard },
   ]
 
   const menuItems = isBackOffice ? backOfficeMenuItems : customerMenuItems

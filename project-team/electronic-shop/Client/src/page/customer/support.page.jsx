@@ -29,14 +29,15 @@ import MessageAttachments from '../../components/molecules/MessageAttachments'
 const ticketTabs = [
   { key: 'all', label: 'Tất cả' },
   { key: 'open', label: 'Đang mở' },
-  { key: 'pending', label: 'Chờ xử lý' },
+  { key: 'in_progress', label: 'Đang xử lý' },
   { key: 'closed', label: 'Đã đóng' },
 ]
 
 function getTicketStatusLabel(status) {
   const map = {
     open: 'Đang mở',
-    pending: 'Chờ xử lý',
+    pending: 'Đang xử lý',
+    in_progress: 'Đang xử lý',
     closed: 'Đã đóng',
   }
 
@@ -47,6 +48,7 @@ function getStatusClass(status) {
   const map = {
     open: 'bg-emerald-50 text-emerald-700',
     pending: 'bg-orange-50 text-orange-700',
+    in_progress: 'bg-orange-50 text-orange-700',
     closed: 'bg-slate-100 text-slate-600',
   }
 
@@ -130,7 +132,10 @@ function SupportPage() {
 
   const filteredTickets = useMemo(() => {
     if (activeTab === 'all') return tickets
-    return tickets.filter((ticket) => ticket.status === activeTab)
+    return tickets.filter((ticket) => {
+      if (activeTab === 'in_progress') return ticket.status === 'in_progress' || ticket.status === 'pending'
+      return ticket.status === activeTab
+    })
   }, [tickets, activeTab])
 
   const ticketCounts = useMemo(() => {
@@ -139,7 +144,8 @@ function SupportPage() {
     }
 
     for (const ticket of tickets) {
-      countMap[ticket.status] = (countMap[ticket.status] || 0) + 1
+      const statusKey = ticket.status === 'pending' ? 'in_progress' : ticket.status
+      countMap[statusKey] = (countMap[statusKey] || 0) + 1
     }
 
     return countMap

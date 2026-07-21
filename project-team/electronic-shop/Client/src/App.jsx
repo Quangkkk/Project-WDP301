@@ -38,9 +38,12 @@ const StaffManagementPage = lazy(() => import('./page/admin/staff-management.pag
 
 const customerOnly = ['CUSTOMER']
 const backOfficeRoles = ['ADMIN', 'MANAGER', 'STAFF']
-const productManagementRoles = ['ADMIN', 'MANAGER']
+const adminAndManager = ['ADMIN', 'MANAGER']
+const productManagementRoles = ['MANAGER']
 const adminOnly = ['ADMIN']
 const managerOnly = ['MANAGER']
+const staffOnly = ['STAFF']
+const orderManagementRoles = ['MANAGER', 'STAFF']
 
 function App() {
   return (
@@ -148,16 +151,26 @@ function App() {
           />
 
           <Route
-            path='/staff'
+            path='/admin'
             element={
-              <ProtectedRoute allowedRoles={backOfficeRoles}>
+              <ProtectedRoute allowedRoles={adminOnly}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ===================== MANAGER ROUTES ===================== */}
+          <Route
+            path='/manager'
+            element={
+              <ProtectedRoute allowedRoles={managerOnly}>
                 <AdminDashboardPage />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path='/staff/products'
+            path='/manager/products'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <ProductManagementPage />
@@ -166,7 +179,7 @@ function App() {
           />
 
           <Route
-            path='/staff/categories'
+            path='/manager/categories'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <CategoryManagementPage />
@@ -175,7 +188,7 @@ function App() {
           />
 
           <Route
-            path='/staff/brands'
+            path='/manager/brands'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <BrandManagementPage />
@@ -184,7 +197,7 @@ function App() {
           />
 
           <Route
-            path='/staff/coupons'
+            path='/manager/coupons'
             element={
               <ProtectedRoute allowedRoles={productManagementRoles}>
                 <CouponManagementPage />
@@ -193,16 +206,16 @@ function App() {
           />
 
           <Route
-            path='/staff/orders'
+            path='/manager/orders'
             element={
-              <ProtectedRoute allowedRoles={backOfficeRoles}>
+              <ProtectedRoute allowedRoles={managerOnly}>
                 <OrderManagementPage />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path='/staff/users'
+            path='/admin/users'
             element={
               <ProtectedRoute allowedRoles={adminOnly}>
                 <UserManagementPage />
@@ -210,26 +223,42 @@ function App() {
             }
           />
 
+          {/* ===================== STAFF ROUTES ===================== */}
+          <Route
+            path='/staff'
+            element={
+              <ProtectedRoute allowedRoles={staffOnly}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/staff/orders'
+            element={
+              <ProtectedRoute allowedRoles={staffOnly}>
+                <OrderManagementPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path='/staff/support'
             element={
-              <ProtectedRoute allowedRoles={backOfficeRoles}>
+              <ProtectedRoute allowedRoles={staffOnly}>
                 <SupportManagementPage />
               </ProtectedRoute>
             }
           />
-
           <Route
             path='/staff/chat'
             element={
-              <ProtectedRoute allowedRoles={backOfficeRoles}>
+              <ProtectedRoute allowedRoles={staffOnly}>
                 <ChatManagementPage />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path='/admin/revenue'
+            path='/manager/revenue'
             element={
               <ProtectedRoute allowedRoles={managerOnly}>
                 <RevenueManagementPage />
@@ -238,7 +267,7 @@ function App() {
           />
 
           <Route
-            path='/admin/staff'
+            path='/manager/staff'
             element={
               <ProtectedRoute allowedRoles={managerOnly}>
                 <StaffManagementPage />

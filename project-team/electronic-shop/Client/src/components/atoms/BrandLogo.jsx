@@ -10,7 +10,7 @@ function BrandLogo({ dark = false }) {
   const user = getCurrentUser()
   const role = getUserRole(user)
   const isBackOffice = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
-  const homeTo = isBackOffice ? '/staff' : '/'
+  const homeTo = role === 'STAFF' ? '/staff' : role === 'MANAGER' ? '/manager' : role === 'ADMIN' ? '/admin' : '/'
 
   return (
     <Link to={homeTo} className='flex items-center gap-3 group'>
