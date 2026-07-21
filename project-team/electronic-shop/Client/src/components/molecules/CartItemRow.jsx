@@ -180,22 +180,7 @@ function CartItemRow({
         selected ? 'border-orange-300' : 'border-slate-200'
       }`}
     >
-      <button
-        type='button'
-        onClick={() => onRemove(itemId)}
-        className='position-absolute end-0 top-0 m-3 d-flex align-items-center justify-content-center !rounded-circle border-0 bg-slate-100 text-slate-500 shadow-sm transition hover:bg-red-500 hover:text-white'
-        style={{
-          width: 34,
-          height: 34,
-          zIndex: 2,
-        }}
-        aria-label='Xóa sản phẩm'
-        title='Xóa sản phẩm'
-      >
-        ×
-      </button>
-
-      <Card.Body className='p-4 pe-5'>
+      <Card.Body className='p-4'>
         <div className='d-flex flex-wrap align-items-center gap-4'>
           <label className='d-flex align-items-center'>
             <input
@@ -279,6 +264,23 @@ function CartItemRow({
               value={itemTotal}
               className='text-xl font-black text-slate-950'
             />
+          </div>
+
+          <div className='d-flex align-items-center justify-content-center'>
+            <button
+              type='button'
+              onClick={() => onRemove(itemId)}
+              className='d-flex align-items-center justify-content-center !rounded-circle border-0 bg-slate-100 text-slate-500 shadow-sm transition hover:bg-red-500 hover:text-white'
+              style={{
+                width: 38,
+                height: 38,
+                minWidth: 38,
+              }}
+              aria-label='Xóa sản phẩm'
+              title='Xóa sản phẩm'
+            >
+              <i className='bi bi-x-lg' />
+            </button>
           </div>
         </div>
       </Card.Body>

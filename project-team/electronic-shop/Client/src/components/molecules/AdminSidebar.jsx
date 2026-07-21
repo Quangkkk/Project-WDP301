@@ -1,3 +1,4 @@
+
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -8,7 +9,8 @@ import {
   PackageSearch, 
   Users, 
   Headset, 
-  MessageSquareText 
+  MessageSquareText,
+  RotateCcw,
 } from 'lucide-react'
 import { getCurrentUser, getUserRole } from '../../utils/authStorage'
 
@@ -19,6 +21,7 @@ const links = [
   { path: '/admin/brands', label: 'Thương hiệu', icon: Tags, allowedRoles: ['ADMIN', 'MANAGER'] },
   { path: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent, allowedRoles: ['ADMIN', 'MANAGER'] },
   { path: '/admin/orders', label: 'Đơn hàng', icon: PackageSearch, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/admin/returns', label: 'Duyệt trả hàng', icon: RotateCcw, allowedRoles: ['STAFF'] },
   { path: '/admin/users', label: 'Người dùng', icon: Users, allowedRoles: ['ADMIN'] },
   { path: '/admin/support', label: 'Yêu cầu hỗ trợ', icon: Headset, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/admin/chat', label: 'Trò chuyện trực tuyến', icon: MessageSquareText, allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'] },

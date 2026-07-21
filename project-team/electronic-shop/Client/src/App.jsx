@@ -30,6 +30,7 @@ const CategoryManagementPage = lazy(() => import('./page/admin/category-manageme
 const BrandManagementPage = lazy(() => import('./page/admin/brand-management.page.jsx'))
 const CouponManagementPage = lazy(() => import('./page/admin/coupon-management.page.jsx'))
 const OrderManagementPage = lazy(() => import('./page/admin/order-management.page.jsx'))
+const ReturnManagementPage = lazy(() => import('./page/admin/return-management.page.jsx'))
 const UserManagementPage = lazy(() => import('./page/admin/user-management.page.jsx'))
 const SupportManagementPage = lazy(() => import('./page/admin/support-management.page.jsx'))
 const ChatManagementPage = lazy(() => import('./page/admin/chat-management.page.jsx'))
@@ -38,6 +39,7 @@ const customerOnly = ['CUSTOMER']
 const backOfficeRoles = ['ADMIN', 'MANAGER', 'STAFF']
 const productManagementRoles = ['ADMIN', 'MANAGER']
 const adminOnly = ['ADMIN']
+const staffOnly = ['STAFF']
 
 function App() {
   return (
@@ -194,6 +196,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={backOfficeRoles}>
                 <OrderManagementPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path='/admin/returns'
+            element={
+              <ProtectedRoute allowedRoles={staffOnly}>
+                <ReturnManagementPage />
               </ProtectedRoute>
             }
           />

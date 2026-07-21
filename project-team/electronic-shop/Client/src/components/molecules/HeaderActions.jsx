@@ -118,7 +118,6 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
 
         <span className='hidden flex-col items-start leading-tight xl:flex'>
           <span className='text-sm font-bold text-slate-900'>{name}</span>
-          <span className='text-xs font-semibold text-slate-500'>{roleLabel}</span>
         </span>
       </button>
 
@@ -144,7 +143,6 @@ function HeaderActions({ loggedIn, user, role, onLogout }) {
               <div className='min-w-0'>
                 <div className='truncate text-sm font-bold text-slate-900'>{name}</div>
                 {email && <div className='truncate text-xs text-slate-500'>{email}</div>}
-                <div className='mt-1 text-xs font-semibold text-orange-600'>{roleLabel}</div>
               </div>
             </div>
           </div>

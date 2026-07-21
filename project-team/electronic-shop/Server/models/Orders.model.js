@@ -17,6 +17,124 @@ const PAYMENT_STATUS = [
   "refunded",
 ];
 
+const RETURN_REQUEST_STATUS = [
+  "pending",
+  "approved",
+  "rejected",
+  "received",
+  "refunded",
+];
+
+const returnRequestItemSchema = new mongoose.Schema(
+  {
+    order_item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "OrderItem",
+      required: true,
+    },
+    product_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    variant_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProductVariant",
+      default: null,
+    },
+    product_name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    variant_value: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    image: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    unit_price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    purchased_quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+const returnRequestSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: RETURN_REQUEST_STATUS,
+      required: true,
+      default: "pending",
+      trim: true,
+    },
+    items: {
+      type: [returnRequestItemSchema],
+      required: true,
+      validate: {
+        validator(items) {
+          return Array.isArray(items) && items.length > 0;
+        },
+        message: "Yêu cầu trả hàng phải có ít nhất một sản phẩm.",
+      },
+    },
+    reason: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    description: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
+    },
+    requested_at: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    reviewed_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    reviewed_at: {
+      type: Date,
+      default: null,
+    },
+    staff_note: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     user_id: {
@@ -113,6 +231,10 @@ const orderSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
     },
+    return_request: {
+      type: returnRequestSchema,
+      default: null,
+    },
     handled_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -151,6 +273,7 @@ orderSchema.index({ user_id: 1 });
 orderSchema.index({ shipping_method_id: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ payment_status: 1 });
+orderSchema.index({ "return_request.status": 1 });
 orderSchema.index({ created_at: -1 });
 
 module.exports = mongoose.model("Order", orderSchema, "orders");

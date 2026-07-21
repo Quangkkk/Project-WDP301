@@ -72,7 +72,7 @@ function HeaderSearch({ className = '' }) {
           type='text'
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
-          placeholder='Tìm kiếm sản phẩm công nghệ...'
+          placeholder='Tìm kiếm tên sản phẩm ...'
           className='w-full bg-transparent border-0 p-0 text-sm focus:outline-none focus:ring-0 text-slate-700 placeholder-slate-400'
         />
         {keyword && (
