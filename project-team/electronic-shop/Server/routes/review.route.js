@@ -5,6 +5,9 @@ const authorizeRoles = require("../middleware/authorizeRoles");
 
 const router = express.Router();
 
+// Lay danh sach review cua customer dang dang nhap.
+router.get("/mine", verifyToken, authorizeRoles("CUSTOMER"), review.getMyReviews);
+
 // Tao review moi (Chi danh cho Customer)
 router.post("/", verifyToken, authorizeRoles("Customer"), review.createReview);
 

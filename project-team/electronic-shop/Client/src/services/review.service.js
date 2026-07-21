@@ -27,6 +27,17 @@ export const getReviews = async (params = {}) => {
   }
 }
 
+
+export const getMyReviews = async (params = {}) => {
+  const response = await api.get('/review/mine', {
+    params,
+  })
+
+  const data = response?.data?.data
+
+  return Array.isArray(data) ? data : []
+}
+
 export const createReview = async (payload) => {
   const response = await api.post('/review', payload)
   return response.data

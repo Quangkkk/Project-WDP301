@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -16,6 +16,7 @@ import PriceText from '../../components/atoms/PriceText'
 import { getErrorMessage } from '../../services/api'
 import { cancelOrder, getOrderById } from '../../services/order.service'
 import { getPaymentByOrder } from '../../services/payment.service'
+import { createReview, getMyReviews } from '../../services/review.service'
 import { addToWishlist } from '../../services/wishlist.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import {
@@ -178,6 +179,25 @@ function buildProductChatMessage(item, order, orderId) {
         .join('\n')
 }
 
+
+function getReviewProductId(review) {
+    const product = review?.product_id || review?.product
+
+    if (typeof product === 'string') {
+        return product
+    }
+
+    return getId(product) || ''
+}
+
+function buildReviewedProductIds(reviews) {
+    return new Set(
+        (Array.isArray(reviews) ? reviews : [])
+            .map(getReviewProductId)
+            .filter(Boolean),
+    )
+}
+
 function canCancelOrder(order) {
     return ['pending', 'confirmed', 'processing'].includes(order?.status)
 }
@@ -213,6 +233,7 @@ function normalizeOrderPayload(response) {
 function OrderDetailPage() {
     const { orderId } = useParams()
     const navigate = useNavigate()
+    const location = useLocation()
     const currentUser = getCurrentUser()
     const currentUserId = getUserId(currentUser)
     const [order, setOrder] = useState(null)
@@ -224,8 +245,44 @@ function OrderDetailPage() {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
     const [error, setError] = useState('')
     const [message, setMessage] = useState('')
+    const [myReviews, setMyReviews] = useState([])
+    const [reviewTarget, setReviewTarget] = useState(null)
+    const [reviewRating, setReviewRating] = useState(0)
+    const [reviewComment, setReviewComment] = useState('')
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+    const [didAutoOpenReview, setDidAutoOpenReview] = useState(false)
 
     const receiverAddress = useMemo(() => getReceiverAddress(order), [order])
+
+    const reviewedProductIds = useMemo(
+        () => buildReviewedProductIds(myReviews),
+        [myReviews],
+    )
+
+    const reviewableItems = useMemo(() => {
+        if (order?.status !== 'completed') {
+            return []
+        }
+
+        const seenProductIds = new Set()
+
+        return items.filter((item) => {
+            const productId = getProductIdFromItem(item)
+
+            if (
+                !productId ||
+                reviewedProductIds.has(productId) ||
+                seenProductIds.has(productId)
+            ) {
+                return false
+            }
+
+            seenProductIds.add(productId)
+            return true
+        })
+    }, [order, items, reviewedProductIds])
+
+    const firstReviewableItem = reviewableItems[0] || null
 
     const subtotal = Number(order?.subtotal || order?.sub_total || 0)
     const totalAmount = Number(order?.total_amount || order?.totalAmount || order?.total || 0)
@@ -257,11 +314,18 @@ function OrderDetailPage() {
             setIsLoading(true)
             setError('')
 
-            const response = await getOrderById(orderId)
-            const payload = normalizeOrderPayload(response)
+            const [orderResponse, reviews] = await Promise.all([
+                getOrderById(orderId),
+                getMyReviews({
+                    order_id: orderId,
+                }),
+            ])
+
+            const payload = normalizeOrderPayload(orderResponse)
 
             setOrder(payload.order || null)
             setItems(payload.items || [])
+            setMyReviews(Array.isArray(reviews) ? reviews : [])
 
             try {
                 const paymentResponse = await getPaymentByOrder(orderId)
@@ -273,6 +337,7 @@ function OrderDetailPage() {
             setError(getErrorMessage(error, 'Không tải được chi tiết đơn hàng.'))
             setOrder(null)
             setItems([])
+            setMyReviews([])
             setPayment(null)
         } finally {
             setIsLoading(false)
@@ -284,6 +349,198 @@ function OrderDetailPage() {
             loadDetail()
         }
     }, [orderId])
+
+    useEffect(() => {
+        if (
+            didAutoOpenReview ||
+            !location.state?.openReview ||
+            order?.status !== 'completed' ||
+            items.length === 0
+        ) {
+            return
+        }
+
+        setDidAutoOpenReview(true)
+
+        const firstUnreviewedItem = items.find((item) => {
+            const productId = getProductIdFromItem(item)
+
+            return (
+                productId &&
+                !reviewedProductIds.has(productId)
+            )
+        })
+
+        if (firstUnreviewedItem) {
+            setReviewTarget(firstUnreviewedItem)
+            setReviewRating(0)
+            setReviewComment('')
+        }
+    }, [
+        didAutoOpenReview,
+        location.state,
+        order,
+        items,
+        reviewedProductIds,
+    ])
+
+
+    const canReviewItem = (item) => {
+        if (order?.status !== 'completed') {
+            return false
+        }
+
+        const productId = getProductIdFromItem(item)
+
+        return Boolean(
+            productId &&
+            !reviewedProductIds.has(productId),
+        )
+    }
+
+    const handleOpenReviewModal = (item) => {
+        if (!canReviewItem(item)) {
+            return
+        }
+
+        setError('')
+        setMessage('')
+        setReviewTarget(item)
+        setReviewRating(0)
+        setReviewComment('')
+    }
+
+    const handleCloseReviewModal = () => {
+        if (isSubmittingReview) {
+            return
+        }
+
+        setReviewTarget(null)
+        setReviewRating(0)
+        setReviewComment('')
+    }
+
+    const handleSelectReviewProduct = (event) => {
+        const productId = event.target.value
+        const nextTarget = reviewableItems.find(
+            (item) => getProductIdFromItem(item) === productId,
+        )
+
+        if (!nextTarget) {
+            return
+        }
+
+        setReviewTarget(nextTarget)
+        setReviewRating(0)
+        setReviewComment('')
+        setError('')
+        setMessage('')
+    }
+
+    const handleSubmitReview = async () => {
+        const productId = getProductIdFromItem(reviewTarget)
+
+        if (!productId) {
+            setError('Không tìm thấy sản phẩm để đánh giá.')
+            return
+        }
+
+        if (
+            !Number.isInteger(Number(reviewRating)) ||
+            Number(reviewRating) < 1 ||
+            Number(reviewRating) > 5
+        ) {
+            setError('Vui lòng chọn số sao từ 1 đến 5.')
+            return
+        }
+
+        try {
+            setIsSubmittingReview(true)
+            setError('')
+            setMessage('')
+
+            const response = await createReview({
+                order_id: orderId,
+                product_id: productId,
+                rating: Number(reviewRating),
+                comment: reviewComment.trim() || undefined,
+                images: [],
+            })
+
+            const createdReview =
+                response?.data ||
+                response?.review ||
+                response
+
+            setMyReviews((current) => {
+                const nextReviews = [...current]
+
+                if (
+                    createdReview &&
+                    getReviewProductId(createdReview)
+                ) {
+                    nextReviews.unshift(createdReview)
+                } else {
+                    nextReviews.unshift({
+                        order_id: orderId,
+                        product_id: productId,
+                        rating: Number(reviewRating),
+                        comment: reviewComment.trim() || null,
+                    })
+                }
+
+                return nextReviews
+            })
+
+            setReviewTarget(null)
+            setReviewRating(0)
+            setReviewComment('')
+            setMessage('Đã gửi đánh giá sản phẩm thành công.')
+        } catch (error) {
+            const rawMessage =
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                error?.message ||
+                ''
+
+            if (
+                String(rawMessage)
+                    .toLowerCase()
+                    .includes('da danh gia') ||
+                String(rawMessage)
+                    .toLowerCase()
+                    .includes('đã đánh giá') ||
+                String(rawMessage)
+                    .toLowerCase()
+                    .includes('duplicate')
+            ) {
+                try {
+                    const reviews = await getMyReviews({
+                        order_id: orderId,
+                    })
+
+                    setMyReviews(
+                        Array.isArray(reviews) ? reviews : [],
+                    )
+                } catch {
+                    // Khong lam mat loi goc neu tai lai trang thai review that bai.
+                }
+
+                setReviewTarget(null)
+                setMessage('Sản phẩm này đã được đánh giá.')
+                return
+            }
+
+            setError(
+                getErrorMessage(
+                    error,
+                    'Không gửi được đánh giá sản phẩm.',
+                ),
+            )
+        } finally {
+            setIsSubmittingReview(false)
+        }
+    }
 
     const handleOpenCancelModal = () => {
         setError('')
@@ -538,6 +795,7 @@ const handleChatWithShop = (item) => {
                                                                                     {variantText}
                                                                                 </p>
                                                                             )}
+
                                                                         </div>
                                                                     </div>
                                                                 </Col>
@@ -584,13 +842,14 @@ const handleChatWithShop = (item) => {
                             </Col>
 
                             <Col lg={5}>
-                                <Card
-                                    className='card-surface position-sticky overflow-hidden'
+                                <div
+                                    className='position-sticky'
                                     style={{
                                         top: 120,
                                         zIndex: 10,
                                     }}
                                 >
+                                    <Card className='card-surface overflow-hidden'>
                                     <div
                                         className='bg-orange-500'
                                         style={{
@@ -711,12 +970,217 @@ const handleChatWithShop = (item) => {
                                             )}
                                         </div>
                                     </Card.Body>
-                                </Card>
+                                    </Card>
+
+                                    {firstReviewableItem && (
+                                        <Button
+                                            type='button'
+                                            className='mt-3 w-100 py-3'
+                                            onClick={() =>
+                                                handleOpenReviewModal(firstReviewableItem)
+                                            }
+                                        >
+                                            <i className='bi bi-star-fill me-2' />
+
+                                            Đánh giá sản phẩm
+                                        </Button>
+                                    )}
+                                </div>
                             </Col>
                         </Row>
                     )}
                 </Container>
             </section>
+
+            <Modal
+                show={Boolean(reviewTarget)}
+                onHide={handleCloseReviewModal}
+                centered
+                backdrop={isSubmittingReview ? 'static' : true}
+                keyboard={!isSubmittingReview}
+            >
+                <Modal.Header className='border-bottom px-4 py-3'>
+                    <Modal.Title className='text-xl font-semibold text-slate-950'>
+                        Đánh giá sản phẩm
+                    </Modal.Title>
+
+                    <button
+                        type='button'
+                        onClick={handleCloseReviewModal}
+                        disabled={isSubmittingReview}
+                        className='ms-auto border-0 bg-transparent text-3xl leading-none text-slate-400 transition hover:text-slate-700 disabled:opacity-50'
+                        aria-label='Đóng'
+                    >
+                        ×
+                    </button>
+                </Modal.Header>
+
+                <Modal.Body className='p-4'>
+                    <div className='mb-4'>
+                        <label
+                            htmlFor='review-product'
+                            className='mb-2 d-block font-semibold text-slate-800'
+                        >
+                            Sản phẩm muốn đánh giá
+                            <span className='ms-1 text-red-500'>*</span>
+                        </label>
+
+                        <select
+                            id='review-product'
+                            value={getProductIdFromItem(reviewTarget)}
+                            onChange={handleSelectReviewProduct}
+                            disabled={isSubmittingReview}
+                            className='form-select mb-3 !rounded-3 border-slate-200 px-3 py-3 shadow-none focus:border-orange-400 focus:ring-0'
+                        >
+                            {reviewableItems.map((item) => {
+                                const productId = getProductIdFromItem(item)
+                                const variantText = getVariantText(item)
+
+                                return (
+                                    <option
+                                        key={productId}
+                                        value={productId}
+                                    >
+                                        {getProductName(item)}
+                                        {variantText ? ` - ${variantText}` : ''}
+                                    </option>
+                                )
+                            })}
+                        </select>
+
+                        {reviewTarget && (
+                            <div className='d-flex align-items-center gap-3 !rounded-4 border border-slate-200 bg-slate-50 p-3'>
+                                <div
+                                    className='d-flex align-items-center justify-content-center overflow-hidden !rounded-3 bg-white'
+                                    style={{
+                                        width: 64,
+                                        height: 64,
+                                        minWidth: 64,
+                                    }}
+                                >
+                                    {getProductImage(reviewTarget) ? (
+                                        <img
+                                            src={getProductImage(reviewTarget)}
+                                            alt={getProductName(reviewTarget)}
+                                            className='h-100 w-100 object-fit-cover'
+                                        />
+                                    ) : (
+                                        <span className='text-2xl'>📦</span>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <p className='mb-1 font-semibold text-slate-900'>
+                                        {getProductName(reviewTarget)}
+                                    </p>
+
+                                    {getVariantText(reviewTarget) && (
+                                        <p className='mb-0 text-sm text-slate-500'>
+                                            {getVariantText(reviewTarget)}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <p className='mb-0 mt-2 text-xs text-slate-500'>
+                            Bạn chỉ cần đánh giá sản phẩm mình muốn, không bắt buộc đánh giá toàn bộ đơn hàng.
+                        </p>
+                    </div>
+
+                    <div className='mb-4'>
+                        <p className='mb-2 font-semibold text-slate-800'>
+                            Mức độ hài lòng
+                        </p>
+
+                        <div className='d-flex flex-wrap gap-2'>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type='button'
+                                    onClick={() => setReviewRating(star)}
+                                    disabled={isSubmittingReview}
+                                    className='border-0 bg-transparent p-1 text-3xl transition hover:scale-110 disabled:opacity-50'
+                                    aria-label={`${star} sao`}
+                                    title={`${star} sao`}
+                                >
+                                    <span
+                                        className={
+                                            star <= reviewRating
+                                                ? 'text-amber-400'
+                                                : 'text-slate-300'
+                                        }
+                                    >
+                                        ★
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <p
+                            className={`mb-0 mt-1 text-sm ${
+                                reviewRating > 0
+                                    ? 'text-slate-500'
+                                    : 'font-semibold text-red-500'
+                            }`}
+                        >
+                            {reviewRating > 0
+                                ? `Bạn đã chọn ${reviewRating} sao.`
+                                : 'Vui lòng chọn số sao trước khi gửi đánh giá.'}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor='review-comment'
+                            className='mb-2 d-block font-semibold text-slate-800'
+                        >
+                            Nhận xét <span className='text-sm font-normal text-slate-400'>(không bắt buộc)</span>
+                        </label>
+
+                        <textarea
+                            id='review-comment'
+                            rows={5}
+                            maxLength={1000}
+                            value={reviewComment}
+                            onChange={(event) =>
+                                setReviewComment(event.target.value)
+                            }
+                            disabled={isSubmittingReview}
+                            placeholder='Chia sẻ trải nghiệm của bạn về sản phẩm...'
+                            className='form-control !rounded-4 border-slate-200 px-3 py-3 shadow-none focus:border-orange-400 focus:ring-0'
+                        />
+
+                        <p className='mb-0 mt-2 text-end text-xs text-slate-400'>
+                            {reviewComment.length}/1000
+                        </p>
+                    </div>
+                </Modal.Body>
+
+                <Modal.Footer className='border-top px-4 py-3'>
+                    <Button
+                        type='button'
+                        variant='secondary'
+                        onClick={handleCloseReviewModal}
+                        disabled={isSubmittingReview}
+                    >
+                        Hủy
+                    </Button>
+
+                    <Button
+                        type='button'
+                        onClick={handleSubmitReview}
+                        isLoading={isSubmittingReview}
+                        disabled={
+                            isSubmittingReview ||
+                            !reviewTarget ||
+                            Number(reviewRating) < 1
+                        }
+                    >
+                        Gửi đánh giá
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
             <Modal
                 show={isCancelModalOpen}
