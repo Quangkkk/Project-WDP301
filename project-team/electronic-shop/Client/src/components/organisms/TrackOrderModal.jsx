@@ -1,169 +1,209 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 
+import Alert from '../atoms/Alert'
 import Button from '../atoms/Button'
 import TextField from '../atoms/TextField'
-import StatusBadge from '../atoms/StatusBadge'
-import Alert from '../atoms/Alert'
 
-import { trackOrder } from '../../services/order.service'
 import { getErrorMessage } from '../../services/api'
-import {
-  formatDate,
-  formatOrderCode,
-} from '../../utils/format'
+import { trackOrder } from '../../services/order.service'
+import { getId } from '../../utils/format'
+
+const getGuestLookupStorageKey = (orderId) =>
+  `guest_order_lookup_${orderId}`
+
+function normalizeTrackResult(response) {
+  const payload = response?.data || response || {}
+
+  return {
+    order: payload?.order || null,
+    items: Array.isArray(payload?.items) ? payload.items : [],
+  }
+}
 
 function TrackOrderModal({ show, onHide }) {
+  const navigate = useNavigate()
+
   const [orderCode, setOrderCode] = useState('')
   const [contact, setContact] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [orderResult, setOrderResult] = useState(null)
 
-  // Dong modal khi nhan ESC
+  const handleClose = () => {
+    setOrderCode('')
+    setContact('')
+    setError('')
+    setIsLoading(false)
+    onHide?.()
+  }
+
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
+    if (!show) return undefined
+
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') {
         handleClose()
       }
     }
-    if (show) {
-      document.addEventListener('keydown', handleEsc)
-      document.body.style.overflow = 'hidden' // block scroll
-    }
+
+    document.addEventListener('keydown', handleEsc)
+    document.body.style.overflow = 'hidden'
+
     return () => {
       document.removeEventListener('keydown', handleEsc)
       document.body.style.overflow = 'unset'
     }
   }, [show])
 
-  if (!show) return null
+  const handleTrack = async (event) => {
+    event.preventDefault()
 
-  const handleTrack = async (e) => {
-    e.preventDefault()
-    if (!orderCode.trim() || !contact.trim()) {
-      setError('Vui lòng nhập mã đơn hàng và email/số điện thoại.')
+    const normalizedOrderCode = orderCode.trim()
+    const normalizedContact = contact.trim()
+
+    if (!normalizedOrderCode || !normalizedContact) {
+      setError('Vui lòng nhập mã đơn hàng và email hoặc số điện thoại.')
       return
     }
 
     try {
       setIsLoading(true)
       setError('')
-      setOrderResult(null)
 
-      const result = await trackOrder({
-        order_code: orderCode.trim(),
-        contact: contact.trim(),
+      const response = await trackOrder({
+        order_code: normalizedOrderCode,
+        contact: normalizedContact,
       })
 
-      const trackedOrder =
-        result?.data?.order ||
-        result?.order ||
-        result?.data ||
-        null
+      const { order, items } = normalizeTrackResult(response)
+      const orderId = getId(order)
 
-      if (trackedOrder) {
-        setOrderResult(trackedOrder)
-      } else {
-        setError('Không tìm thấy đơn hàng nào khớp với thông tin đã nhập.')
+      if (!order || !orderId) {
+        setError('Không tìm thấy đơn hàng phù hợp với thông tin đã nhập.')
+        return
       }
+
+      const lookup = {
+        order_code: order.order_code || normalizedOrderCode,
+        contact: normalizedContact,
+      }
+
+      try {
+        sessionStorage.setItem(
+          getGuestLookupStorageKey(orderId),
+          JSON.stringify(lookup),
+        )
+      } catch {
+        // Vẫn cho phép chuyển trang bằng location.state nếu trình duyệt chặn storage.
+      }
+
+      onHide?.()
+
+      navigate(`/track-order/${orderId}`, {
+        state: {
+          order,
+          items,
+          lookup,
+        },
+      })
     } catch (err) {
-      if (err.response?.status === 429) {
+      if (err?.response?.status === 429) {
         setError('Bạn đã tra cứu quá nhiều lần. Vui lòng thử lại sau 1 phút.')
       } else {
-        setError(getErrorMessage(err, 'Không tìm thấy đơn hàng hoặc thông tin không khớp.'))
+        setError(
+          getErrorMessage(
+            err,
+            'Không tìm thấy đơn hàng hoặc thông tin xác nhận không khớp.',
+          ),
+        )
       }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleClose = () => {
-    setOrderCode('')
-    setContact('')
-    setError('')
-    setOrderResult(null)
-    onHide()
-  }
+  if (!show) return null
 
   return (
-    <div className='fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4'>
-      <div 
-        className='relative w-full max-w-md bg-white !rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200'
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className='flex items-center justify-between px-3 pt-4 border-b border-slate-100'>
-          <h2 className='text-lg font-black text-slate-900'>Tra cứu đơn hàng</h2>
-          <button 
-            onClick={handleClose}
-            className='p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 !rounded-full transition-colors focus:outline-none'
+    <div
+      className='fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm'
+      role='dialog'
+      aria-modal='true'
+      aria-labelledby='track-order-title'
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleClose()
+        }
+      }}
+    >
+      <div className='relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden !rounded-2xl bg-white shadow-2xl'>
+        <div className='flex items-center justify-between border-b border-slate-100 px-6 py-4'>
+          <h2
+            id='track-order-title'
+            className='mb-0 text-lg font-black text-slate-900'
           >
-            <X className='w-5 h-5' />
+            Tra cứu đơn hàng
+          </h2>
+
+          <button
+            type='button'
+            onClick={handleClose}
+            className='border-0 bg-transparent p-2 text-slate-400 transition-colors hover:text-slate-700'
+            aria-label='Đóng cửa sổ tra cứu đơn hàng'
+          >
+            <X className='h-5 w-5' />
           </button>
         </div>
 
-        <div className='px-6 py-3 overflow-y-auto'>
-          {!orderResult ? (
-            <form onSubmit={handleTrack}>
-              <p className='text-sm text-slate-600 mb-5 leading-relaxed'>
-                Nhập mã đơn hàng và số điện thoại (hoặc email) lúc đặt hàng để xem trạng thái đơn mới nhất.
-              </p>
-              
-              {error && <div className="mb-4"><Alert type='danger'>{error}</Alert></div>}
-              
-              <TextField
-                label='Mã đơn hàng'
-                id='orderCode'
-                value={orderCode}
-                onChange={(e) => setOrderCode(e.target.value)}
-                placeholder='VD: TS-835F3AD4 hoặc 835F3AD4'
-                className='mb-4'
-              />
-              <TextField
-                label='SĐT hoặc Email'
-                id='contact'
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder='Nhập số điện thoại hoặc email'
-                className='mb-6'
-              />
-              <Button type='submit' className='w-full py-3' isLoading={isLoading}>
-                Tra Cứu
-              </Button>
-            </form>
-          ) : (
-            <div className='bg-slate-50 p-5 !rounded-xl border border-slate-200'>
-              <div className='flex justify-between items-center mb-4 pb-4 border-b border-slate-200'>
-                <span className='font-bold text-slate-700'>Trạng thái:</span>
-                <StatusBadge value={orderResult.status} />
-              </div>
-              <div className='mb-3 flex justify-between'>
-                <span className='text-sm text-slate-500'>Mã đơn hàng:</span>
-                <span className='font-bold text-slate-900'>{formatOrderCode(orderResult)}</span>
-              </div>
-              <div className='mb-3 flex justify-between'>
-                <span className='text-sm text-slate-500'>Ngày đặt:</span>
-                <span className='font-bold text-slate-900'>{formatDate(orderResult.created_at)}</span>
-              </div>
-              <div className='mb-3 flex justify-between'>
-                <span className='text-sm text-slate-500'>Người nhận:</span>
-                <span className='font-bold text-slate-900 text-right'>{orderResult.receiver_name}</span>
-              </div>
-              <div className='mb-6 flex justify-between items-center pt-3 border-t border-slate-200'>
-                <span className='text-sm font-bold text-slate-700'>Tổng tiền:</span>
-                <span className='text-xl font-black text-orange-600'>
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderResult.total_amount)}
-                </span>
-              </div>
-              <Button variant='ghost' className='w-full py-2 bg-white border border-slate-200 shadow-sm' onClick={() => setOrderResult(null)}>
-                Tra cứu đơn khác
-              </Button>
-            </div>
-          )}
+        <div className='overflow-y-auto px-6 py-5'>
+          <form onSubmit={handleTrack}>
+            <p className='mb-5 text-sm leading-relaxed text-slate-600'>
+              Nhập mã đơn hàng cùng số điện thoại hoặc email đã dùng khi đặt
+              hàng. Khi thông tin chính xác, hệ thống sẽ chuyển bạn đến trang
+              chi tiết đơn hàng.
+            </p>
+
+            <Alert type='danger' className='mb-4'>
+              {error}
+            </Alert>
+
+            <TextField
+              label='Mã đơn hàng'
+              id='orderCode'
+              value={orderCode}
+              onChange={(event) => {
+                setOrderCode(event.target.value)
+                setError('')
+              }}
+              placeholder='VD: TS-835F3AD4 hoặc 835F3AD4'
+              className='mb-4'
+              autoComplete='off'
+            />
+
+            <TextField
+              label='Số điện thoại hoặc email'
+              id='contact'
+              value={contact}
+              onChange={(event) => {
+                setContact(event.target.value)
+                setError('')
+              }}
+              placeholder='Nhập số điện thoại hoặc email'
+              className='mb-6'
+              autoComplete='email'
+            />
+
+            <Button
+              type='submit'
+              className='w-full py-3'
+              isLoading={isLoading}
+            >
+              Tra cứu
+            </Button>
+          </form>
         </div>
       </div>
-      
-      <div className="absolute inset-0 -z-10" onClick={handleClose}></div>
     </div>
   )
 }

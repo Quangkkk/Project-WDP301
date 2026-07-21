@@ -15,6 +15,26 @@ import { getCategories } from '../../services/product.service'
 import { pickArray } from '../../utils/format'
 import TrackOrderModal from './TrackOrderModal'
 
+const PROTECTED_PATH_PREFIXES = [
+  '/orders',
+  '/wishlist',
+  '/profile',
+  '/support',
+  '/chat',
+  '/admin',
+  '/management',
+  '/manager',
+  '/staff',
+]
+
+function isProtectedPath(pathname = '') {
+  return PROTECTED_PATH_PREFIXES.some(
+    (prefix) =>
+      pathname === prefix ||
+      pathname.startsWith(`${prefix}/`),
+  )
+}
+
 function HeaderSearch({ className = '' }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -140,14 +160,13 @@ function CategoryDropdown() {
         <div className='absolute right-0 mt-2 w-56 !rounded-xl bg-white border border-slate-100 shadow-xl z-50 overflow-hidden py-1'>
           <button
             onClick={() => handleSelectCategory('')}
-            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-              !selectedCategoryId ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
-            }`}
+            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${!selectedCategoryId ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-700 hover:bg-slate-50'
+              }`}
           >
             Tất cả sản phẩm
           </button>
           <div className='my-1 border-t border-slate-100' />
-          
+
           {isLoading && (
             <div className='px-4 py-2 text-sm text-slate-500'>Đang tải danh mục...</div>
           )}
@@ -161,9 +180,8 @@ function CategoryDropdown() {
               <button
                 key={categoryId}
                 onClick={() => handleSelectCategory(categoryId)}
-                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                  isActive ? 'bg-blue-50 font-bold text-blue-600' : 'text-slate-700 hover:bg-slate-50 font-medium'
-                }`}
+                className={`w-full text-left px-4 py-2 text-sm transition-colors ${isActive ? 'bg-blue-50 font-bold text-blue-600' : 'text-slate-700 hover:bg-slate-50 font-medium'
+                  }`}
               >
                 {category.name}
               </button>
@@ -183,9 +201,8 @@ function CartButton() {
   return (
     <button
       onClick={() => navigate('/cart')}
-      className={`relative flex items-center justify-center w-11 h-11 !rounded-full shadow-sm transition-colors focus:outline-none ${
-        isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-      }`}
+      className={`relative flex items-center justify-center w-11 h-11 !rounded-full shadow-sm transition-colors focus:outline-none ${isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+        }`}
       aria-label='Giỏ hàng'
     >
       <ShoppingCart className='w-5 h-5' />
@@ -198,6 +215,7 @@ function CartButton() {
 
 function Header() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [authState, setAuthState] = useState(() => ({
     user: getCurrentUser(),
     loggedIn: isAuthenticated(),
@@ -225,8 +243,22 @@ function Header() {
   const role = getUserRole(user)
 
   const handleLogout = () => {
+    const currentPath = `${location.pathname}${location.search}${location.hash}`
+    const requiresAuthentication = isProtectedPath(location.pathname)
+
     clearAuth()
-    navigate('/login', { replace: true })
+
+    if (requiresAuthentication) {
+      navigate('/login', {
+        replace: true,
+        state: { from: currentPath },
+      })
+      return
+    }
+
+    // Giữ nguyên URL hiện tại nhưng tải lại trang để toàn bộ component
+    // cập nhật sang trạng thái guest, tránh giữ dữ liệu customer cũ.
+    window.location.reload()
   }
 
   return (
@@ -247,14 +279,20 @@ function Header() {
             </div>
 
             <div className='flex shrink-0 items-center gap-3'>
-              <button
-                onClick={() => setShowTrackModal(true)}
-                className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
-                title='Tra cứu đơn hàng'
-              >
-                <Truck className='w-5 h-5' />
-                <span className='hidden xl:inline'>Tra cứu đơn</span>
-              </button>
+              {!loggedIn && (
+                <button
+                  type='button'
+                  onClick={() => setShowTrackModal(true)}
+                  className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                  title='Tra cứu đơn hàng'
+                >
+                  <Truck className='h-5 w-5' />
+
+                  <span className='hidden xl:inline'>
+                    Tra cứu đơn
+                  </span>
+                </button>
+              )}
 
               <CategoryDropdown />
               <CartButton />
@@ -269,10 +307,12 @@ function Header() {
         </div>
       </header>
 
-      <TrackOrderModal
-        show={showTrackModal}
-        onHide={() => setShowTrackModal(false)}
-      />
+      {!loggedIn && (
+        <TrackOrderModal
+          show={showTrackModal}
+          onHide={() => setShowTrackModal(false)}
+        />
+      )}
     </>
   )
 }

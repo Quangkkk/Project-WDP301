@@ -362,7 +362,7 @@ function ProductReviews({
             {isLoading ? (
               <LoadingText />
             ) : reviews.length === 0 ? (
-              <div className='!rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
+              <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-5 text-center'>
                 <div className='mb-3 text-4xl'>💬</div>
 
                 <h3 className='mb-2 text-xl font-black text-slate-900'>
@@ -1047,7 +1047,7 @@ function ProductDetailPage() {
                     </span>
                   ) : (
                     <span className='text-sm font-bold text-slate-500'>
-                      Còn hàng
+                      Còn {formatNumber(stock)} sản phẩm
                     </span>
                   )}
                 </div>
@@ -1081,7 +1081,7 @@ function ProductDetailPage() {
                 <div className='p-4 p-lg-5'>
                   <Row className='g-4'>
                     <Col lg={7}>
-                      <div className='h-100 !rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
+                      <div className='h-100 rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
                         <h3 className='mb-3 text-xl font-black text-slate-900'>
                           Mô tả sản phẩm
                         </h3>
@@ -1094,13 +1094,13 @@ function ProductDetailPage() {
                     </Col>
 
                     <Col lg={5}>
-                      <div className='h-100 !rounded-4 border border-slate-200 bg-white p-4'>
+                      <div className='h-100 rounded-4 border border-slate-200 bg-white p-4'>
                         <h3 className='mb-4 text-xl font-black text-slate-900'>
                           Thông tin nhanh
                         </h3>
 
                         <div className='d-flex flex-column gap-3'>
-                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-grid-3x3-gap-fill text-orange-500' />
                               Danh mục
@@ -1112,7 +1112,7 @@ function ProductDetailPage() {
                           </div>
 
                           {brandName && (
-                            <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
+                            <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                               <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                                 <i className='bi bi-award-fill text-orange-500' />
                                 Thương hiệu
@@ -1124,7 +1124,7 @@ function ProductDetailPage() {
                             </div>
                           )}
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-bag-check-fill text-orange-500' />
                               Đã bán
@@ -1135,7 +1135,7 @@ function ProductDetailPage() {
                             </span>
                           </div>
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-chat-dots-fill text-orange-500' />
                               Đánh giá
@@ -1146,7 +1146,7 @@ function ProductDetailPage() {
                             </span>
                           </div>
 
-                          <div className='d-flex align-items-center justify-content-between gap-3 !rounded-3 bg-slate-50 px-3 py-3'>
+                          <div className='d-flex align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
                             <span className='d-flex align-items-center gap-2 font-bold text-slate-500'>
                               <i className='bi bi-box-seam-fill text-orange-500' />
                               Kho hàng

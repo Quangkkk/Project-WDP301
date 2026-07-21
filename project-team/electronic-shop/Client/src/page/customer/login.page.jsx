@@ -1,20 +1,74 @@
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import AuthPanel from '../../components/organisms/AuthPanel'
-import MainLayout from '../../components/templates/MainLayout'
+
 import Alert from '../../components/atoms/Alert'
 import Button from '../../components/atoms/Button'
 import TextField from '../../components/atoms/TextField'
-import { login } from '../../services/auth.service'
+import AuthPanel from '../../components/organisms/AuthPanel'
+import MainLayout from '../../components/templates/MainLayout'
+
 import { getErrorMessage } from '../../services/api'
+import { login } from '../../services/auth.service'
 import { getUserRole, saveAuth } from '../../utils/authStorage'
+
+const BACK_OFFICE_ROLES = ['ADMIN', 'MANAGER', 'STAFF']
+const AUTH_PATH_PREFIXES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+]
+
+function normalizeInternalPath(value) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  const path = value.trim()
+
+  if (!path.startsWith('/') || path.startsWith('//')) {
+    return ''
+  }
+
+  return path
+}
+
+function getPathname(path) {
+  return path.split(/[?#]/, 1)[0] || '/'
+}
+
+function isAuthPath(path) {
+  const pathname = getPathname(path)
+
+  return AUTH_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+}
+
+function isBackOfficePath(path) {
+  const pathname = getPathname(path)
+
+  return pathname === '/admin' || pathname.startsWith('/admin/')
+}
+
+function getCustomerRedirectPath(value) {
+  const path = normalizeInternalPath(value)
+
+  if (!path || isAuthPath(path) || isBackOfficePath(path)) {
+    return '/'
+  }
+
+  return path
+}
 
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const redirectPath = location.state?.from || ''
 
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  })
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -26,49 +80,91 @@ function LoginPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-    setErrors((prev) => ({ ...prev, [name]: '' }))
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: '',
+    }))
+
     setMessage('')
   }
 
   const validate = () => {
-    const next = {}
+    const nextErrors = {}
+    const email = form.email.trim()
 
-    if (!form.email.trim()) next.email = 'Vui lòng nhập email'
-    else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Email không hợp lệ'
+    if (!email) {
+      nextErrors.email = 'Vui lòng nhập email'
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      nextErrors.email = 'Email không hợp lệ'
+    }
 
-    if (!form.password.trim()) next.password = 'Vui lòng nhập mật khẩu'
+    if (!form.password.trim()) {
+      nextErrors.password = 'Vui lòng nhập mật khẩu'
+    }
 
-    setErrors(next)
-    return Object.keys(next).length === 0
+    setErrors(nextErrors)
+
+    return Object.keys(nextErrors).length === 0
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!validate()) return
+
+    if (isLoading || !validate()) {
+      return
+    }
 
     try {
       setIsLoading(true)
+      setMessage('')
+
       const response = await login({
         email: form.email.trim(),
         password: form.password,
       })
 
-      const token = response?.accessToken || response?.token
-      const user = response?.data
+      const token =
+        response?.accessToken ||
+        response?.access_token ||
+        response?.token ||
+        response?.data?.accessToken ||
+        response?.data?.access_token ||
+        response?.data?.token
 
-      if (!token || !user) {
+      const user =
+        response?.user ||
+        response?.data?.user ||
+        response?.data
+
+      if (!token || !user || typeof user !== 'object') {
         throw new Error('Phản hồi đăng nhập thiếu token hoặc thông tin người dùng.')
       }
 
       saveAuth({ token, user })
 
       const role = getUserRole(user)
-      const fallbackPath = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
-        ? '/admin'
-        : '/'
 
-      navigate(redirectPath || fallbackPath, { replace: true })
+      // Các role quản trị luôn vào dashboard, không quay lại trang public trước đó.
+      if (BACK_OFFICE_ROLES.includes(role)) {
+        navigate('/admin', { replace: true })
+        return
+      }
+
+      // CUSTOMER quay lại đúng trang đã đứng trước khi mở trang đăng nhập.
+      if (role === 'CUSTOMER') {
+        const redirectPath = getCustomerRedirectPath(location.state?.from)
+        navigate(redirectPath, { replace: true })
+        return
+      }
+
+      // Role không xác định không được tự chuyển vào trang quản trị.
+      navigate('/', { replace: true })
     } catch (error) {
       setMessage(getErrorMessage(error, 'Đăng nhập thất bại.'))
     } finally {
@@ -90,12 +186,13 @@ function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <TextField
                 label='Email'
                 id='email'
                 name='email'
                 type='email'
+                autoComplete='email'
                 placeholder='customer@example.com'
                 value={form.email}
                 error={errors.email}
@@ -108,6 +205,7 @@ function LoginPage() {
                 id='password'
                 name='password'
                 type='password'
+                autoComplete='current-password'
                 placeholder='••••••••'
                 value={form.password}
                 error={errors.password}

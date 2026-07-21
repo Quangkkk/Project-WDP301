@@ -15,6 +15,9 @@ const CheckoutPage = lazy(() => import('./page/customer/checkout.page.jsx'))
 const PaymentResultPage = lazy(() => import('./page/customer/payment-result.page.jsx'))
 const OrderHistoryPage = lazy(() => import('./page/customer/order-history.page.jsx'))
 const OrderDetailPage = lazy(() => import('./page/customer/order-detail.page.jsx'))
+const GuestOrderDetailPage = lazy(() =>
+  import('./page/customer/guest-order-detail.page.jsx'),
+)
 const ProfilePage = lazy(() => import('./page/customer/profile.page.jsx'))
 const WishlistPage = lazy(() => import('./page/customer/wishlist.page.jsx'))
 const SupportPage = lazy(() => import('./page/customer/support.page.jsx'))
@@ -71,6 +74,11 @@ function App() {
             element={
               <PaymentResultPage />
             }
+          />
+
+          <Route
+            path='/track-order/:orderId'
+            element={<GuestOrderDetailPage />}
           />
 
           <Route

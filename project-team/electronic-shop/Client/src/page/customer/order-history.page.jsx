@@ -101,6 +101,69 @@ function getOrderItemsSummary(order) {
     : `${name} x ${quantity}`
 }
 
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim()
+}
+
+function getOrderSearchText(order) {
+  const items = Array.isArray(order?.items) ? order.items : []
+
+  const itemText = items
+    .map((item) => {
+      const product = item?.product_id || item?.product || {}
+      const variant = item?.variant_id || item?.variant || {}
+
+      const productName =
+        typeof product === 'string'
+          ? item?.product_name || ''
+          : product?.name || item?.product_name || ''
+
+      const variantText =
+        typeof variant === 'string'
+          ? item?.variant_name || item?.variant_value || ''
+          : [
+              variant?.variant_name,
+              variant?.variant_value,
+              variant?.sku,
+              variant?.color,
+              variant?.storage,
+              variant?.ram,
+            ]
+              .filter(Boolean)
+              .join(' ')
+
+      return [
+        productName,
+        variantText,
+        item?.product_name,
+        item?.variant_name,
+        item?.variant_value,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    })
+    .join(' ')
+
+  return normalizeSearchText(
+    [
+      formatOrderCode(order),
+      order?.order_code,
+      order?.orderCode,
+      getId(order),
+      itemText,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  )
+}
+
 function canCancelOrder(order) {
   return ['pending', 'confirmed', 'processing'].includes(order?.status)
 }
@@ -111,6 +174,7 @@ function OrderHistoryPage() {
 
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('all')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [loadingId, setLoadingId] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
@@ -156,12 +220,23 @@ function OrderHistoryPage() {
   }, [orders])
 
   const filteredOrders = useMemo(() => {
-    if (activeTab === 'all') {
-      return orders
-    }
+    const normalizedKeyword = normalizeSearchText(searchKeyword)
 
-    return orders.filter((order) => order.status === activeTab)
-  }, [orders, activeTab])
+    return orders.filter((order) => {
+      const matchesStatus =
+        activeTab === 'all' || order.status === activeTab
+
+      if (!matchesStatus) {
+        return false
+      }
+
+      if (!normalizedKeyword) {
+        return true
+      }
+
+      return getOrderSearchText(order).includes(normalizedKeyword)
+    })
+  }, [orders, activeTab, searchKeyword])
 
   const handleOpenCancelModal = (event, order) => {
     event.stopPropagation()
@@ -205,8 +280,13 @@ function OrderHistoryPage() {
     <MainLayout>
       <section className='page-section'>
         <Container>
-          <div className='mb-4 d-flex flex-wrap align-items-end justify-content-between gap-3'>
-            <div>
+          <div className='mb-4 d-flex flex-column flex-lg-row align-items-lg-end gap-4'>
+            <div
+              className='flex-shrink-0'
+              style={{
+                minWidth: 270,
+              }}
+            >
               <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
                 Đơn hàng
               </p>
@@ -216,14 +296,70 @@ function OrderHistoryPage() {
               </h1>
             </div>
 
-            <Button
-              type='button'
-              variant='secondary'
-              onClick={() => navigate('/products')}
+            <div className='d-flex flex-grow-1 justify-content-lg-center'>
+              <div
+                className='d-flex w-100 align-items-center overflow-hidden rounded-pill border border-slate-200 bg-white shadow-sm transition focus-within:border-orange-400'
+                style={{
+                  maxWidth: 650,
+                  minHeight: 50,
+                }}
+              >
+                <span className='d-flex align-items-center justify-content-center ps-4 text-slate-400'>
+                  <i className='bi bi-search fs-5' />
+                </span>
+
+                <input
+                  type='search'
+                  value={searchKeyword}
+                  onChange={(event) => setSearchKeyword(event.target.value)}
+                  placeholder='Tìm theo mã đơn hoặc tên sản phẩm...'
+                  className='flex-grow-1 border-0 bg-transparent px-3 py-3 text-sm text-slate-800 outline-none'
+                  aria-label='Tìm kiếm đơn hàng'
+                />
+
+                {/* {searchKeyword && (
+                  <button
+                    type='button'
+                    onClick={() => setSearchKeyword('')}
+                    className='me-2 d-flex align-items-center justify-content-center !rounded-circle border-0 bg-slate-100 text-slate-500 transition hover:bg-orange-100 hover:text-orange-600'
+                    style={{
+                      width: 34,
+                      height: 34,
+                      minWidth: 34,
+                    }}
+                    aria-label='Xóa tìm kiếm'
+                  >
+                    <i className='bi bi-x-lg' />
+                  </button>
+                )} */}
+              </div>
+            </div>
+
+            <div
+              className='d-flex flex-shrink-0 justify-content-lg-end'
+              style={{
+                minWidth: 210,
+              }}
             >
-              Tiếp tục mua hàng
-            </Button>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => navigate('/products')}
+              >
+                Tiếp tục mua hàng
+              </Button>
+            </div>
           </div>
+
+          {searchKeyword && (
+            <p className='mb-3 text-center text-sm font-semibold text-slate-500'>
+              Tìm thấy{' '}
+              <span className='font-black text-orange-600'>
+                {filteredOrders.length}
+              </span>{' '}
+              đơn hàng
+            </p>
+          )}
 
           <Alert type='danger'>{error}</Alert>
           <Alert type='success'>{message}</Alert>
@@ -279,12 +415,27 @@ function OrderHistoryPage() {
                   </div>
                 </div>
 
+
                 {filteredOrders.length === 0 ? (
                   <div className='p-5'>
                     <EmptyState
-                      icon='📦'
-                      title='Chưa có đơn hàng'
-                      description='Không có đơn hàng nào trong trạng thái này.'
+                      icon={searchKeyword ? '🔍' : '📦'}
+                      title={
+                        searchKeyword
+                          ? 'Không tìm thấy đơn hàng'
+                          : 'Chưa có đơn hàng'
+                      }
+                      description={
+                        searchKeyword
+                          ? `Không có mã đơn hoặc sản phẩm nào khớp với “${searchKeyword}”.`
+                          : 'Không có đơn hàng nào trong trạng thái này.'
+                      }
+                      actionLabel={searchKeyword ? 'Xóa tìm kiếm' : undefined}
+                      onAction={
+                        searchKeyword
+                          ? () => setSearchKeyword('')
+                          : undefined
+                      }
                     />
                   </div>
                 ) : (
