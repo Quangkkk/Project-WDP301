@@ -214,7 +214,7 @@ function FilterPill({ active, icon, children, onClick }) {
     <button
       type='button'
       onClick={onClick}
-      className={`d-inline-flex align-items-center gap-2 !rounded-4 border px-4 py-3 text-sm font-bold transition ${
+      className={`d-inline-flex align-items-center gap-2 rounded-4 border px-4 py-3 text-sm font-bold transition ${
         active
           ? 'border-orange-500 bg-orange-50 text-orange-600 shadow-sm'
           : 'border-transparent bg-slate-100 text-slate-800 hover:bg-slate-200'
@@ -231,7 +231,7 @@ function StockBadge({ stock }) {
 
   return (
     <span
-      className={`!rounded-pill px-3 py-2 text-xs font-black ${
+      className={`rounded-pill px-3 py-2 text-xs font-black ${
         isInStock
           ? 'bg-emerald-50 text-emerald-700'
           : 'bg-red-50 text-red-600'
@@ -291,7 +291,7 @@ function WishlistProductCard({ entry, isRemoving, onRemove }) {
             onClick={handleRemoveClick}
             disabled={isRemoving}
             title='Bỏ khỏi yêu thích'
-            className='d-flex align-items-center justify-content-center !rounded-circle border-0 bg-white text-red-500 shadow-sm transition hover:bg-red-50 disabled:opacity-60'
+            className='d-flex align-items-center justify-content-center rounded-circle border-0 bg-white text-red-500 shadow-sm transition hover:bg-red-50 disabled:opacity-60'
             style={{
               width: 42,
               height: 42,

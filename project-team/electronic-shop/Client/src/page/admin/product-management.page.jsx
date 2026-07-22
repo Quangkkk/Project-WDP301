@@ -34,6 +34,11 @@ import {
   getStock,
 } from '../../utils/product'
 
+const createEmptyAttribute = () => ({
+  name: '',
+  value: '',
+})
+
 const createEmptyVariant = () => ({
   _id: '',
   sku: '',
@@ -45,7 +50,7 @@ const createEmptyVariant = () => ({
   image: '',
   preview_url: '',
   image_broken: false,
-  attributes_text: '{}',
+  attributes: [],
   is_active: true,
 })
 
@@ -74,14 +79,23 @@ function parseLocalizedNumber(value) {
   return normalized === '' ? Number.NaN : Number(normalized)
 }
 
-function stringifyAttributes(value) {
-  if (!value || typeof value !== 'object') return '{}'
-
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return '{}'
+function attributesObjectToRows(value) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value)
+  ) {
+    return []
   }
+
+  return Object.entries(value).map(([name, attributeValue]) => ({
+    name,
+    value:
+      attributeValue !== null &&
+      typeof attributeValue === 'object'
+        ? JSON.stringify(attributeValue)
+        : String(attributeValue ?? ''),
+  }))
 }
 
 function normalizeDetailResponse(response) {
@@ -122,36 +136,50 @@ function normalizeVariantForForm(variant) {
     image: variant?.image || '',
     preview_url: '',
     image_broken: false,
-    attributes_text: stringifyAttributes(variant?.attributes_json),
+    attributes: attributesObjectToRows(variant?.attributes_json),
     is_active: variant?.is_active !== false,
   }
 }
 
-function parseAttributes(text, variantIndex) {
-  const value = String(text || '').trim()
-  if (!value) return {}
+function buildAttributesObject(attributes, variantIndex) {
+  if (!Array.isArray(attributes)) return {}
 
-  let parsed
+  const result = {}
+  const usedNames = new Set()
 
-  try {
-    parsed = JSON.parse(value)
-  } catch {
-    throw new Error(
-      `Thuộc tính JSON của phiên bản ${variantIndex + 1} không hợp lệ.`,
-    )
-  }
+  attributes.forEach((attribute, attributeIndex) => {
+    const name = String(attribute?.name || '').trim()
+    const value = String(attribute?.value || '').trim()
 
-  if (
-    !parsed ||
-    typeof parsed !== 'object' ||
-    Array.isArray(parsed)
-  ) {
-    throw new Error(
-      `Thuộc tính phiên bản ${variantIndex + 1} phải là một object JSON.`,
-    )
-  }
+    /*
+     * Cho phép dòng hoàn toàn trống để Manager chưa cần xóa
+     * ngay khi vừa bấm thêm nhầm.
+     */
+    if (!name && !value) return
 
-  return parsed
+    if (!name || !value) {
+      throw new Error(
+        `Thuộc tính ${attributeIndex + 1} của phiên bản ${
+          variantIndex + 1
+        } phải có đủ tên và giá trị.`,
+      )
+    }
+
+    const normalizedName = name.toLowerCase()
+
+    if (usedNames.has(normalizedName)) {
+      throw new Error(
+        `Tên thuộc tính "${name}" đang bị trùng trong phiên bản ${
+          variantIndex + 1
+        }.`,
+      )
+    }
+
+    usedNames.add(normalizedName)
+    result[name] = value
+  })
+
+  return result
 }
 
 function validateAndBuildPayload(form) {
@@ -232,7 +260,7 @@ function validateAndBuildPayload(form) {
       stock_quantity: stockQuantity,
       weight,
       image: String(variant.image || '').trim() || null,
-      attributes_json: parseAttributes(variant.attributes_text, index),
+      attributes_json: buildAttributesObject(variant.attributes, index),
       is_active: Boolean(variant.is_active),
     }
   })
@@ -371,6 +399,88 @@ function ProductManagementPage() {
                     image_broken: false,
                   }
                 : {}),
+            }
+          : variant,
+      ),
+    }))
+
+    setError('')
+    setMessage('')
+  }
+
+  const handleAddVariantAttribute = (variantIndex) => {
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((variant, currentVariantIndex) =>
+        currentVariantIndex === variantIndex
+          ? {
+              ...variant,
+              attributes: [
+                ...(Array.isArray(variant.attributes)
+                  ? variant.attributes
+                  : []),
+                createEmptyAttribute(),
+              ],
+            }
+          : variant,
+      ),
+    }))
+
+    setError('')
+    setMessage('')
+  }
+
+  const handleVariantAttributeChange = (
+    variantIndex,
+    attributeIndex,
+    field,
+    value,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((variant, currentVariantIndex) => {
+        if (currentVariantIndex !== variantIndex) return variant
+
+        const attributes = Array.isArray(variant.attributes)
+          ? variant.attributes
+          : []
+
+        return {
+          ...variant,
+          attributes: attributes.map((attribute, currentAttributeIndex) =>
+            currentAttributeIndex === attributeIndex
+              ? {
+                  ...attribute,
+                  [field]: value,
+                }
+              : attribute,
+          ),
+        }
+      }),
+    }))
+
+    setError('')
+    setMessage('')
+  }
+
+  const handleRemoveVariantAttribute = (
+    variantIndex,
+    attributeIndex,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((variant, currentVariantIndex) =>
+        currentVariantIndex === variantIndex
+          ? {
+              ...variant,
+              attributes: (
+                Array.isArray(variant.attributes)
+                  ? variant.attributes
+                  : []
+              ).filter(
+                (_attribute, currentAttributeIndex) =>
+                  currentAttributeIndex !== attributeIndex,
+              ),
             }
           : variant,
       ),
@@ -1264,16 +1374,104 @@ function ProductManagementPage() {
                           </Col>
 
                           <Col xs={12}>
-                            <TextAreaField
-                              label='Thuộc tính JSON'
-                              name='attributes_text'
-                              value={variant.attributes_text}
-                              onChange={(event) =>
-                                handleVariantChange(index, event)
-                              }
-                              rows={5}
-                              placeholder={'{\n  "color": "Đen",\n  "storage": "256GB"\n}'}
-                            />
+                            <div className='!rounded-4 border border-slate-200 bg-slate-50 p-3'>
+                              <div className='mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2'>
+                                <div>
+                                  <h5 className='mb-1 text-sm font-black text-slate-800'>
+                                    Thuộc tính phiên bản
+                                  </h5>
+
+                                  <p className='mb-0 text-xs text-slate-500'>
+                                    Ví dụ: RAM — 8GB, Màu sắc — Đen.
+                                  </p>
+                                </div>
+
+                                <Button
+                                  type='button'
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    handleAddVariantAttribute(index)
+                                  }
+                                  disabled={isSaving}
+                                >
+                                  + Thêm thuộc tính
+                                </Button>
+                              </div>
+
+                              {(!Array.isArray(variant.attributes) ||
+                                variant.attributes.length === 0) && (
+                                <div className='!rounded-3 border border-dashed border-slate-300 bg-white px-3 py-4 text-center text-sm text-slate-500'>
+                                  Chưa có thuộc tính bổ sung.
+                                </div>
+                              )}
+
+                              {Array.isArray(variant.attributes) &&
+                                variant.attributes.length > 0 && (
+                                  <div className='d-flex flex-column gap-3'>
+                                    {variant.attributes.map(
+                                      (attribute, attributeIndex) => (
+                                        <div
+                                          key={`variant-${index}-attribute-${attributeIndex}`}
+                                          className='!rounded-3 border border-slate-200 bg-white p-3'
+                                        >
+                                          <Row className='g-3 align-items-end'>
+                                            <Col md={5}>
+                                              <TextField
+                                                label='Tên thuộc tính'
+                                                value={attribute.name}
+                                                onChange={(event) =>
+                                                  handleVariantAttributeChange(
+                                                    index,
+                                                    attributeIndex,
+                                                    'name',
+                                                    event.target.value,
+                                                  )
+                                                }
+                                                placeholder='Ví dụ: RAM'
+                                              />
+                                            </Col>
+
+                                            <Col md={5}>
+                                              <TextField
+                                                label='Giá trị'
+                                                value={attribute.value}
+                                                onChange={(event) =>
+                                                  handleVariantAttributeChange(
+                                                    index,
+                                                    attributeIndex,
+                                                    'value',
+                                                    event.target.value,
+                                                  )
+                                                }
+                                                placeholder='Ví dụ: 8GB'
+                                              />
+                                            </Col>
+
+                                            <Col md={2}>
+                                              <Button
+                                                type='button'
+                                                variant='danger'
+                                                size='sm'
+                                                className='w-100'
+                                                onClick={() =>
+                                                  handleRemoveVariantAttribute(
+                                                    index,
+                                                    attributeIndex,
+                                                  )
+                                                }
+                                                disabled={isSaving}
+                                              >
+                                                Xóa
+                                              </Button>
+                                            </Col>
+                                          </Row>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
+                            </div>
                           </Col>
                         </Row>
                       </Col>

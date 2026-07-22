@@ -109,6 +109,49 @@ function getVariantLabel(variant) {
   return values.length > 0 ? values.join(' - ') : 'Phiên bản mặc định'
 }
 
+function getVariantAttributes(variant) {
+  const rawAttributes =
+    variant?.attributes_json ??
+    variant?.attributesJson ??
+    variant?.attributes ??
+    {}
+
+  let attributes = rawAttributes
+
+  if (typeof attributes === 'string') {
+    try {
+      attributes = JSON.parse(attributes)
+    } catch {
+      return []
+    }
+  }
+
+  if (
+    !attributes ||
+    typeof attributes !== 'object' ||
+    Array.isArray(attributes)
+  ) {
+    return []
+  }
+
+  return Object.entries(attributes)
+    .filter(([name, value]) => {
+      return (
+        String(name || '').trim() &&
+        value !== null &&
+        value !== undefined &&
+        String(value).trim()
+      )
+    })
+    .map(([name, value]) => ({
+      name: String(name).trim(),
+      value:
+        typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value).trim(),
+    }))
+}
+
 function getCategoryInfo(product) {
   const category =
     product?.category ||
@@ -493,6 +536,7 @@ function ProductDetailPage() {
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
   const [variantId, setVariantId] = useState('')
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [reviews, setReviews] = useState([])
   const [reviewPagination, setReviewPagination] = useState({
@@ -573,6 +617,7 @@ function ProductDetailPage() {
           setProduct(null)
           setVariants([])
           setVariantId('')
+          setActiveImageIndex(0)
           setReviews([])
           setReviewPagination({ total: 0, page: 1, limit: 10, pages: 0 })
           setIsWishlisted(false)
@@ -588,6 +633,7 @@ function ProductDetailPage() {
 
         setVariants(loadedVariants)
         setVariantId(getId(loadedVariants[0]) || '')
+        setActiveImageIndex(0)
         setQuantity(1)
 
         await loadWishlistStatus(getId(loadedProduct))
@@ -623,6 +669,7 @@ function ProductDetailPage() {
         setProduct(null)
         setVariants([])
         setVariantId('')
+        setActiveImageIndex(0)
         setReviews([])
         setReviewPagination({ total: 0, page: 1, limit: 10, pages: 0 })
         setIsWishlisted(false)
@@ -696,20 +743,104 @@ function ProductDetailPage() {
   const categoryInfo = useMemo(() => getCategoryInfo(product), [product])
   const brandInfo = useMemo(() => getBrandInfo(product), [product])
   const brandName = brandInfo.name
+  const selectedVariantAttributes = useMemo(
+    () => getVariantAttributes(selectedVariant),
+    [selectedVariant],
+  )
+
+  const variantCarouselItems = useMemo(() => {
+    const items = variants
+      .map((variant) => ({
+        variantId: getId(variant),
+        variant,
+        label: getVariantLabel(variant),
+        image: getProductImage(product, variant),
+      }))
+      .filter((item) => item.image)
+
+    if (items.length > 0) return items
+
+    const fallbackImage = getProductImage(product, selectedVariant)
+
+    return fallbackImage
+      ? [
+          {
+            variantId: getId(selectedVariant),
+            variant: selectedVariant,
+            label: getVariantLabel(selectedVariant),
+            image: fallbackImage,
+          },
+        ]
+      : []
+  }, [product, variants, selectedVariant])
+
+  const activeCarouselItem =
+    variantCarouselItems[activeImageIndex] ||
+    variantCarouselItems[0] ||
+    null
 
   // Cac thuoc tinh nhu gia, anh, ton kho va luot ban se tu dong thay doi dynamic theo variant duoc chon
   const price = getProductPrice(product, selectedVariant)
   const original = getProductOriginalPrice(product, selectedVariant)
-  const image = getProductImage(product, selectedVariant)
+  const image =
+    activeCarouselItem?.image ||
+    getProductImage(product, selectedVariant)
   const stock = getStock(product, selectedVariant)
   const soldCount = getSoldCount(product, selectedVariant)
   const isOutOfStock = Number(stock || 0) <= 0
 
+  useEffect(() => {
+    if (variantCarouselItems.length === 0) {
+      setActiveImageIndex(0)
+      return
+    }
+
+    const selectedIndex = variantCarouselItems.findIndex(
+      (item) => item.variantId === variantId,
+    )
+
+    setActiveImageIndex(selectedIndex >= 0 ? selectedIndex : 0)
+  }, [variantId, variantCarouselItems])
+
   const handleSelectVariant = (nextVariantId) => {
     setVariantId(nextVariantId)
+
+    const nextImageIndex = variantCarouselItems.findIndex(
+      (item) => item.variantId === nextVariantId,
+    )
+
+    if (nextImageIndex >= 0) {
+      setActiveImageIndex(nextImageIndex)
+    }
+
     setQuantity(1)
     setMessage('')
     setError('')
+  }
+
+  const handleSelectCarouselItem = (nextIndex) => {
+    const item = variantCarouselItems[nextIndex]
+
+    if (!item) return
+
+    setActiveImageIndex(nextIndex)
+
+    if (item.variantId && item.variantId !== variantId) {
+      setVariantId(item.variantId)
+      setQuantity(1)
+      setMessage('')
+      setError('')
+    }
+  }
+
+  const handleMoveCarousel = (direction) => {
+    if (variantCarouselItems.length <= 1) return
+
+    const nextIndex =
+      (activeImageIndex + direction + variantCarouselItems.length) %
+      variantCarouselItems.length
+
+    handleSelectCarouselItem(nextIndex)
   }
 
   const addSelectedItemToCart = async () => {
@@ -896,11 +1027,16 @@ function ProductDetailPage() {
           <Row className='g-5 align-items-start'>
             <Col lg={6}>
               <Card className='card-surface overflow-hidden'>
-                <div className='flex min-h-[420px] items-center justify-center bg-gradient-to-br from-slate-100 to-orange-50 p-5'>
+                <div className='position-relative flex min-h-[420px] items-center justify-center bg-gradient-to-br from-slate-100 to-orange-50 p-5'>
                   {image ? (
                     <img
+                      key={activeCarouselItem?.variantId || image}
                       src={image}
-                      alt={product.name}
+                      alt={
+                        activeCarouselItem?.label
+                          ? `${product.name} - ${activeCarouselItem.label}`
+                          : product.name
+                      }
                       className='max-h-[360px] w-full object-contain'
                       onError={(event) => {
                         event.currentTarget.style.display = 'none'
@@ -909,7 +1045,89 @@ function ProductDetailPage() {
                   ) : (
                     <div className='text-8xl'>💻</div>
                   )}
+
+                  {variantCarouselItems.length > 1 && (
+                    <>
+                      <button
+                        type='button'
+                        onClick={() => handleMoveCarousel(-1)}
+                        aria-label='Ảnh phiên bản trước'
+                        className='position-absolute start-0 top-50 ms-3 d-flex translate-middle-y align-items-center justify-content-center rounded-circle border border-slate-200 bg-white text-xl font-black text-slate-700 shadow transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-600'
+                        style={{
+                          width: 46,
+                          height: 46,
+                          zIndex: 2,
+                        }}
+                      >
+                        ‹
+                      </button>
+
+                      <button
+                        type='button'
+                        onClick={() => handleMoveCarousel(1)}
+                        aria-label='Ảnh phiên bản tiếp theo'
+                        className='position-absolute end-0 top-50 me-3 d-flex translate-middle-y align-items-center justify-content-center rounded-circle border border-slate-200 bg-white text-xl font-black text-slate-700 shadow transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-600'
+                        style={{
+                          width: 46,
+                          height: 46,
+                          zIndex: 2,
+                        }}
+                      >
+                        ›
+                      </button>
+
+                      <span className='position-absolute end-0 top-0 me-3 mt-3 !rounded-pill bg-slate-900/75 px-3 py-2 text-xs font-black text-white'>
+                        {activeImageIndex + 1} / {variantCarouselItems.length}
+                      </span>
+                    </>
+                  )}
                 </div>
+
+                {variantCarouselItems.length > 1 && (
+                  <div className='border-top bg-white p-3'>
+                    <div className='d-flex gap-3 overflow-auto pb-1'>
+                      {variantCarouselItems.map((item, index) => {
+                        const isActive = index === activeImageIndex
+
+                        return (
+                          <button
+                            type='button'
+                            key={
+                              item.variantId ||
+                              `${item.image}-${index}`
+                            }
+                            onClick={() => handleSelectCarouselItem(index)}
+                            title={item.label}
+                            className={`flex-shrink-0 overflow-hidden !rounded-3 border bg-white p-1 transition ${
+                              isActive
+                                ? 'border-orange-500 shadow-sm'
+                                : 'border-slate-200 hover:border-orange-300'
+                            }`}
+                            style={{
+                              width: 82,
+                              height: 82,
+                            }}
+                          >
+                            <img
+                              src={item.image}
+                              alt={item.label}
+                              className='h-100 w-100 object-contain'
+                              onError={(event) => {
+                                event.currentTarget.style.display = 'none'
+                              }}
+                            />
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {activeCarouselItem?.label && (
+                      <p className='mb-0 mt-2 text-center text-sm font-bold text-slate-600'>
+                        {activeCarouselItem.label}
+                      </p>
+                    )}
+                  </div>
+                )}
               </Card>
 
               <Row className='mt-3 g-0 align-items-center'>
@@ -1085,24 +1303,59 @@ function ProductDetailPage() {
                 </div>
 
                 <div className='p-4 p-lg-5'>
-                  <Row className='g-4'>
+                  <Row className='g-4 align-items-stretch'>
                     <Col lg={7}>
-                      <div className='h-100 rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
-                        <h3 className='mb-3 text-xl font-black text-slate-900'>
-                          Mô tả sản phẩm
-                        </h3>
+                      <div className='d-flex h-100 flex-column gap-4'>
+                        <div className='rounded-4 border border-orange-100 bg-orange-50/40 p-4'>
+                          <h3 className='mb-3 text-xl font-black text-slate-900'>
+                            Mô tả sản phẩm
+                          </h3>
 
-                        <p className='mb-0 text-base leading-8 text-slate-600'>
-                          {product.description ||
-                            'Sản phẩm công nghệ chính hãng, phù hợp cho nhu cầu học tập, làm việc và giải trí hằng ngày.'}
-                        </p>
+                          <p className='mb-0 text-base leading-8 text-slate-600'>
+                            {product.description ||
+                              'Sản phẩm công nghệ chính hãng, phù hợp cho nhu cầu học tập, làm việc và giải trí hằng ngày.'}
+                          </p>
+                        </div>
+
+                        {selectedVariantAttributes.length > 0 && (
+                          <div className='flex-grow-1 rounded-4 border border-slate-200 bg-white p-4'>
+                            <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2'>
+                              <h3 className='mb-0 text-xl font-black text-slate-900'>
+                                Thuộc tính phiên bản
+                              </h3>
+
+                              <span className='!rounded-pill bg-orange-50 px-3 py-2 text-xs font-black text-orange-600'>
+                                {getVariantLabel(selectedVariant)}
+                              </span>
+                            </div>
+
+                            <Row className='g-3'>
+                              {selectedVariantAttributes.map((attribute) => (
+                                <Col
+                                  md={6}
+                                  key={`${getId(selectedVariant)}-${attribute.name}`}
+                                >
+                                  <div className='d-flex h-100 align-items-center justify-content-between gap-3 rounded-3 bg-slate-50 px-3 py-3'>
+                                    <span className='font-bold text-slate-500'>
+                                      {attribute.name}
+                                    </span>
+
+                                    <span className='text-end font-black text-slate-900'>
+                                      {attribute.value}
+                                    </span>
+                                  </div>
+                                </Col>
+                              ))}
+                            </Row>
+                          </div>
+                        )}
                       </div>
                     </Col>
 
                     <Col lg={5}>
                       <div className='h-100 rounded-4 border border-slate-200 bg-white p-4'>
                         <h3 className='mb-4 text-xl font-black text-slate-900'>
-                          Thông tin nhanh
+                          Thông tin
                         </h3>
 
                         <div className='d-flex flex-column gap-3'>
@@ -1163,7 +1416,9 @@ function ProductDetailPage() {
                                 isOutOfStock ? 'text-red-500' : 'text-emerald-600'
                               }`}
                             >
-                              {isOutOfStock ? 'Hết hàng' : 'Còn hàng'}
+                              {isOutOfStock
+                                ? 'Hết hàng'
+                                : `Còn ${formatNumber(stock)} sản phẩm`}
                             </span>
                           </div>
                         </div>

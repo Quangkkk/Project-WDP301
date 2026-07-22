@@ -8,6 +8,11 @@ const {
   sendResetSuccessEmail,
 } = require("../mailtrap/email");
 
+const passwordResetService =
+  require(
+    "../services/passwordReset.service"
+  );
+
 const safeSelect =
   "-hash_pass -email_otp -email_otp_expires -reset_password_token -reset_password_expires -__v";
 
@@ -103,134 +108,172 @@ const login = async (req, res) => {
     });
   }
 };
-
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (
+  req,
+  res,
+) => {
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    const user = await User.findOne({ email: normalizeEmail(email) });
-    const genericMessage =
-      "Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.";
-
-    if (!user) {
-      return res.status(200).json({ success: true, message: genericMessage });
-    }
-
-    if (user.status === "blocked") {
-      return res.status(403).json({
-        success: false,
-        message: "Account has been blocked",
-      });
-    }
-
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    user.reset_password_token = hashResetToken(rawToken);
-    user.reset_password_expires = new Date(Date.now() + 60 * 60 * 1000);
-    await user.save();
-
-    const resetURL = `${getClientBaseUrl()}/reset-password/${rawToken}`;
-    let mailSent = true;
-
-    try {
-      await sendForgotPasswordEmail(user.email, resetURL);
-    } catch (mailError) {
-      mailSent = false;
-      console.error("Send forgot password email failed:", mailError.message);
-    }
-
     const data =
-      process.env.NODE_ENV === "production"
-        ? { mail_sent: mailSent }
-        : { mail_sent: mailSent, reset_url: resetURL };
+      await passwordResetService.requestOtp(
+        req.body?.email,
+      );
 
     return res.status(200).json({
       success: true,
-      message: genericMessage,
+
+      message:
+        "Mã OTP đã được gửi tới Gmail của bạn.",
+
       data,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Không gửi được yêu cầu đặt lại mật khẩu.",
-      error: error.message,
-    });
+    return res
+      .status(
+        error.statusCode ||
+          500,
+      )
+      .json({
+        success: false,
+
+        message:
+          error.message ||
+          "Không gửi được mã OTP.",
+
+        error:
+          error.message,
+      });
   }
 };
 
-const resetPassword = async (req, res) => {
+const resendResetOtp = async (
+  req,
+  res,
+) => {
   try {
-    const { token } = req.params;
-    const { password, confirm_password, confirmPassword } = req.body;
-    const finalConfirmPassword = confirm_password || confirmPassword;
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "Reset token is required",
-      });
-    }
-
-    if (!password || !finalConfirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Password and confirm password are required",
-      });
-    }
-
-    if (String(password).length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
-    }
-
-    if (password !== finalConfirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Passwords do not match",
-      });
-    }
-
-    const user = await User.findOne({
-      reset_password_token: hashResetToken(token),
-      reset_password_expires: { $gt: new Date() },
-    });
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Reset password token is invalid or has expired",
-      });
-    }
-
-    user.hash_pass = await bcrypt.hash(password, 10);
-    user.reset_password_token = null;
-    user.reset_password_expires = null;
-    await user.save();
-
-    try {
-      await sendResetSuccessEmail(user.email);
-    } catch (mailError) {
-      console.error("Send reset success email failed:", mailError.message);
-    }
+    const data =
+      await passwordResetService.requestOtp(
+        req.body?.email,
+      );
 
     return res.status(200).json({
       success: true,
-      message: "Đặt lại mật khẩu thành công.",
+
+      message:
+        "Mã OTP mới đã được gửi tới Gmail của bạn.",
+
+      data,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Không đặt lại được mật khẩu.",
-      error: error.message,
+    return res
+      .status(
+        error.statusCode ||
+          500,
+      )
+      .json({
+        success: false,
+
+        message:
+          error.message ||
+          "Không gửi lại được mã OTP.",
+
+        error:
+          error.message,
+      });
+  }
+};
+
+const verifyResetOtp = async (
+  req,
+  res,
+) => {
+  try {
+    const data =
+      await passwordResetService.verifyOtp(
+        {
+          email:
+            req.body?.email,
+
+          otp:
+            req.body?.otp,
+        },
+      );
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "Xác thực OTP thành công.",
+
+      data,
     });
+  } catch (error) {
+    return res
+      .status(
+        error.statusCode ||
+          500,
+      )
+      .json({
+        success: false,
+
+        message:
+          error.message ||
+          "Không xác thực được OTP.",
+
+        error:
+          error.message,
+      });
+  }
+};
+
+const resetPassword = async (
+  req,
+  res,
+) => {
+  try {
+    await passwordResetService.changePassword(
+      {
+        email:
+          req.body?.email,
+
+        resetToken:
+          req.body
+            ?.reset_token ||
+          req.body
+            ?.resetToken,
+
+        password:
+          req.body?.password,
+
+        confirmPassword:
+          req.body
+            ?.confirm_password ||
+          req.body
+            ?.confirmPassword,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "Đặt lại mật khẩu thành công.",
+    });
+  } catch (error) {
+    return res
+      .status(
+        error.statusCode ||
+          500,
+      )
+      .json({
+        success: false,
+
+        message:
+          error.message ||
+          "Không đặt lại được mật khẩu.",
+
+        error:
+          error.message,
+      });
   }
 };
 
@@ -297,12 +340,15 @@ const resendVerificationCode = async (req, res) => {
     });
   }
 };
-
 module.exports = {
   register,
   login,
+
   forgotPassword,
+  resendResetOtp,
+  verifyResetOtp,
   resetPassword,
+
   verifyEmail,
   resendVerificationCode,
 };

@@ -27,6 +27,12 @@ const couponService = require(
   "./coupon.service"
 );
 
+const {
+  sendOrderCreatedEmail,
+} = require(
+  "./orderEmail.service"
+);
+
 const ORDER_STATUS = [
   "pending",
   "confirmed",
@@ -692,7 +698,27 @@ const createOrder = async (orderData) => {
       hasExplicitItems,
     });
   } catch (cartCleanupError) {
-    console.error("[order.createOrder.cartCleanup]", cartCleanupError);
+    console.error(
+      "[order.createOrder.cartCleanup]",
+      cartCleanupError
+    );
+  }
+
+  /*
+   * Đơn hàng đã tạo và trừ tồn kho thành công.
+   * Email lỗi không được làm mất đơn hàng.
+   */
+  try {
+    await sendOrderCreatedEmail({
+      order,
+      shippingFee,
+      discountAmount,
+    });
+  } catch (emailError) {
+    console.error(
+      "[order.createOrder.confirmationEmail]",
+      emailError.message
+    );
   }
 
   return {
@@ -851,7 +877,7 @@ const getOrderById = async (
   if (
     role === "CUSTOMER" &&
     String(ownerId) !==
-      String(currentUser.user_id)
+    String(currentUser.user_id)
   ) {
     throw new Error(
       "Access denied. You do not have permission."
@@ -1250,10 +1276,9 @@ const cancelOrder = async (
         html: `
           <p>Xin chao <b>${customer.name}</b>,</p>
           <p>Don hang <b>#${displayOrderCode}</b> cua ban da bi huy.</p>
-          ${
-            cancelledOrder.cancel_reason
-              ? `<p><b>Ly do:</b> ${cancelledOrder.cancel_reason}</p>`
-              : ""
+          ${cancelledOrder.cancel_reason
+            ? `<p><b>Ly do:</b> ${cancelledOrder.cancel_reason}</p>`
+            : ""
           }
           <p>San pham trong don hang da duoc hoan lai kho.</p>
         `,
