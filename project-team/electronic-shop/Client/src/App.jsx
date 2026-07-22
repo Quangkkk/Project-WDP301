@@ -222,14 +222,6 @@ function App() {
             }
           />
           <Route
-            path='/manager/orders'
-            element={
-              <ProtectedRoute allowedRoles={managerOnly}>
-                <OrderManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path='/manager/revenue'
             element={
               <ProtectedRoute allowedRoles={managerOnly}>
@@ -252,14 +244,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={staffOnly}>
                 <AdminDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/staff/products'
-            element={
-              <ProtectedRoute allowedRoles={staffOnly}>
-                <ProductManagementPage />
               </ProtectedRoute>
             }
           />

@@ -34,8 +34,6 @@ const links = [
     icon: Users,
     allowedRoles: ['ADMIN'],
   },
-
-  // MANAGER
   {
     path: '/manager',
     label: 'Tổng quan',
@@ -68,12 +66,6 @@ const links = [
     allowedRoles: ['MANAGER'],
   },
   {
-    path: '/manager/orders',
-    label: 'Đơn hàng',
-    icon: PackageSearch,
-    allowedRoles: ['MANAGER'],
-  },
-  {
     path: '/manager/revenue',
     label: 'Doanh thu',
     icon: BarChart3,
@@ -93,12 +85,6 @@ const links = [
     icon: LayoutDashboard,
     allowedRoles: ['STAFF'],
     end: true,
-  },
-  {
-    path: '/staff/products',
-    label: 'Sản phẩm',
-    icon: MonitorSmartphone,
-    allowedRoles: ['STAFF'],
   },
   {
     path: '/staff/orders',

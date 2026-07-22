@@ -472,7 +472,6 @@ function ChatManagementPage() {
                       <h4 className='m-0 text-sm font-black text-slate-900'>
                         {selectedConv.customer_id?.name || 'Khách hàng'}
                       </h4>
-                      <p className='m-0 text-[10px] text-green-600 font-bold'>Trực tuyến (phòng trò chuyện đang hoạt động)</p>
                     </div>
                   </div>
                   {selectedConv.status !== 'closed' && (
