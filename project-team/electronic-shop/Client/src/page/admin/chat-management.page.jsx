@@ -474,11 +474,11 @@ function ChatManagementPage() {
                       </h4>
                     </div>
                   </div>
-                  {selectedConv.status !== 'closed' && (
+                  {/* {selectedConv.status !== 'closed' && (
                     <Button size="sm" variant="outline" onClick={handleConvertToTicket} disabled={isConverting}>
                       {isConverting ? 'Đang chuyển...' : 'Chuyển thành Ticket'}
                     </Button>
-                  )}
+                  )} */}
                 </Card.Header>
 
                 {/* Nội dung tin nhắn */}
