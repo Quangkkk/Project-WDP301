@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const ticketMessageSchema = new mongoose.Schema(
@@ -14,8 +15,25 @@ const ticketMessageSchema = new mongoose.Schema(
     },
     message: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+    },
+    attachments: {
+      type: [
+        {
+          original_name: String,
+          filename: String,
+          mime_type: String,
+          size: Number,
+          url: String,
+          public_id: { type: String, default: "" },
+          resource_type: { type: String, default: "" },
+          format: { type: String, default: "" },
+          provider: { type: String, default: "cloudinary" },
+          type: { type: String, enum: ["image", "file"], default: "file" },
+        }
+      ],
+      default: [],
     },
   },
   {

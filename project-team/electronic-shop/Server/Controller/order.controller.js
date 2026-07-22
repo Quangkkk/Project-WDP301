@@ -163,6 +163,8 @@ const updateOrderById = async (req, res) => {
       error.message === "No data to update" ||
       error.message.includes("Use the cancel order endpoint") ||
       error.message.includes("cannot be changed") ||
+      error.message.includes("cannot be marked as paid") ||
+      error.message.includes("can only be paid or refunded") ||
       error.message.includes("must be paid before completing")
     ) {
       statusCode = 400;
@@ -223,6 +225,162 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+
+// Customer tạo yêu cầu trả hàng cho một đơn đã hoàn thành.
+const createReturnRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order id",
+      });
+    }
+
+    const currentUser = {
+      user_id: req.user_id,
+      role: req.role,
+    };
+
+    const data = await orderService.createReturnRequest(
+      id,
+      currentUser,
+      req.body
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Gửi yêu cầu trả hàng thành công.",
+      data,
+    });
+  } catch (error) {
+    console.error("[order.createReturnRequest]", error);
+
+    const message = String(error?.message || "");
+    let statusCode = 500;
+
+    if (message === "Order not found") {
+      statusCode = 404;
+    } else if (message.includes("Access denied")) {
+      statusCode = 403;
+    } else if (
+      message.includes("Invalid") ||
+      message.includes("required") ||
+      message.includes("completed") ||
+      message.includes("already has") ||
+      message.includes("quantity") ||
+      message.includes("belong") ||
+      message.includes("Duplicate") ||
+      message.includes("exceed")
+    ) {
+      statusCode = 400;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: message || "Không gửi được yêu cầu trả hàng.",
+      error: message,
+    });
+  }
+};
+
+// STAFF lấy danh sách yêu cầu trả hàng.
+const getReturnRequests = async (req, res) => {
+  try {
+    const currentUser = {
+      user_id: req.user_id,
+      role: req.role,
+    };
+
+    const data = await orderService.getReturnRequests(
+      req.query,
+      currentUser
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("[order.getReturnRequests]", error);
+
+    const message = String(error?.message || "");
+    let statusCode = 500;
+
+    if (message.includes("Access denied")) {
+      statusCode = 403;
+    } else if (message.includes("Invalid")) {
+      statusCode = 400;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: message || "Không tải được yêu cầu trả hàng.",
+      error: message,
+    });
+  }
+};
+
+// STAFF duyệt hoặc từ chối yêu cầu trả hàng.
+const reviewReturnRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order id",
+      });
+    }
+
+    const currentUser = {
+      user_id: req.user_id,
+      role: req.role,
+    };
+
+    const data = await orderService.reviewReturnRequest(
+      id,
+      currentUser,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        req.body?.decision === "approved"
+          ? "Đã duyệt yêu cầu trả hàng."
+          : "Đã từ chối yêu cầu trả hàng.",
+      data,
+    });
+  } catch (error) {
+    console.error("[order.reviewReturnRequest]", error);
+
+    const message = String(error?.message || "");
+    let statusCode = 500;
+
+    if (message === "Order not found" || message === "Return request not found") {
+      statusCode = 404;
+    } else if (message.includes("Access denied")) {
+      statusCode = 403;
+    } else if (
+      message.includes("must be") ||
+      message.includes("required") ||
+      message.includes("already been reviewed") ||
+      message.includes("exceed")
+    ) {
+      statusCode = 400;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message: message || "Không xử lý được yêu cầu trả hàng.",
+      error: message,
+    });
+  }
+};
+
 // Tra cuu don hang cho khach vang lai (Guest)
 const trackGuestOrder = async (req, res) => {
   try {
@@ -264,5 +422,8 @@ module.exports = {
   getOrderById,
   updateOrderById,
   cancelOrder,
+  createReturnRequest,
+  getReturnRequests,
+  reviewReturnRequest,
   trackGuestOrder,
 };

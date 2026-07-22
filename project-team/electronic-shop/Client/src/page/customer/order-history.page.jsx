@@ -13,7 +13,6 @@ import PriceText from '../../components/atoms/PriceText'
 
 import { getErrorMessage } from '../../services/api'
 import { cancelOrder, getOrders } from '../../services/order.service'
-import { getMyReviews } from '../../services/review.service'
 import { getCurrentUser, getUserId } from '../../utils/authStorage'
 import {
   formatDate,
@@ -34,7 +33,7 @@ const orderTabs = [
 
 const tableGridStyle = {
   display: 'grid',
-  gridTemplateColumns: '140px 150px minmax(360px, 1.7fr) 180px 190px 150px',
+  gridTemplateColumns: '140px 150px minmax(360px, 1.7fr) 180px 190px 220px',
   alignItems: 'center',
   minWidth: 1170,
 }
@@ -130,15 +129,15 @@ function getOrderSearchText(order) {
         typeof variant === 'string'
           ? item?.variant_name || item?.variant_value || ''
           : [
-              variant?.variant_name,
-              variant?.variant_value,
-              variant?.sku,
-              variant?.color,
-              variant?.storage,
-              variant?.ram,
-            ]
-              .filter(Boolean)
-              .join(' ')
+            variant?.variant_name,
+            variant?.variant_value,
+            variant?.sku,
+            variant?.color,
+            variant?.storage,
+            variant?.ram,
+          ]
+            .filter(Boolean)
+            .join(' ')
 
       return [
         productName,
@@ -166,67 +165,6 @@ function getOrderSearchText(order) {
 }
 
 
-function getProductIdFromOrderItem(item) {
-  const product =
-    item?.product_id ||
-    item?.product ||
-    item?.productId
-
-  if (typeof product === 'string') {
-    return product
-  }
-
-  return getId(product) || ''
-}
-
-function getOrderReviewKey(orderId, productId) {
-  return `${String(orderId || '')}:${String(productId || '')}`
-}
-
-function buildReviewedProductKeys(reviews) {
-  return new Set(
-    (Array.isArray(reviews) ? reviews : [])
-      .map((review) => {
-        const reviewOrderId = getId(review?.order_id || review?.order)
-        const reviewProductId = getId(review?.product_id || review?.product)
-
-        if (!reviewOrderId || !reviewProductId) {
-          return ''
-        }
-
-        return getOrderReviewKey(reviewOrderId, reviewProductId)
-      })
-      .filter(Boolean),
-  )
-}
-
-function hasUnreviewedProduct(order, reviewedProductKeys) {
-  if (order?.status !== 'completed') {
-    return false
-  }
-
-  const orderId = getId(order)
-  const items = Array.isArray(order?.items) ? order.items : []
-
-  const productIds = [
-    ...new Set(
-      items
-        .map(getProductIdFromOrderItem)
-        .filter(Boolean),
-    ),
-  ]
-
-  if (!orderId || productIds.length === 0) {
-    return false
-  }
-
-  return productIds.some(
-    (productId) =>
-      !reviewedProductKeys.has(
-        getOrderReviewKey(orderId, productId),
-      ),
-  )
-}
 
 function canCancelOrder(order) {
   return ['pending', 'confirmed', 'processing'].includes(order?.status)
@@ -244,7 +182,6 @@ function OrderHistoryPage() {
   const [cancelTarget, setCancelTarget] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [reviewedProductKeys, setReviewedProductKeys] = useState(new Set())
 
   const loadOrders = async () => {
     if (!user) {
@@ -256,17 +193,11 @@ function OrderHistoryPage() {
       setIsLoading(true)
       setError('')
 
-      const [ordersResponse, reviews] = await Promise.all([
-        getOrders({
-          user_id: getUserId(user),
-        }),
-        getMyReviews(),
-      ])
+      const ordersResponse = await getOrders({
+        user_id: getUserId(user),
+      })
 
       setOrders(pickArray(ordersResponse, []))
-      setReviewedProductKeys(
-        buildReviewedProductKeys(reviews),
-      )
     } catch (error) {
       setError(getErrorMessage(error, 'Không tải được lịch sử đơn hàng.'))
     } finally {
@@ -310,22 +241,6 @@ function OrderHistoryPage() {
   }, [orders, activeTab, searchKeyword])
 
 
-  const handleOpenReview = (event, order) => {
-    event.stopPropagation()
-
-    const orderId = getId(order)
-
-    if (!orderId) {
-      setError('Không tìm thấy mã đơn hàng để đánh giá.')
-      return
-    }
-
-    navigate(`/orders/${orderId}`, {
-      state: {
-        openReview: true,
-      },
-    })
-  }
 
   const handleOpenCancelModal = (event, order) => {
     event.stopPropagation()
@@ -461,8 +376,8 @@ function OrderHistoryPage() {
                           type='button'
                           onClick={() => setActiveTab(tab.key)}
                           className={`d-inline-flex align-items-center justify-content-center gap-2 rounded-4 border px-4 py-3 text-sm font-black shadow-sm transition ${isActive
-                              ? 'border-orange-500 bg-orange-500 text-white'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                            ? 'border-orange-500 bg-orange-500 text-white'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                             }`}
                           style={{
                             minWidth: 150,
@@ -473,8 +388,8 @@ function OrderHistoryPage() {
 
                           <span
                             className={`d-inline-flex align-items-center justify-content-center rounded-3 px-2 py-1 text-xs ${isActive
-                                ? 'bg-white text-orange-600'
-                                : 'bg-slate-100 text-slate-500'
+                              ? 'bg-white text-orange-600'
+                              : 'bg-slate-100 text-slate-500'
                               }`}
                             style={{
                               minWidth: 26,
@@ -584,21 +499,18 @@ function OrderHistoryPage() {
                               >
                                 Hủy
                               </Button>
-                            ) : hasUnreviewedProduct(
-                                order,
-                                reviewedProductKeys,
-                              ) ? (
+                            ) : (
                               <Button
                                 type='button'
+                                variant='secondary'
                                 className='!rounded-pill px-4 py-2 text-sm'
-                                onClick={(event) =>
-                                  handleOpenReview(event, order)
-                                }
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  navigate(`/orders/${orderId}`)
+                                }}
                               >
-                                Đánh giá
+                                Chi tiết
                               </Button>
-                            ) : (
-                              <span className='text-sm text-slate-400'>—</span>
                             )}
                           </div>
                         </div>

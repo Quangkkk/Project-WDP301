@@ -20,10 +20,13 @@ const createConversation = async (customerId) => {
 
   const existing = await ChatConversation.findOne({
     customer_id: customerId,
-    status: { $ne: "closed" },
   }).sort({ updated_at: -1, created_at: -1 });
 
   if (existing) {
+    if (existing.status === "closed") {
+      existing.status = "open";
+      await existing.save();
+    }
     return populateConversation(ChatConversation.findById(existing._id)).lean();
   }
 
@@ -58,6 +61,15 @@ const createConversation = async (customerId) => {
     status: "open",
   });
 
+  // Auto-reply welcome message
+  await ChatMessage.create({
+    conversation_id: conversation._id,
+    sender_id: assignedStaff._id,
+    message: "Xin chào! Cảm ơn bạn đã liên hệ với bộ phận hỗ trợ. Tôi có thể giúp gì cho bạn hôm nay?",
+    attachments: [],
+    is_read: false,
+  });
+
   return populateConversation(ChatConversation.findById(conversation._id)).lean();
 };
 
@@ -84,9 +96,26 @@ const getConversations = async (userId, role, filters = {}) => {
     query.staff_id = filters.staff_id;
   }
 
-  return populateConversation(ChatConversation.find(query))
+  const conversations = await populateConversation(ChatConversation.find(query))
     .sort({ updated_at: -1, created_at: -1 })
     .lean();
+
+  // Lọc lấy conversation mới nhất cho mỗi customer (1 account = 1 chat)
+  const uniqueConversations = [];
+  const customerSet = new Set();
+
+  for (const conv of conversations) {
+    const custId = conv.customer_id?._id
+      ? String(conv.customer_id._id)
+      : String(conv.customer_id);
+
+    if (custId && !customerSet.has(custId)) {
+      customerSet.add(custId);
+      uniqueConversations.push(conv);
+    }
+  }
+
+  return uniqueConversations;
 };
 
 const assertConversationAccess = async (conversationId, userId, role) => {
@@ -159,17 +188,21 @@ const normalizeAttachments = (attachments = []) => {
   return attachments
     .map((item) => ({
       original_name: item.original_name || item.originalName || item.name || "",
-      filename: item.filename || "",
+      filename: item.filename || item.public_id || "",
+      public_id: item.public_id || item.filename || "",
+      resource_type: item.resource_type || "",
+      format: item.format || "",
+      provider: item.provider || "cloudinary",
       mime_type: item.mime_type || item.mimeType || "",
       size: Number(item.size || 0),
-      url: item.url || "",
+      url: item.url || item.secure_url || "",
       type:
         item.type === "image" ||
         String(item.mime_type || item.mimeType || "").startsWith("image/")
           ? "image"
           : "file",
     }))
-    .filter((item) => item.url);
+    .filter((item) => item.url && /^https:\/\//i.test(item.url));
 };
 
 const saveMessage = async ({
@@ -237,7 +270,7 @@ const updateConversation = async (conversationId, payload = {}) => {
 
   const data = await populateConversation(
     ChatConversation.findByIdAndUpdate(conversationId, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     })
   ).lean();

@@ -224,7 +224,7 @@ function ChangePasswordPage() {
                       <div className='mb-4 !rounded-4 border border-slate-200 bg-slate-50 p-3'>
                         <div className='d-flex flex-column gap-2'>
                           <PasswordHint valid={isLengthValid}>
-                            Mật khẩu mới có ít nhất 8 ký tự
+                            Mật khẩu mới có ít nhất 6 ký tự
                           </PasswordHint>
 
                           <PasswordHint valid={Boolean(isDifferent)}>

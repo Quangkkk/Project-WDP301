@@ -156,15 +156,14 @@ function TrackOrderModal({ show, onHide }) {
           </button>
         </div>
 
-        <div className='overflow-y-auto px-6 py-5'>
+        <div className='overflow-y-auto px-6 pt-3'>
           <form onSubmit={handleTrack}>
-            <p className='mb-5 text-sm leading-relaxed text-slate-600'>
+            <p className='mb-2 text-sm leading-relaxed text-slate-600'>
               Nhập mã đơn hàng cùng số điện thoại hoặc email đã dùng khi đặt
-              hàng. Khi thông tin chính xác, hệ thống sẽ chuyển bạn đến trang
-              chi tiết đơn hàng.
+              hàng để tra cứu.
             </p>
 
-            <Alert type='danger' className='mb-4'>
+            <Alert type='danger' className='mb-3'>
               {error}
             </Alert>
 

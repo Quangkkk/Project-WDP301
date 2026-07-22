@@ -46,7 +46,7 @@ function RegisterPage() {
       setIsLoading(true)
       await register({ name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), password: form.password })
       setIsOtpSent(true)
-      setSuccess('Tạo tài khoản thành công! Vui lòng kiểm tra email để lấy mã OTP (6 số) xác thực tài khoản.')
+      setSuccess('Tạo tài khoản thành công! Vui lòng kiểm tra email để lấy mã OTP xác thực tài khoản.')
       setMessage('')
     } catch (error) {
       setMessage(getErrorMessage(error, 'Đăng ký thất bại'))

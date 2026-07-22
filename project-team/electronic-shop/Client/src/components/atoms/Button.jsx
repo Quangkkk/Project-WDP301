@@ -1,6 +1,5 @@
 import { Loader2 } from 'lucide-react'
 
-// Map cac bien the (variant) sang class cua Tailwind
 const variantStyles = {
   primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 border border-transparent',
   secondary: 'bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-500 border border-transparent',
@@ -12,43 +11,61 @@ const variantStyles = {
   dark: 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-900 border border-transparent',
 }
 
-// Map kich thuoc (size) sang class
 const sizeStyles = {
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-base',
   lg: 'px-6 py-3 text-lg',
 }
 
-function Button({ 
-  children, 
-  variant = 'primary', 
+function Button({
+  as: Component = 'button',
+  children,
+  variant = 'primary',
   size = 'md',
-  className = '', 
-  isLoading = false, 
-  disabled = false, 
+  className = '',
+  isLoading = false,
+  disabled = false,
   type = 'button',
-  ...props 
+  onClick,
+  ...props
 }) {
-  // Xu ly fallback cho nhung variant cu dang dung (react-bootstrap mapping)
   if (variant === 'light') variant = 'ghost'
 
-  const baseStyles = 'inline-flex items-center justify-center font-semibold !rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+  const isDisabled = disabled || isLoading
+  const baseStyles =
+    'inline-flex items-center justify-center font-semibold !rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
   const combinedClasses = `${baseStyles} ${variantStyles[variant] || variantStyles.primary} ${sizeStyles[size] || sizeStyles.md} ${className}`
 
+  const handleClick = (event) => {
+    if (isDisabled) {
+      event.preventDefault()
+      return
+    }
+
+    onClick?.(event)
+  }
+
+  const componentProps =
+    Component === 'button'
+      ? { type, disabled: isDisabled }
+      : { 'aria-disabled': isDisabled || undefined }
+
   return (
-    <button
-      type={type}
+    <Component
       className={combinedClasses}
-      disabled={disabled || isLoading}
+      onClick={handleClick}
+      {...componentProps}
       {...props}
     >
       {isLoading ? (
         <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
           <span>Vui lòng đợi...</span>
         </>
-      ) : children}
-    </button>
+      ) : (
+        children
+      )}
+    </Component>
   )
 }
 

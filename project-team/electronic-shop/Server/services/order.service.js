@@ -27,6 +27,12 @@ const couponService = require(
   "./coupon.service"
 );
 
+const {
+  sendOrderCreatedEmail,
+} = require(
+  "./orderEmail.service"
+);
+
 const ORDER_STATUS = [
   "pending",
   "confirmed",
@@ -42,6 +48,23 @@ const PAYMENT_STATUS = [
   "paid",
   "failed",
   "refunded",
+];
+
+const RETURN_REQUEST_STATUS = [
+  "pending",
+  "approved",
+  "rejected",
+  "received",
+  "refunded",
+];
+
+const RETURN_REASON_VALUES = [
+  "damaged",
+  "wrong_item",
+  "not_as_described",
+  "missing_parts",
+  "changed_mind",
+  "other",
 ];
 
 const isValidObjectId = (id) =>
@@ -675,7 +698,27 @@ const createOrder = async (orderData) => {
       hasExplicitItems,
     });
   } catch (cartCleanupError) {
-    console.error("[order.createOrder.cartCleanup]", cartCleanupError);
+    console.error(
+      "[order.createOrder.cartCleanup]",
+      cartCleanupError
+    );
+  }
+
+  /*
+   * Đơn hàng đã tạo và trừ tồn kho thành công.
+   * Email lỗi không được làm mất đơn hàng.
+   */
+  try {
+    await sendOrderCreatedEmail({
+      order,
+      shippingFee,
+      discountAmount,
+    });
+  } catch (emailError) {
+    console.error(
+      "[order.createOrder.confirmationEmail]",
+      emailError.message
+    );
   }
 
   return {
@@ -834,7 +877,7 @@ const getOrderById = async (
   if (
     role === "CUSTOMER" &&
     String(ownerId) !==
-      String(currentUser.user_id)
+    String(currentUser.user_id)
   ) {
     throw new Error(
       "Access denied. You do not have permission."
@@ -886,7 +929,8 @@ const updateOrderById = async (
   updateFields,
   handledByUserId = null
 ) => {
-  const order = await Order.findById(id);
+  const order = await Order.findById(id)
+    .select("+guest_access_token_hash");
 
   if (!order) {
     throw new Error("Order not found");
@@ -901,6 +945,7 @@ const updateOrderById = async (
     "address_district",
     "address_address_line",
     "status",
+    "payment_status",
     "note",
   ];
 
@@ -918,15 +963,48 @@ const updateOrderById = async (
     );
   }
 
+  if (
+    updateData.payment_status &&
+    !PAYMENT_STATUS.includes(updateData.payment_status)
+  ) {
+    throw new Error(
+      `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(", ")}`
+    );
+  }
+
   if (updateData.status === "cancelled") {
     throw new Error("Use the cancel order endpoint to cancel an order");
   }
 
-  if (["completed", "cancelled"].includes(order.status) && updateData.status && updateData.status !== order.status) {
+  if (
+    ["completed", "cancelled"].includes(order.status) &&
+    updateData.status &&
+    updateData.status !== order.status
+  ) {
     throw new Error("Completed or cancelled orders cannot be changed");
   }
 
-  if (updateData.shipping_method_id && !isValidObjectId(updateData.shipping_method_id)) {
+  if (
+    order.status === "cancelled" &&
+    updateData.payment_status === "paid"
+  ) {
+    throw new Error("Cancelled order cannot be marked as paid");
+  }
+
+  if (
+    order.status === "completed" &&
+    updateData.payment_status &&
+    !["paid", "refunded"].includes(updateData.payment_status)
+  ) {
+    throw new Error(
+      "Completed order payment can only be paid or refunded"
+    );
+  }
+
+  if (
+    updateData.shipping_method_id &&
+    !isValidObjectId(updateData.shipping_method_id)
+  ) {
     throw new Error("Invalid shipping_method_id");
   }
 
@@ -936,11 +1014,16 @@ const updateOrderById = async (
       : null;
   }
 
+  const effectivePaymentStatus =
+    updateData.payment_status || order.payment_status;
+
   if (updateData.status === "completed") {
     if (order.payment_method === "cod") {
       updateData.payment_status = "paid";
-    } else if (order.payment_status !== "paid") {
-      throw new Error("Online payment must be paid before completing the order");
+    } else if (effectivePaymentStatus !== "paid") {
+      throw new Error(
+        "Online payment must be paid before completing the order"
+      );
     }
   }
 
@@ -952,10 +1035,61 @@ const updateOrderById = async (
     throw new Error("No data to update");
   }
 
-  const data = await Order.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  }).select("-__v");
+  const data = await Order.findByIdAndUpdate(
+    id,
+    { $set: updateData },
+    {
+      returnDocument: "after",
+      runValidators: true,
+    }
+  )
+    .select("-__v")
+    .lean();
+
+  if (!data) {
+    throw new Error("Order not found");
+  }
+
+  // Đồng bộ giao dịch thanh toán gần nhất nếu đơn có payment transaction.
+  if (updateData.payment_status) {
+    const PaymentTransaction = require(
+      "../models/PaymentTransaction.model"
+    );
+
+    const transactionStatus =
+      updateData.payment_status === "unpaid"
+        ? "pending"
+        : updateData.payment_status;
+
+    const transactionUpdate = {
+      status: transactionStatus,
+    };
+
+    if (transactionStatus === "paid") {
+      transactionUpdate.paid_at = new Date();
+    }
+
+    if (["pending", "failed"].includes(transactionStatus)) {
+      transactionUpdate.paid_at = null;
+    }
+
+    try {
+      await PaymentTransaction.findOneAndUpdate(
+        { order_id: id },
+        { $set: transactionUpdate },
+        {
+          sort: { updated_at: -1 },
+          returnDocument: "after",
+          runValidators: true,
+        }
+      );
+    } catch (paymentSyncError) {
+      console.error(
+        "[order.updateOrderById.paymentSync]",
+        paymentSyncError.message
+      );
+    }
+  }
 
   return data;
 };
@@ -1142,10 +1276,9 @@ const cancelOrder = async (
         html: `
           <p>Xin chao <b>${customer.name}</b>,</p>
           <p>Don hang <b>#${displayOrderCode}</b> cua ban da bi huy.</p>
-          ${
-            cancelledOrder.cancel_reason
-              ? `<p><b>Ly do:</b> ${cancelledOrder.cancel_reason}</p>`
-              : ""
+          ${cancelledOrder.cancel_reason
+            ? `<p><b>Ly do:</b> ${cancelledOrder.cancel_reason}</p>`
+            : ""
           }
           <p>San pham trong don hang da duoc hoan lai kho.</p>
         `,
@@ -1156,6 +1289,266 @@ const cancelOrder = async (
   }
 
   return cancelledOrder;
+};
+
+
+// Customer gửi một yêu cầu trả hàng được nhúng trực tiếp trong Order.
+// Mỗi Order chỉ có một return_request tại một thời điểm. Nếu yêu cầu trước bị
+// từ chối, customer có thể gửi lại và dữ liệu yêu cầu cũ sẽ được thay thế.
+const createReturnRequest = async (
+  orderId,
+  currentUser,
+  requestData = {}
+) => {
+  if (!isValidObjectId(orderId)) {
+    throw new Error("Invalid order id");
+  }
+
+  const role = String(currentUser?.role || "").toUpperCase();
+
+  if (role !== "CUSTOMER") {
+    throw new Error("Access denied. Only customers can request a return.");
+  }
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  if (String(order.user_id) !== String(currentUser.user_id)) {
+    throw new Error("Access denied. You do not have permission.");
+  }
+
+  if (order.status !== "completed") {
+    throw new Error("Only completed orders can be returned");
+  }
+
+  const currentReturnStatus = order.return_request?.status;
+
+  if (
+    currentReturnStatus &&
+    currentReturnStatus !== "rejected"
+  ) {
+    throw new Error("This order already has an active return request");
+  }
+
+  const reason = String(requestData.reason || "").trim().toLowerCase();
+
+  if (!RETURN_REASON_VALUES.includes(reason)) {
+    throw new Error(
+      `Invalid return reason. Allowed: ${RETURN_REASON_VALUES.join(", ")}`
+    );
+  }
+
+  const description = String(requestData.description || "").trim();
+
+  if (description.length > 1000) {
+    throw new Error("Return description must not exceed 1000 characters");
+  }
+
+  const requestedItems = Array.isArray(requestData.items)
+    ? requestData.items
+    : [];
+
+  if (requestedItems.length === 0) {
+    throw new Error("At least one return item is required");
+  }
+
+  const normalizedItems = [];
+  const seenOrderItemIds = new Set();
+
+  for (const rawItem of requestedItems) {
+    const orderItemId = String(rawItem?.order_item_id || "").trim();
+    const quantity = Number(rawItem?.quantity);
+
+    if (!isValidObjectId(orderItemId)) {
+      throw new Error("Invalid order_item_id");
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      throw new Error("Return quantity must be a positive integer");
+    }
+
+    if (seenOrderItemIds.has(orderItemId)) {
+      throw new Error("Duplicate order_item_id in return request");
+    }
+
+    seenOrderItemIds.add(orderItemId);
+    normalizedItems.push({
+      order_item_id: orderItemId,
+      quantity,
+    });
+  }
+
+  const orderItems = await OrderItem.find({
+    _id: {
+      $in: normalizedItems.map((item) => item.order_item_id),
+    },
+    order_id: orderId,
+  })
+    .populate("product_id", "name sku")
+    .populate("variant_id", "variant_value sku image")
+    .lean();
+
+  if (orderItems.length !== normalizedItems.length) {
+    throw new Error("One or more return items do not belong to this order");
+  }
+
+  const orderItemsById = new Map(
+    orderItems.map((item) => [String(item._id), item])
+  );
+
+  const returnItems = normalizedItems.map((requestedItem) => {
+    const orderItem = orderItemsById.get(requestedItem.order_item_id);
+    const purchasedQuantity = Number(orderItem.quantity || 0);
+
+    if (requestedItem.quantity > purchasedQuantity) {
+      throw new Error(
+        "Return quantity cannot exceed the purchased quantity"
+      );
+    }
+
+    const product = orderItem.product_id || {};
+    const variant = orderItem.variant_id || {};
+
+    return {
+      order_item_id: orderItem._id,
+      product_id: product?._id || orderItem.product_id,
+      variant_id: variant?._id || orderItem.variant_id || null,
+      product_name:
+        product?.name || orderItem.product_name || "Sản phẩm",
+      variant_value:
+        variant?.variant_value || variant?.sku || null,
+      image: orderItem.image || variant?.image || null,
+      unit_price: Number(orderItem.unit_price || 0),
+      purchased_quantity: purchasedQuantity,
+      quantity: requestedItem.quantity,
+    };
+  });
+
+  order.return_request = {
+    status: "pending",
+    items: returnItems,
+    reason,
+    description: description || null,
+    requested_at: new Date(),
+    reviewed_by: null,
+    reviewed_at: null,
+    staff_note: null,
+  };
+
+  await order.save();
+
+  return Order.findById(orderId)
+    .populate("user_id", "name email phone")
+    .populate("return_request.reviewed_by", "name email")
+    .select("-__v")
+    .lean();
+};
+
+// STAFF xem danh sách các Order có return_request.
+const getReturnRequests = async (queryParams = {}, currentUser = {}) => {
+  const role = String(currentUser?.role || "").toUpperCase();
+
+  if (role !== "STAFF") {
+    throw new Error("Access denied. Only staff can review return requests.");
+  }
+
+  const filter = {
+    return_request: { $ne: null },
+  };
+
+  const status = String(queryParams.status || "").trim().toLowerCase();
+
+  if (status) {
+    if (!RETURN_REQUEST_STATUS.includes(status)) {
+      throw new Error(
+        `Invalid return status. Allowed: ${RETURN_REQUEST_STATUS.join(", ")}`
+      );
+    }
+
+    filter["return_request.status"] = status;
+  }
+
+  return Order.find(filter)
+    .populate("user_id", "name email phone")
+    .populate("return_request.reviewed_by", "name email")
+    .select("-guest_access_token_hash -__v")
+    .sort({ "return_request.requested_at": -1 })
+    .lean();
+};
+
+// STAFF duyệt hoặc từ chối yêu cầu. Bước này chưa tự hoàn kho hay hoàn tiền.
+const reviewReturnRequest = async (
+  orderId,
+  currentUser,
+  reviewData = {}
+) => {
+  if (!isValidObjectId(orderId)) {
+    throw new Error("Invalid order id");
+  }
+
+  const role = String(currentUser?.role || "").toUpperCase();
+
+  if (role !== "STAFF") {
+    throw new Error("Access denied. Only staff can review return requests.");
+  }
+
+  const decision = String(reviewData.decision || "").trim().toLowerCase();
+  const staffNote = String(reviewData.staff_note || "").trim();
+
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new Error("Return decision must be approved or rejected");
+  }
+
+  if (decision === "rejected" && !staffNote) {
+    throw new Error("Staff note is required when rejecting a return request");
+  }
+
+  if (staffNote.length > 1000) {
+    throw new Error("Staff note must not exceed 1000 characters");
+  }
+
+  const updatedOrder = await Order.findOneAndUpdate(
+    {
+      _id: orderId,
+      "return_request.status": "pending",
+    },
+    {
+      $set: {
+        "return_request.status": decision,
+        "return_request.reviewed_by": currentUser.user_id,
+        "return_request.reviewed_at": new Date(),
+        "return_request.staff_note": staffNote || null,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
+    .populate("user_id", "name email phone")
+    .populate("return_request.reviewed_by", "name email")
+    .select("-__v");
+
+  if (!updatedOrder) {
+    const existingOrder = await Order.findById(orderId)
+      .select("return_request")
+      .lean();
+
+    if (!existingOrder) {
+      throw new Error("Order not found");
+    }
+
+    if (!existingOrder.return_request) {
+      throw new Error("Return request not found");
+    }
+
+    throw new Error("This return request has already been reviewed");
+  }
+
+  return updatedOrder;
 };
 
 // Tra cuu don hang cho guest
@@ -1230,7 +1623,12 @@ module.exports = {
   getOrderById,
   updateOrderById,
   cancelOrder,
+  createReturnRequest,
+  getReturnRequests,
+  reviewReturnRequest,
   trackGuestOrder,
   ORDER_STATUS,
   PAYMENT_STATUS,
+  RETURN_REQUEST_STATUS,
+  RETURN_REASON_VALUES,
 };

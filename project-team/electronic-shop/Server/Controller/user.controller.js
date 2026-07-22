@@ -9,7 +9,7 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 // Controller them user moi (Admin/Manager)
 const addUser = async (req, res) => {
   try {
-    const { role_id, name, email, password, hash_pass, phone, img_url, status } = req.body;
+    const { role_id, name, email, password, hash_pass, phone, date_of_birth, gender, img_url, status } = req.body;
 
     if (!role_id || !name || !email || (!password && !hash_pass)) {
       return res.status(400).json({
@@ -29,6 +29,8 @@ const addUser = async (req, res) => {
       password,
       hash_pass,
       phone,
+      date_of_birth,
+      gender,
       img_url,
       status,
     });
@@ -40,6 +42,12 @@ const addUser = async (req, res) => {
       statusCode = 404;
     } else if (error.message === "Email already exists") {
       statusCode = 409;
+    } else if (
+      error.message === "Invalid gender" ||
+      error.message === "Invalid date of birth" ||
+      error.message === "Date of birth cannot be in the future"
+    ) {
+      statusCode = 400;
     }
     return res.status(statusCode).json({
       success: false,
@@ -103,7 +111,12 @@ const updateUserById = async (req, res) => {
       statusCode = 404;
     } else if (error.message === "Email already exists") {
       statusCode = 409;
-    } else if (error.message === "No data to update") {
+    } else if (
+      error.message === "No data to update" ||
+      error.message === "Invalid gender" ||
+      error.message === "Invalid date of birth" ||
+      error.message === "Date of birth cannot be in the future"
+    ) {
       statusCode = 400;
     }
     return res.status(statusCode).json({
@@ -160,15 +173,27 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user_id; // Duoc gan tu middleware verifyToken
-    const { name, phone, img_url, password } = req.body;
+    const { name, phone, date_of_birth, gender, img_url, password } = req.body;
 
-    const data = await userService.updateProfile(userId, { name, phone, img_url, password });
+    const data = await userService.updateProfile(userId, {
+      name,
+      phone,
+      date_of_birth,
+      gender,
+      img_url,
+      password,
+    });
     return res.status(200).json({ success: true, message: "Update profile successfully", data });
   } catch (error) {
     let statusCode = 500;
     if (error.message === "User not found") {
       statusCode = 404;
-    } else if (error.message === "No data to update") {
+    } else if (
+      error.message === "No data to update" ||
+      error.message === "Invalid gender" ||
+      error.message === "Invalid date of birth" ||
+      error.message === "Date of birth cannot be in the future"
+    ) {
       statusCode = 400;
     }
     return res.status(statusCode).json({

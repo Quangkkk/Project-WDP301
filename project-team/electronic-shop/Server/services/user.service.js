@@ -5,8 +5,41 @@ const UserAddress = require("../models/UserAddress.model");
 
 const safeSelect = "-hash_pass -email_otp -email_otp_expires -reset_password_token -reset_password_expires -__v";
 
+const allowedGenders = new Set(["male", "female", "other"]);
+
+const normalizeGender = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || String(value).trim() === "") return null;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (!allowedGenders.has(normalized)) {
+    throw new Error("Invalid gender");
+  }
+
+  return normalized;
+};
+
+const normalizeDateOfBirth = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || String(value).trim() === "") return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Invalid date of birth");
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (date > today) {
+    throw new Error("Date of birth cannot be in the future");
+  }
+
+  return date;
+};
+
 // Them nguoi dung moi (danh cho Admin/Manager)
-const addUser = async ({ role_id, name, email, password, hash_pass, phone, img_url, status }) => {
+const addUser = async ({ role_id, name, email, password, hash_pass, phone, date_of_birth, gender, img_url, status }) => {
   const role = await Role.findById(role_id);
   if (!role) {
     throw new Error("Role not found");
@@ -25,6 +58,8 @@ const addUser = async ({ role_id, name, email, password, hash_pass, phone, img_u
     name,
     email: normalizedEmail,
     phone: phone || null,
+    date_of_birth: normalizeDateOfBirth(date_of_birth) ?? null,
+    gender: normalizeGender(gender) ?? null,
     img_url: img_url || null,
     hash_pass: hashedPassword,
     status: status || "active",
@@ -72,11 +107,13 @@ const getUserById = async (id) => {
 
 // Cap nhat thong tin nguoi dung theo ID (danh cho Admin/Manager)
 const updateUserById = async (id, updateFields) => {
-  const { role_id, name, email, phone, img_url, status, password, hash_pass } = updateFields;
+  const { role_id, name, email, phone, date_of_birth, gender, img_url, status, password, hash_pass } = updateFields;
   const updateData = {};
 
   if (name !== undefined) updateData.name = name;
   if (phone !== undefined) updateData.phone = phone;
+  if (date_of_birth !== undefined) updateData.date_of_birth = normalizeDateOfBirth(date_of_birth);
+  if (gender !== undefined) updateData.gender = normalizeGender(gender);
   if (img_url !== undefined) updateData.img_url = img_url;
   if (status !== undefined) updateData.status = status;
 
@@ -148,10 +185,12 @@ const getProfile = async (userId) => {
 };
 
 // Cap nhat profile cua user hien tai
-const updateProfile = async (userId, { name, phone, img_url, password }) => {
+const updateProfile = async (userId, { name, phone, date_of_birth, gender, img_url, password }) => {
   const updateData = {};
   if (name !== undefined) updateData.name = name;
   if (phone !== undefined) updateData.phone = phone;
+  if (date_of_birth !== undefined) updateData.date_of_birth = normalizeDateOfBirth(date_of_birth);
+  if (gender !== undefined) updateData.gender = normalizeGender(gender);
   if (img_url !== undefined) updateData.img_url = img_url;
 
   if (password) {

@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -31,6 +32,22 @@ const initialAddressForm = {
   ward: '',
   address_line: '',
   is_default: false,
+}
+
+const genderOptions = [
+  { value: '', label: 'Chưa cập nhật' },
+  { value: 'male', label: 'Nam' },
+  { value: 'female', label: 'Nữ' },
+  { value: 'other', label: 'Khác' },
+]
+
+function formatDateForInput(value) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return date.toISOString().slice(0, 10)
 }
 
 function buildLocationOptions(options, placeholder) {
@@ -133,6 +150,8 @@ function ProfilePage() {
     name: '',
     email: '',
     phone: '',
+    date_of_birth: '',
+    gender: '',
     img_url: '',
   })
 
@@ -148,6 +167,7 @@ function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUpdatingAddress, setIsUpdatingAddress] = useState(false)
@@ -171,6 +191,8 @@ function ProfilePage() {
       name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
+      date_of_birth: formatDateForInput(user?.date_of_birth),
+      gender: user?.gender || '',
       img_url: user?.img_url || '',
     })
   }
@@ -292,6 +314,8 @@ function ProfilePage() {
       name: profile?.name || '',
       email: profile?.email || '',
       phone: profile?.phone || '',
+      date_of_birth: formatDateForInput(profile?.date_of_birth),
+      gender: profile?.gender || '',
       img_url: profile?.img_url || '',
     })
   }
@@ -342,6 +366,8 @@ function ProfilePage() {
       const payload = {
         name: form.name.trim(),
         phone: form.phone.trim(),
+        date_of_birth: form.date_of_birth || null,
+        gender: form.gender || null,
       }
 
       if (form.img_url) {
@@ -358,6 +384,8 @@ function ProfilePage() {
         name: updatedUser?.name || '',
         email: updatedUser?.email || '',
         phone: updatedUser?.phone || '',
+        date_of_birth: formatDateForInput(updatedUser?.date_of_birth),
+        gender: updatedUser?.gender || '',
         img_url: updatedUser?.img_url || '',
       })
 
@@ -373,18 +401,45 @@ function ProfilePage() {
   }
 
   const handleOpenAddressModal = () => {
+    setEditingAddressId('')
     setAddressForm(initialAddressForm)
     setIsAddressModalOpen(true)
     setError('')
     setMessage('')
   }
 
+  const handleOpenEditAddressModal = (address) => {
+    const addressId = getAddressId(address)
+
+    if (!addressId) {
+      setError('Không xác định được địa chỉ cần chỉnh sửa.')
+      return
+    }
+
+    setEditingAddressId(addressId)
+    setAddressForm({
+      receiver_name: getReceiverName(address),
+      receiver_phone: getReceiverPhone(address),
+      province: address?.province || '',
+      district: address?.district || '',
+      ward: address?.ward || '',
+      address_line: address?.address_line || '',
+      is_default: isDefaultAddress(address),
+    })
+    setIsAddressModalOpen(true)
+    setError('')
+    setMessage('')
+  }
+
   const handleCloseAddressModal = () => {
+    if (isUpdatingAddress) return
+
     setIsAddressModalOpen(false)
+    setEditingAddressId('')
     setAddressForm(initialAddressForm)
   }
 
-  const handleAddAddress = async (event) => {
+  const handleSaveAddress = async (event) => {
     event.preventDefault()
 
     if (!addressForm.receiver_name.trim()) {
@@ -422,7 +477,7 @@ function ProfilePage() {
       setError('')
       setMessage('')
 
-      await createAddress(getUserId(currentUser), {
+      const payload = {
         receive_name: addressForm.receiver_name.trim(),
         receive_phone: addressForm.receiver_phone.trim(),
         receiver_name: addressForm.receiver_name.trim(),
@@ -431,15 +486,37 @@ function ProfilePage() {
         district: addressForm.district.trim(),
         ward: addressForm.ward.trim(),
         address_line: addressForm.address_line.trim(),
-        is_default: addressForm.is_default || addresses.length === 0,
-      })
+        is_default:
+          addressForm.is_default ||
+          (!editingAddressId && addresses.length === 0),
+      }
+
+      if (editingAddressId) {
+        await updateAddress(editingAddressId, payload)
+      } else {
+        await createAddress(getUserId(currentUser), payload)
+      }
 
       await loadProfile()
 
-      setMessage('Đã thêm địa chỉ vào danh sách.')
-      handleCloseAddressModal()
+      setMessage(
+        editingAddressId
+          ? 'Đã cập nhật địa chỉ.'
+          : 'Đã thêm địa chỉ vào danh sách.',
+      )
+
+      setIsAddressModalOpen(false)
+      setEditingAddressId('')
+      setAddressForm(initialAddressForm)
     } catch (error) {
-      setError(getErrorMessage(error, 'Không thêm được địa chỉ.'))
+      setError(
+        getErrorMessage(
+          error,
+          editingAddressId
+            ? 'Không cập nhật được địa chỉ.'
+            : 'Không thêm được địa chỉ.',
+        ),
+      )
     } finally {
       setIsUpdatingAddress(false)
     }
@@ -489,7 +566,7 @@ function ProfilePage() {
               onAction={() => window.location.assign('/login')}
             />
           ) : (
-            <Row className='g-4 align-items-start'>
+            <Row className='g-4 mt-2 align-items-start'>
               <Col lg={4}>
                 <Card className='card-surface overflow-hidden'>
                   <Card.Body className='p-4 text-center'>
@@ -630,6 +707,26 @@ function ProfilePage() {
                         </Col>
 
                         <Col md={6}>
+                          <TextField
+                            label='Ngày sinh'
+                            name='date_of_birth'
+                            type='date'
+                            value={form.date_of_birth}
+                            max={new Date().toISOString().slice(0, 10)}
+                            disabled={!isEditing || isSaving}
+                            onChange={handleChange}
+                          />
+                        </Col>
+
+                        <Col md={6}>
+                          <SelectField
+                            label='Giới tính'
+                            name='gender'
+                            value={form.gender}
+                            options={genderOptions}
+                            disabled={!isEditing || isSaving}
+                            onChange={handleChange}
+                          />
                         </Col>
                       </Row>
 
@@ -682,7 +779,7 @@ function ProfilePage() {
                     </div>
 
                     {addresses.length === 0 ? (
-                      <div className='!rounded-4 border border-dashed border-slate-300 bg-slate-50 p-4 text-center'>
+                      <div className='rounded-4 border border-dashed border-slate-300 bg-slate-50 p-4 text-center'>
                         <div className='mb-2 text-3xl'>📍</div>
 
                         <p className='mb-0 font-bold text-slate-600'>
@@ -690,79 +787,121 @@ function ProfilePage() {
                         </p>
                       </div>
                     ) : (
-                      <Row className='g-3'>
+                      <div className='d-flex flex-column gap-3'>
                         {addresses.map((address, index) => {
                           const addressId = getAddressId(address)
                           const addressKey = addressId || `address-${index}`
                           const isDefault = isDefaultAddress(address)
 
                           return (
-                            <Col md={6} key={addressKey}>
-                              <div
-                                className={`h-100 !rounded-4 border bg-white p-4 shadow-sm transition ${isDefault ? 'border-emerald-300' : 'border-slate-200'
+                            <div
+                              key={addressKey}
+                              className={`d-flex flex-column flex-md-row align-items-md-center gap-3 rounded-4 border bg-white p-4 shadow-sm transition ${
+                                isDefault
+                                  ? 'border-emerald-300'
+                                  : 'border-slate-200'
+                              }`}
+                            >
+                              <div className='d-flex align-items-center gap-3'>
+                                <button
+                                  type='button'
+                                  onClick={() =>
+                                    handleSetDefaultAddress(addressId)
+                                  }
+                                  disabled={
+                                    isUpdatingAddress ||
+                                    !addressId ||
+                                    isDefault
+                                  }
+                                  className={`d-flex align-items-center justify-content-center rounded-circle border shadow-sm transition ${
+                                    isDefault
+                                      ? 'border-emerald-500 bg-emerald-500 text-white'
+                                      : 'border-slate-300 bg-white text-transparent hover:border-orange-500 hover:bg-orange-50'
                                   }`}
-                              >
-                                <div className='mb-3 d-flex align-items-start gap-3'>
-                                  <button
-                                    type='button'
-                                    onClick={() => handleSetDefaultAddress(addressId)}
-                                    disabled={isUpdatingAddress || !addressId || isDefault}
-                                    className={`d-flex align-items-center justify-content-center rounded-circle border shadow-sm transition ${isDefault
-                                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                                        : 'border-slate-200 bg-white text-transparent hover:border-orange-500 hover:bg-orange-50'
-                                      }`}
-                                    style={{
-                                      width: 24,
-                                      height: 24,
-                                      minWidth: 24,
-                                      marginTop: 8,
-                                    }}
-                                    title={isDefault ? 'Địa chỉ mặc định' : 'Chọn làm mặc định'}
-                                    aria-label={isDefault ? 'Địa chỉ mặc định' : 'Chọn làm mặc định'}
-                                  >
-                                    {isDefault && (
-                                      <i
-                                        className='bi bi-check-lg'
-                                        style={{
-                                          fontSize: 12,
-                                          lineHeight: 1,
-                                        }}
-                                      />
-                                    )}
-                                  </button>
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    minWidth: 24,
+                                  }}
+                                  title={
+                                    isDefault
+                                      ? 'Địa chỉ mặc định'
+                                      : 'Chọn làm mặc định'
+                                  }
+                                  aria-label={
+                                    isDefault
+                                      ? 'Địa chỉ mặc định'
+                                      : 'Chọn làm mặc định'
+                                  }
+                                >
+                                  {isDefault && (
+                                    <i
+                                      className='bi bi-check-lg'
+                                      style={{
+                                        fontSize: 12,
+                                        lineHeight: 1,
+                                      }}
+                                    />
+                                  )}
+                                </button>
 
-                                  <span
-                                    className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
-                                    style={{
-                                      width: 42,
-                                      height: 42,
-                                      minWidth: 42,
-                                    }}
-                                  >
-                                    <i className='bi bi-geo-alt-fill' />
+                                <span
+                                  className='d-flex align-items-center justify-content-center rounded-circle bg-orange-50 text-orange-600'
+                                  style={{
+                                    width: 46,
+                                    height: 46,
+                                    minWidth: 46,
+                                  }}
+                                >
+                                  <i className='bi bi-geo-alt-fill fs-5' />
+                                </span>
+                              </div>
+
+                              <div className='flex-grow-1'>
+                                <div className='mb-2 d-flex flex-wrap align-items-center gap-2'>
+                                  <h3 className='mb-0 text-lg font-black text-slate-950'>
+                                    {getReceiverName(address)}
+                                  </h3>
+
+                                  <span className='text-slate-300'>|</span>
+
+                                  <span className='text-sm font-semibold text-slate-500'>
+                                    {getReceiverPhone(address)}
                                   </span>
 
-                                  <div>
-                                    <h3 className='mb-1 text-base font-black text-slate-950'>
-                                      {getReceiverName(address)}
-                                    </h3>
-
-                                    <p className='mb-0 text-sm text-slate-500'>
-                                      {getReceiverPhone(address)}
-                                    </p>
-                                  </div>
+                                  {isDefault && (
+                                    <span className='rounded-pill bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700'>
+                                      Mặc định
+                                    </span>
+                                  )}
                                 </div>
 
-                                <div className='!rounded-4 bg-slate-50 p-3'>
-                                  <p className='mb-0 text-sm leading-7 text-slate-600'>
-                                    {formatAddress(address)}
-                                  </p>
-                                </div>
+                                <p className='mb-0 text-sm leading-7 text-slate-600'>
+                                  {formatAddress(address)}
+                                </p>
                               </div>
-                            </Col>
+
+                              <div className='d-flex flex-shrink-0 justify-content-end'>
+                                <Button
+                                  type='button'
+                                  variant='outline'
+                                  size='sm'
+                                  disabled={
+                                    isUpdatingAddress ||
+                                    !addressId
+                                  }
+                                  onClick={() =>
+                                    handleOpenEditAddressModal(address)
+                                  }
+                                >
+                                  <i className='bi bi-pencil-square me-2' />
+                                  Sửa
+                                </Button>
+                              </div>
+                            </div>
                           )
                         })}
-                      </Row>
+                      </div>
                     )}
                   </Card.Body>
                 </Card>
@@ -785,12 +924,12 @@ function ProfilePage() {
             </p>
 
             <Modal.Title className='font-black text-slate-950'>
-              Thêm địa chỉ mới
+              {editingAddressId ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới'}
             </Modal.Title>
           </div>
         </Modal.Header>
 
-        <Form onSubmit={handleAddAddress}>
+        <Form onSubmit={handleSaveAddress}>
           <Modal.Body className='px-4'>
             <Row className='g-3'>
               <Col md={6}>
@@ -893,13 +1032,13 @@ function ProfilePage() {
               type='button'
               onClick={handleCloseAddressModal}
               disabled={isUpdatingAddress}
-              className='!rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50'
+              className='rounded-pill border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50'
             >
               Hủy
             </button>
 
             <Button type='submit' isLoading={isUpdatingAddress}>
-              Thêm địa chỉ
+              {editingAddressId ? 'Lưu địa chỉ' : 'Thêm địa chỉ'}
             </Button>
           </Modal.Footer>
         </Form>

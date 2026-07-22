@@ -14,7 +14,11 @@ import LoadingText from '../../components/atoms/LoadingText'
 import PriceText from '../../components/atoms/PriceText'
 
 import { getErrorMessage } from '../../services/api'
-import { cancelOrder, getOrderById } from '../../services/order.service'
+import {
+  cancelOrder,
+  createReturnRequest,
+  getOrderById,
+} from '../../services/order.service'
 import { getPaymentByOrder } from '../../services/payment.service'
 import { createReview, getMyReviews } from '../../services/review.service'
 import { addToWishlist } from '../../services/wishlist.service'
@@ -73,6 +77,9 @@ function getStatusClass(status) {
         paid: 'bg-emerald-50 text-emerald-700',
         failed: 'bg-red-50 text-red-700',
         refunded: 'bg-purple-50 text-purple-700',
+        approved: 'bg-emerald-50 text-emerald-700',
+        rejected: 'bg-red-50 text-red-700',
+        received: 'bg-blue-50 text-blue-700',
     }
 
     return map[status] || 'bg-slate-100 text-slate-600'
@@ -198,6 +205,37 @@ function buildReviewedProductIds(reviews) {
     )
 }
 
+const returnReasonOptions = [
+    { value: '', label: 'Chọn lý do trả hàng' },
+    { value: 'damaged', label: 'Sản phẩm bị hư hỏng' },
+    { value: 'wrong_item', label: 'Giao sai sản phẩm' },
+    { value: 'not_as_described', label: 'Sản phẩm không đúng mô tả' },
+    { value: 'missing_parts', label: 'Thiếu phụ kiện hoặc bộ phận' },
+    { value: 'changed_mind', label: 'Không còn nhu cầu sử dụng' },
+    { value: 'other', label: 'Lý do khác' },
+]
+
+function getReturnStatusLabel(status) {
+    const map = {
+        pending: 'Chờ duyệt',
+        approved: 'Đã được duyệt',
+        rejected: 'Đã bị từ chối',
+        received: 'Shop đã nhận hàng trả',
+        refunded: 'Đã hoàn tiền',
+    }
+
+    return map[status] || status || 'Không xác định'
+}
+
+function canCreateReturnRequest(order) {
+    const returnStatus = order?.return_request?.status
+
+    return (
+        order?.status === 'completed' &&
+        (!returnStatus || returnStatus === 'rejected')
+    )
+}
+
 function canCancelOrder(order) {
     return ['pending', 'confirmed', 'processing'].includes(order?.status)
 }
@@ -251,6 +289,11 @@ function OrderDetailPage() {
     const [reviewComment, setReviewComment] = useState('')
     const [isSubmittingReview, setIsSubmittingReview] = useState(false)
     const [didAutoOpenReview, setDidAutoOpenReview] = useState(false)
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false)
+    const [returnItemsDraft, setReturnItemsDraft] = useState({})
+    const [returnReason, setReturnReason] = useState('')
+    const [returnDescription, setReturnDescription] = useState('')
+    const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
 
     const receiverAddress = useMemo(() => getReceiverAddress(order), [order])
 
@@ -283,6 +326,9 @@ function OrderDetailPage() {
     }, [order, items, reviewedProductIds])
 
     const firstReviewableItem = reviewableItems[0] || null
+
+    const currentReturnRequest = order?.return_request || null
+    const canRequestReturn = canCreateReturnRequest(order)
 
     const subtotal = Number(order?.subtotal || order?.sub_total || 0)
     const totalAmount = Number(order?.total_amount || order?.totalAmount || order?.total || 0)
@@ -539,6 +585,127 @@ function OrderDetailPage() {
             )
         } finally {
             setIsSubmittingReview(false)
+        }
+    }
+
+    const handleOpenReturnModal = () => {
+        if (!canRequestReturn) {
+            return
+        }
+
+        const initialDraft = Object.fromEntries(
+            items
+                .map((item) => getId(item))
+                .filter(Boolean)
+                .map((itemId) => [
+                    itemId,
+                    {
+                        selected: false,
+                        quantity: 1,
+                    },
+                ]),
+        )
+
+        setReturnItemsDraft(initialDraft)
+        setReturnReason('')
+        setReturnDescription('')
+        setError('')
+        setMessage('')
+        setIsReturnModalOpen(true)
+    }
+
+    const handleCloseReturnModal = () => {
+        if (isSubmittingReturn) {
+            return
+        }
+
+        setIsReturnModalOpen(false)
+        setReturnItemsDraft({})
+        setReturnReason('')
+        setReturnDescription('')
+    }
+
+    const handleToggleReturnItem = (itemId) => {
+        setReturnItemsDraft((current) => ({
+            ...current,
+            [itemId]: {
+                selected: !current[itemId]?.selected,
+                quantity: current[itemId]?.quantity || 1,
+            },
+        }))
+    }
+
+    const handleReturnQuantityChange = (item, rawValue) => {
+        const itemId = getId(item)
+        const purchasedQuantity = Math.max(Number(item.quantity || 1), 1)
+        const parsedValue = Number(rawValue)
+        const nextQuantity = Number.isFinite(parsedValue)
+            ? Math.min(Math.max(Math.trunc(parsedValue), 1), purchasedQuantity)
+            : 1
+
+        setReturnItemsDraft((current) => ({
+            ...current,
+            [itemId]: {
+                selected: current[itemId]?.selected || false,
+                quantity: nextQuantity,
+            },
+        }))
+    }
+
+    const handleSubmitReturnRequest = async () => {
+        const selectedItems = items
+            .filter((item) => returnItemsDraft[getId(item)]?.selected)
+            .map((item) => ({
+                order_item_id: getId(item),
+                quantity: Number(returnItemsDraft[getId(item)]?.quantity || 1),
+            }))
+
+        if (selectedItems.length === 0) {
+            setError('Vui lòng chọn ít nhất một sản phẩm muốn trả.')
+            return
+        }
+
+        if (!returnReason) {
+            setError('Vui lòng chọn lý do trả hàng.')
+            return
+        }
+
+        try {
+            setIsSubmittingReturn(true)
+            setError('')
+            setMessage('')
+
+            const response = await createReturnRequest(orderId, {
+                items: selectedItems,
+                reason: returnReason,
+                description: returnDescription.trim() || undefined,
+            })
+
+            const updatedOrder =
+                response?.data ||
+                response?.order ||
+                response
+
+            if (updatedOrder && getId(updatedOrder)) {
+                setOrder(updatedOrder)
+            } else {
+                await loadDetail()
+            }
+
+            setIsReturnModalOpen(false)
+            setReturnItemsDraft({})
+            setReturnReason('')
+            setReturnDescription('')
+            setMessage('Đã gửi yêu cầu trả hàng. STAFF sẽ kiểm tra và phản hồi.')
+        } catch (error) {
+            setError(
+                getErrorMessage(
+                    error,
+                    'Không gửi được yêu cầu trả hàng.',
+                ),
+            )
+        } finally {
+            setIsSubmittingReturn(false)
         }
     }
 
@@ -972,18 +1139,56 @@ const handleChatWithShop = (item) => {
                                     </Card.Body>
                                     </Card>
 
-                                    {firstReviewableItem && (
-                                        <Button
-                                            type='button'
-                                            className='mt-3 w-100 py-3'
-                                            onClick={() =>
-                                                handleOpenReviewModal(firstReviewableItem)
-                                            }
-                                        >
-                                            <i className='bi bi-star-fill me-2' />
+                                    {(firstReviewableItem || canRequestReturn) && (
+                                        <div className='mt-3 d-flex gap-2'>
+                                            {firstReviewableItem && (
+                                                <Button
+                                                    type='button'
+                                                    className='flex-grow-1 py-3'
+                                                    onClick={() =>
+                                                        handleOpenReviewModal(firstReviewableItem)
+                                                    }
+                                                >
+                                                    <i className='bi bi-star-fill me-2' />
+                                                    Đánh giá
+                                                </Button>
+                                            )}
 
-                                            Đánh giá sản phẩm
-                                        </Button>
+                                            {canRequestReturn && (
+                                                <Button
+                                                    type='button'
+                                                    variant='secondary'
+                                                    className='flex-grow-1 py-3'
+                                                    onClick={handleOpenReturnModal}
+                                                >
+                                                    <i className='bi bi-arrow-counterclockwise me-2' />
+                                                    {currentReturnRequest?.status === 'rejected'
+                                                        ? 'Gửi lại yêu cầu'
+                                                        : 'Trả hàng'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {currentReturnRequest && (
+                                        <div className='mt-3 !rounded-4 border border-slate-200 bg-white p-3 shadow-sm'>
+                                            <div className='d-flex flex-wrap align-items-center justify-content-between gap-2'>
+                                                <span className='text-sm font-semibold text-slate-700'>
+                                                    Yêu cầu trả hàng
+                                                </span>
+
+                                                <StatusPill status={currentReturnRequest.status}>
+                                                    {getReturnStatusLabel(currentReturnRequest.status)}
+                                                </StatusPill>
+                                            </div>
+
+                                            {currentReturnRequest.staff_note && (
+                                                <p className='mb-0 mt-2 text-sm text-slate-500'>
+                                                    <b>Phản hồi của STAFF:</b>{' '}
+                                                    {currentReturnRequest.staff_note}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </Col>
@@ -1183,6 +1388,205 @@ const handleChatWithShop = (item) => {
             </Modal>
 
             <Modal
+                show={isReturnModalOpen}
+                onHide={handleCloseReturnModal}
+                centered
+                size='lg'
+                backdrop={isSubmittingReturn ? 'static' : true}
+                keyboard={!isSubmittingReturn}
+            >
+                <Modal.Header className='border-bottom px-4 py-3'>
+                    <Modal.Title className='text-xl font-semibold text-slate-950'>
+                        Yêu cầu trả hàng
+                    </Modal.Title>
+
+                    <button
+                        type='button'
+                        onClick={handleCloseReturnModal}
+                        disabled={isSubmittingReturn}
+                        className='ms-auto border-0 bg-transparent text-3xl leading-none text-slate-400 transition hover:text-slate-700 disabled:opacity-50'
+                        aria-label='Đóng'
+                    >
+                        ×
+                    </button>
+                </Modal.Header>
+
+                <Modal.Body className='p-4'>
+                    <Alert type='danger'>{error}</Alert>
+
+                    <p className='mb-3 font-semibold text-slate-800'>
+                        Chọn sản phẩm và số lượng muốn trả
+                        <span className='ms-1 text-red-500'>*</span>
+                    </p>
+
+                    <div className='mb-4 d-flex flex-column gap-3'>
+                        {items.map((item) => {
+                            const itemId = getId(item)
+                            const draft = returnItemsDraft[itemId] || {
+                                selected: false,
+                                quantity: 1,
+                            }
+                            const purchasedQuantity = Math.max(
+                                Number(item.quantity || 1),
+                                1,
+                            )
+
+                            return (
+                                <div
+                                    key={itemId}
+                                    className={`!rounded-4 border p-3 transition ${
+                                        draft.selected
+                                            ? 'border-orange-300 bg-orange-50/50'
+                                            : 'border-slate-200 bg-white'
+                                    }`}
+                                >
+                                    <div className='d-flex flex-wrap align-items-center gap-3'>
+                                        <input
+                                            type='checkbox'
+                                            checked={Boolean(draft.selected)}
+                                            onChange={() => handleToggleReturnItem(itemId)}
+                                            disabled={isSubmittingReturn}
+                                            className='form-check-input m-0'
+                                            aria-label={`Chọn ${getProductName(item)}`}
+                                        />
+
+                                        <div
+                                            className='d-flex align-items-center justify-content-center overflow-hidden !rounded-3 bg-slate-100'
+                                            style={{
+                                                width: 64,
+                                                height: 64,
+                                                minWidth: 64,
+                                            }}
+                                        >
+                                            {getProductImage(item) ? (
+                                                <img
+                                                    src={getProductImage(item)}
+                                                    alt={getProductName(item)}
+                                                    className='h-100 w-100 object-fit-cover'
+                                                />
+                                            ) : (
+                                                <span className='text-2xl'>📦</span>
+                                            )}
+                                        </div>
+
+                                        <div className='flex-grow-1'>
+                                            <p className='mb-1 font-semibold text-slate-900'>
+                                                {getProductName(item)}
+                                            </p>
+
+                                            {getVariantText(item) && (
+                                                <p className='mb-0 text-sm text-slate-500'>
+                                                    {getVariantText(item)}
+                                                </p>
+                                            )}
+
+                                            <p className='mb-0 mt-1 text-xs text-slate-400'>
+                                                Đã mua: {purchasedQuantity}
+                                            </p>
+                                        </div>
+
+                                        <div style={{ width: 125 }}>
+                                            <label
+                                                htmlFor={`return-quantity-${itemId}`}
+                                                className='mb-1 d-block text-xs font-semibold text-slate-500'
+                                            >
+                                                Số lượng trả
+                                            </label>
+
+                                            <input
+                                                id={`return-quantity-${itemId}`}
+                                                type='number'
+                                                min='1'
+                                                max={purchasedQuantity}
+                                                value={draft.quantity}
+                                                onChange={(event) =>
+                                                    handleReturnQuantityChange(
+                                                        item,
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !draft.selected ||
+                                                    isSubmittingReturn
+                                                }
+                                                className='form-control !rounded-3 border-slate-200 shadow-none focus:border-orange-400 focus:ring-0'
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className='mb-4'>
+                        <label
+                            htmlFor='return-reason'
+                            className='mb-2 d-block font-semibold text-slate-800'
+                        >
+                            Lý do trả hàng
+                            <span className='ms-1 text-red-500'>*</span>
+                        </label>
+
+                        <select
+                            id='return-reason'
+                            value={returnReason}
+                            onChange={(event) => setReturnReason(event.target.value)}
+                            disabled={isSubmittingReturn}
+                            className='form-select !rounded-3 border-slate-200 px-3 py-3 shadow-none focus:border-orange-400 focus:ring-0'
+                        >
+                            {returnReasonOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor='return-description'
+                            className='mb-2 d-block font-semibold text-slate-800'
+                        >
+                            Mô tả thêm
+                            <span className='ms-2 text-sm font-normal text-slate-400'>
+                                Không bắt buộc
+                            </span>
+                        </label>
+
+                        <textarea
+                            id='return-description'
+                            rows='4'
+                            maxLength='1000'
+                            value={returnDescription}
+                            onChange={(event) => setReturnDescription(event.target.value)}
+                            disabled={isSubmittingReturn}
+                            placeholder='Mô tả chi tiết tình trạng sản phẩm'
+                            className='form-control !rounded-3 border-slate-200 px-3 py-3 shadow-none focus:border-orange-400 focus:ring-0'
+                        />
+                    </div>
+                </Modal.Body>
+
+                <Modal.Footer className='border-top px-4 py-3'>
+                    <Button
+                        type='button'
+                        variant='secondary'
+                        onClick={handleCloseReturnModal}
+                        disabled={isSubmittingReturn}
+                    >
+                        Đóng
+                    </Button>
+
+                    <Button
+                        type='button'
+                        onClick={handleSubmitReturnRequest}
+                        isLoading={isSubmittingReturn}
+                    >
+                        Gửi yêu cầu
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal
                 show={isCancelModalOpen}
                 onHide={handleCloseCancelModal}
                 centered
@@ -1212,7 +1616,7 @@ const handleChatWithShop = (item) => {
                                 <span className='font-normal text-orange-600'>
                                     {formatOrderCode(order || orderId)}
                                 </span>{' '}
-                                không? Sau khi hủy, đơn hàng sẽ chuyển sang trạng thái đã hủy.
+                                không? Sau khi hủy đơn hàng sẽ không thể hoàn tác.
                             </p>
                         </div>
                     </div>

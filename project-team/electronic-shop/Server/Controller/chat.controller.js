@@ -1,85 +1,53 @@
-const fs = require("fs");
-const path = require("path");
-const multer = require("multer");
 const mongoose = require("mongoose");
 const chatService = require("../services/chat.service");
+const attachmentUpload = require("../middleware/attachmentUpload");
+const { uploadFiles } = require("../services/cloudinaryUpload.service");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
-const CHAT_UPLOAD_DIR = path.join(__dirname, "../uploads/chat");
-
-fs.mkdirSync(CHAT_UPLOAD_DIR, { recursive: true });
-
-const allowedMimeTypes = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/zip",
-  "application/x-zip-compressed",
-];
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, CHAT_UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "");
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
-
-const uploader = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
-  fileFilter: (req, file, cb) => {
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      return cb(new Error("Định dạng file không được hỗ trợ."));
-    }
-    return cb(null, true);
-  },
-}).array("files", 5);
-
 const uploadChatFiles = (req, res, next) => {
-  uploader(req, res, (error) => {
+  attachmentUpload.array("files", 5)(req, res, (error) => {
     if (error) {
       return res.status(400).json({
         success: false,
         message:
           error.code === "LIMIT_FILE_SIZE"
-            ? "File không được vượt quá 10MB."
-            : error.message || "Không tải được file lên.",
+            ? "Mỗi file không được vượt quá 10MB."
+            : error.code === "LIMIT_FILE_COUNT"
+              ? "Chỉ được tải tối đa 5 file mỗi lần."
+              : error.message || "Không tải được file lên.",
       });
     }
+
     return next();
   });
 };
 
 const uploadChatAttachments = async (req, res) => {
-  const baseUrl = (
-    process.env.SERVER_URL ||
-    process.env.API_URL ||
-    `${req.protocol}://${req.get("host")}`
-  ).replace(/\/$/, "");
+  try {
+    if (!Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn ít nhất một file.",
+      });
+    }
 
-  const data = (req.files || []).map((file) => ({
-    original_name: file.originalname || file.filename,
-    filename: file.filename,
-    mime_type: file.mimetype,
-    size: file.size,
-    url: `${baseUrl}/uploads/chat/${file.filename}`,
-    type: String(file.mimetype || "").startsWith("image/") ? "image" : "file",
-  }));
+    const data = await uploadFiles(req.files, {
+      folder: process.env.CLOUDINARY_CHAT_FOLDER || "techsale/chat",
+      resourceType: "auto",
+    });
 
-  return res.status(201).json({
-    success: true,
-    message: "Đã tải file lên.",
-    data,
-  });
+    return res.status(201).json({
+      success: true,
+      message: "Đã tải file chat lên Cloudinary.",
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Không tải được file chat lên Cloudinary.",
+      error: error.message,
+    });
+  }
 };
 
 const getOrCreateConversation = async (req, res) => {

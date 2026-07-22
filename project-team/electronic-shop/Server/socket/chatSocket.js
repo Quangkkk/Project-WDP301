@@ -15,6 +15,10 @@ const emitNewMessage = (conversationId, message) => {
     conversationId: String(conversationId),
     message,
   });
+  io.to("staff_room").emit("staff_receive_message", {
+    conversationId: String(conversationId),
+    message,
+  });
 };
 
 const initChatSocket = (server, allowedOrigins = []) => {
@@ -50,6 +54,19 @@ const initChatSocket = (server, allowedOrigins = []) => {
   });
 
   io.on("connection", (socket) => {
+    console.log(`Socket connected: ${socket.id}, role: ${socket.role}, user_id: ${socket.user_id}`);
+    
+    if (socket.user_id) {
+      socket.join(`user_${socket.user_id}`);
+      console.log(`Socket ${socket.id} joined personal room user_${socket.user_id}`);
+    }
+
+    const roleUpper = String(socket.role).toUpperCase();
+    if (roleUpper === "ADMIN" || roleUpper === "STAFF" || roleUpper === "MANAGER") {
+      socket.join("staff_room");
+      console.log(`Socket ${socket.id} joined staff_room`);
+    }
+
     const joinConversation = async (conversationId, callback) => {
       try {
         if (!conversationId) throw new Error("Thiếu mã cuộc trò chuyện");
@@ -134,6 +151,32 @@ const initChatSocket = (server, allowedOrigins = []) => {
         userId: socket.user_id,
         isTyping: payload.isTyping ?? true,
       });
+    });
+
+    socket.on("chat:joinStaffRoom", async (callback) => {
+      try {
+        // If role is missing in token, fallback to DB check
+        let hasAccess = false;
+        if (["ADMIN", "STAFF", "MANAGER"].includes(String(socket.role).toUpperCase())) {
+          hasAccess = true;
+        } else if (socket.user_id) {
+          const User = require("../models/User.model");
+          const user = await User.findById(socket.user_id).populate("role_id");
+          if (user && user.role_id && ["ADMIN", "STAFF", "MANAGER"].includes(String(user.role_id.code).toUpperCase())) {
+            hasAccess = true;
+            socket.role = user.role_id.code.toUpperCase(); // cache it
+          }
+        }
+        
+        if (hasAccess) {
+          socket.join("staff_room");
+          if (typeof callback === "function") callback({ success: true });
+        } else {
+          if (typeof callback === "function") callback({ success: false, message: "Unauthorized" });
+        }
+      } catch (error) {
+        if (typeof callback === "function") callback({ success: false, message: error.message });
+      }
     });
 
     socket.on("chat:leave", (payload) => {

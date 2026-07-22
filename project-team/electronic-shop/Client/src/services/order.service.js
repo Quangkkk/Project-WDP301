@@ -29,3 +29,22 @@ export const trackOrder = async (payload) => {
   const response = await api.post('/order/track', payload)
   return response.data
 }
+
+export const createReturnRequest = async (orderId, payload) => {
+  const response = await api.post(`/order/${orderId}/return-request`, payload)
+  return response.data
+}
+
+export const getReturnRequests = async (params = {}) => {
+  const response = await api.get('/order/return-requests', { params })
+  return response.data
+}
+
+export const reviewReturnRequest = async (orderId, payload) => {
+  const response = await api.patch(
+    `/order/${orderId}/return-request/review`,
+    payload,
+  )
+
+  return response.data
+}

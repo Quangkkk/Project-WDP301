@@ -191,7 +191,7 @@ function CartPage() {
             />
           ) : (
             <>
-              <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 !rounded-4 border border-orange-100 bg-white px-4 py-3 shadow-sm'>
+              <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 rounded-4 border border-orange-100 bg-white px-4 py-3 shadow-sm'>
                 <label className='d-flex align-items-center gap-3 font-bold text-slate-700'>
                   <input
                     type='checkbox'

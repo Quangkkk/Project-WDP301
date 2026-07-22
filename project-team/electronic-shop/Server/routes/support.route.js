@@ -9,6 +9,7 @@ const staffRoles = authorizeRoles("STAFF", "ADMIN", "MANAGER");
 
 router.use(verifyToken);
 
+router.post("/tickets/uploads", allSupportRoles, support.uploadSupportFiles, support.uploadSupportAttachments);
 router.post("/tickets", authorizeRoles("CUSTOMER"), support.createTicket);
 router.get("/tickets", allSupportRoles, support.getTickets);
 router.get("/tickets/:id/messages", allSupportRoles, support.getTicketMessages);
@@ -23,6 +24,7 @@ router.patch(
 );
 
 router.get("/admin/tickets", staffRoles, support.getAdminTickets);
+router.post("/admin/tickets/from-chat/:chatId", staffRoles, support.createTicketFromChat);
 router.patch("/admin/tickets/:id/assign", staffRoles, support.assignTicket);
 router.patch(
   "/admin/tickets/:id/status",
