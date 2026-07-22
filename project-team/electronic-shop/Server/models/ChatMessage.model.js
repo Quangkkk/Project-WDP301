@@ -22,6 +22,22 @@ const attachmentSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    public_id: {
+      type: String,
+      default: "",
+    },
+    resource_type: {
+      type: String,
+      default: "",
+    },
+    format: {
+      type: String,
+      default: "",
+    },
+    provider: {
+      type: String,
+      default: "cloudinary",
+    },
     type: {
       type: String,
       enum: ["image", "file"],

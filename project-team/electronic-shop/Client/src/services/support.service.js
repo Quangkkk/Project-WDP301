@@ -29,3 +29,24 @@ export const createTicketMessage = async (ticketId, payload) => {
   const response = await api.post(`/support/tickets/${ticketId}/messages`, payload)
   return response.data
 }
+
+export const createTicketFromChat = async (chatId, payload) => {
+  const response = await api.post(`/support/admin/tickets/from-chat/${chatId}`, payload)
+  return response.data
+}
+
+export const uploadSupportFiles = async (files = []) => {
+  const formData = new FormData()
+
+  for (const file of files) {
+    formData.append('files', file)
+  }
+
+  const response = await api.post('/support/tickets/uploads', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return response.data
+}

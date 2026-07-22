@@ -11,6 +11,11 @@ const productManagers = [
   authorizeRoles("ADMIN", "MANAGER"),
 ];
 
+const productEditors = [
+  verifyToken,
+  authorizeRoles("ADMIN", "MANAGER", "STAFF"),
+];
+
 
 const uploadSingleProductImage = (req, res, next) => {
   productUpload.single("image")(req, res, (error) => {
@@ -33,16 +38,16 @@ router.get("/brand/:id", product.getProductByBrand);
 // Upload dat truoc /:id de khong bi nhan nham la product id.
 router.post(
   "/upload-image",
-  ...productManagers,
+  ...productEditors,
   uploadSingleProductImage,
   product.uploadProductImage
 );
 
 router.post("/", ...productManagers, product.createProduct);
-router.post("/:productId/variants", ...productManagers, product.createVariant);
-router.put("/variant/:id", ...productManagers, product.updateVariant);
-router.delete("/variant/:id", ...productManagers, product.deleteVariant);
-router.put("/:id", ...productManagers, product.updateProductById);
+router.post("/:productId/variants", ...productEditors, product.createVariant);
+router.put("/variant/:id", ...productEditors, product.updateVariant);
+router.delete("/variant/:id", ...productEditors, product.deleteVariant);
+router.put("/:id", ...productEditors, product.updateProductById);
 router.delete("/:id", ...productManagers, product.deleteProductById);
 
 router.get("/:id/reviews", review.getProductReviews);

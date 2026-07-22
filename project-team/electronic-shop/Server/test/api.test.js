@@ -1,4 +1,3 @@
-
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
@@ -11,6 +10,7 @@ const paymentService = require("../services/payment.service");
 const paymentController = require("../Controller/payment.controller");
 const orderController = require("../Controller/order.controller");
 const productController = require("../Controller/product.controller");
+const cloudinaryUploadService = require("../services/cloudinaryUpload.service");
 const Order = require("../models/Orders.model");
 
 test("all main routers can be loaded", () => {
@@ -243,14 +243,23 @@ test("payment controller forwards a guest order token", async () => {
   assert.equal(receivedCurrentUser.guest_order_token, "guest-token");
 });
 
-test("product image upload controller returns the public upload URL", async () => {
+test("product image upload controller returns the Cloudinary URL", async () => {
+  const originalUploadBuffer = cloudinaryUploadService.uploadBuffer;
+
+  cloudinaryUploadService.uploadBuffer = async () => ({
+    secure_url: "https://res.cloudinary.com/demo/image/upload/product-demo.png",
+    public_id: "techsale/products/product-demo",
+    resource_type: "image",
+    format: "png",
+    bytes: 1234,
+  });
+
   const req = {
-    protocol: "http",
-    get: () => "localhost:8080",
     file: {
-      filename: "product-demo.png",
+      originalname: "product-demo.png",
       mimetype: "image/png",
       size: 1234,
+      buffer: Buffer.from("demo"),
     },
   };
 
@@ -267,11 +276,16 @@ test("product image upload controller returns the public upload URL", async () =
     },
   };
 
-  await productController.uploadProductImage(req, response);
+  try {
+    await productController.uploadProductImage(req, response);
+  } finally {
+    cloudinaryUploadService.uploadBuffer = originalUploadBuffer;
+  }
 
   assert.equal(response.statusCode, 201);
   assert.equal(
     response.payload.data.url,
-    "http://localhost:8080/uploads/products/product-demo.png"
+    "https://res.cloudinary.com/demo/image/upload/product-demo.png"
   );
+  assert.equal(response.payload.data.provider, "cloudinary");
 });

@@ -27,6 +27,11 @@ const supportTicketSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    category: {
+      type: String,
+      default: "general",
+      trim: true,
+    },
     status: {
       type: String,
       default: "open",

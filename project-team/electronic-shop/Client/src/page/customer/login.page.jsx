@@ -48,7 +48,11 @@ function isAuthPath(path) {
 function isBackOfficePath(path) {
   const pathname = getPathname(path)
 
-  return pathname === '/admin' || pathname.startsWith('/admin/')
+  return ['/admin', '/manager', '/staff'].some(
+    (prefix) =>
+      pathname === prefix ||
+      pathname.startsWith(`${prefix}/`),
+  )
 }
 
 function getCustomerRedirectPath(value) {
@@ -152,7 +156,8 @@ function LoginPage() {
 
       // Các role quản trị luôn vào dashboard, không quay lại trang public trước đó.
       if (BACK_OFFICE_ROLES.includes(role)) {
-        navigate('/admin', { replace: true })
+        const dest = role === 'STAFF' ? '/staff' : role === 'MANAGER' ? '/manager' : '/admin'
+        navigate(dest, { replace: true })
         return
       }
 

@@ -862,8 +862,8 @@ const confirmBankTransferPayment = async (
   orderId,
   currentUser
 ) => {
-  const order =
-    await Order.findById(orderId);
+  const order = await Order.findById(orderId)
+    .select("+guest_access_token_hash");
 
   if (!order) {
     throw new Error("Order not found");
@@ -890,11 +890,13 @@ const confirmBankTransferPayment = async (
         provider: "bank_transfer",
       },
       {
-        status: "paid",
-        paid_at: new Date(),
+        $set: {
+          status: "paid",
+          paid_at: new Date(),
+        },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       }
     );
@@ -905,15 +907,29 @@ const confirmBankTransferPayment = async (
     );
   }
 
-  order.payment_method =
-    "bank_transfer";
+  const updatedOrder = await Order.findOneAndUpdate(
+    {
+      _id: order._id,
+      status: { $ne: "cancelled" },
+    },
+    {
+      $set: {
+        payment_method: "bank_transfer",
+        payment_status: "paid",
+      },
+    },
+    {
+      returnDocument: "after",
+      runValidators: true,
+    }
+  ).select("-guest_access_token_hash -__v");
 
-  order.payment_status = "paid";
-
-  await order.save();
+  if (!updatedOrder) {
+    throw new Error("Cancelled order cannot be marked as paid");
+  }
 
   return {
-    order,
+    order: updatedOrder,
     payment,
   };
 };

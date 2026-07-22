@@ -260,6 +260,18 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.pre("validate", function validateOrderOwner() {
+  const ownerFieldsChanged =
+    this.isNew ||
+    this.isModified("user_id") ||
+    this.isModified("guest_access_token_hash");
+
+  // guest_access_token_hash có select:false. Khi đọc một đơn cũ rồi save()
+  // để đổi trạng thái, field này không nằm trên document dù vẫn tồn tại trong DB.
+  // Chỉ kiểm tra owner khi tạo đơn hoặc khi thực sự sửa thông tin owner.
+  if (!ownerFieldsChanged) {
+    return;
+  }
+
   if (!this.user_id && !this.guest_access_token_hash) {
     this.invalidate(
       "guest_access_token_hash",

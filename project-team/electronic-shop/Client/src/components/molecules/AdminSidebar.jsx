@@ -1,16 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  MonitorSmartphone,
+  BarChart3,
+  Headset,
   Layers,
+  LayoutDashboard,
+  MessageSquareText,
+  MonitorSmartphone,
+  PackageSearch,
+  RotateCcw,
   Tags,
   TicketPercent,
-  PackageSearch,
   Users,
-  Headset,
-  MessageSquareText,
-  RotateCcw,
-  BarChart3,
   Users2,
 } from 'lucide-react'
 
@@ -20,59 +20,13 @@ import {
 } from '../../utils/authStorage'
 
 const links = [
+  // ADMIN
   {
     path: '/admin',
     label: 'Tổng quan',
     icon: LayoutDashboard,
-    allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
-  },
-  {
-    path: '/admin/products',
-    label: 'Sản phẩm',
-    icon: MonitorSmartphone,
-    allowedRoles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    path: '/admin/categories',
-    label: 'Danh mục',
-    icon: Layers,
-    allowedRoles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    path: '/admin/brands',
-    label: 'Thương hiệu',
-    icon: Tags,
-    allowedRoles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    path: '/admin/coupons',
-    label: 'Mã giảm giá',
-    icon: TicketPercent,
-    allowedRoles: ['ADMIN', 'MANAGER'],
-  },
-  {
-    path: '/admin/revenue',
-    label: 'Doanh thu',
-    icon: BarChart3,
-    allowedRoles: ['MANAGER'],
-  },
-  {
-    path: '/admin/staff',
-    label: 'Quản lý nhân viên',
-    icon: Users2,
-    allowedRoles: ['MANAGER'],
-  },
-  {
-    path: '/admin/orders',
-    label: 'Đơn hàng',
-    icon: PackageSearch,
-    allowedRoles: ['ADMIN', 'MANAGER', 'STAFF'],
-  },
-  {
-    path: '/admin/returns',
-    label: 'Duyệt trả hàng',
-    icon: RotateCcw,
-    allowedRoles: ['STAFF'],
+    allowedRoles: ['ADMIN'],
+    end: true,
   },
   {
     path: '/admin/users',
@@ -80,17 +34,95 @@ const links = [
     icon: Users,
     allowedRoles: ['ADMIN'],
   },
+
+  // MANAGER
   {
-    path: '/admin/support',
-    label: 'Yêu cầu hỗ trợ',
-    icon: Headset,
-    allowedRoles: ['ADMIN', 'STAFF'],
+    path: '/manager',
+    label: 'Tổng quan',
+    icon: LayoutDashboard,
+    allowedRoles: ['MANAGER'],
+    end: true,
   },
   {
-    path: '/admin/chat',
+    path: '/manager/products',
+    label: 'Sản phẩm',
+    icon: MonitorSmartphone,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/categories',
+    label: 'Danh mục',
+    icon: Layers,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/brands',
+    label: 'Thương hiệu',
+    icon: Tags,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/coupons',
+    label: 'Mã giảm giá',
+    icon: TicketPercent,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/orders',
+    label: 'Đơn hàng',
+    icon: PackageSearch,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/revenue',
+    label: 'Doanh thu',
+    icon: BarChart3,
+    allowedRoles: ['MANAGER'],
+  },
+  {
+    path: '/manager/staff',
+    label: 'Quản lý nhân viên',
+    icon: Users2,
+    allowedRoles: ['MANAGER'],
+  },
+
+  // STAFF
+  {
+    path: '/staff',
+    label: 'Tổng quan',
+    icon: LayoutDashboard,
+    allowedRoles: ['STAFF'],
+    end: true,
+  },
+  {
+    path: '/staff/products',
+    label: 'Sản phẩm',
+    icon: MonitorSmartphone,
+    allowedRoles: ['STAFF'],
+  },
+  {
+    path: '/staff/orders',
+    label: 'Đơn hàng',
+    icon: PackageSearch,
+    allowedRoles: ['STAFF'],
+  },
+  {
+    path: '/staff/returns',
+    label: 'Duyệt trả hàng',
+    icon: RotateCcw,
+    allowedRoles: ['STAFF'],
+  },
+  {
+    path: '/staff/support',
+    label: 'Yêu cầu hỗ trợ',
+    icon: Headset,
+    allowedRoles: ['STAFF'],
+  },
+  {
+    path: '/staff/chat',
     label: 'Trò chuyện trực tuyến',
     icon: MessageSquareText,
-    allowedRoles: ['ADMIN', 'STAFF'],
+    allowedRoles: ['STAFF'],
   },
 ]
 
@@ -116,7 +148,7 @@ function AdminSidebar() {
             <NavLink
               key={link.path}
               to={link.path}
-              end={link.path === '/admin'}
+              end={Boolean(link.end)}
               className={({ isActive }) =>
                 `flex items-center gap-3 !rounded-lg px-3 py-3 text-sm font-bold transition-all ${
                   isActive
@@ -126,7 +158,7 @@ function AdminSidebar() {
               }
             >
               <Icon className='h-5 w-5' />
-              {link.label}
+              <span>{link.label}</span>
             </NavLink>
           )
         })}

@@ -163,6 +163,8 @@ const updateOrderById = async (req, res) => {
       error.message === "No data to update" ||
       error.message.includes("Use the cancel order endpoint") ||
       error.message.includes("cannot be changed") ||
+      error.message.includes("cannot be marked as paid") ||
+      error.message.includes("can only be paid or refunded") ||
       error.message.includes("must be paid before completing")
     ) {
       statusCode = 400;

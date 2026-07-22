@@ -2,13 +2,86 @@ const mongoose = require("mongoose");
 const supportService = require("../services/support.service");
 const SupportTicket = require("../models/SupportTicket.model");
 const TicketMessage = require("../models/TicketMessage.model");
+const attachmentUpload = require("../middleware/attachmentUpload");
+const { uploadFiles } = require("../services/cloudinaryUpload.service");
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 const normalizeRole = (role) => String(role || "").toUpperCase();
 
+const uploadSupportFiles = (req, res, next) => {
+  attachmentUpload.array("files", 5)(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          error.code === "LIMIT_FILE_SIZE"
+            ? "Mỗi file không được vượt quá 10MB."
+            : error.code === "LIMIT_FILE_COUNT"
+              ? "Chỉ được tải tối đa 5 file mỗi lần."
+              : error.message || "Không tải được file lên.",
+      });
+    }
+
+    return next();
+  });
+};
+
+const uploadSupportAttachments = async (req, res) => {
+  try {
+    if (!Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn ít nhất một file.",
+      });
+    }
+
+    const data = await uploadFiles(req.files, {
+      folder: process.env.CLOUDINARY_SUPPORT_FOLDER || "techsale/support",
+      resourceType: "auto",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Đã tải file ticket lên Cloudinary.",
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Không tải được file ticket lên Cloudinary.",
+      error: error.message,
+    });
+  }
+};
+
+const createTicketFromChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { subject, category } = req.body;
+
+    if (!isValidObjectId(chatId)) {
+      return res.status(400).json({ success: false, message: "Invalid chat id" });
+    }
+
+    const data = await supportService.createTicketFromChat(req.user_id, chatId, { subject, category });
+
+    return res.status(201).json({
+      success: true,
+      message: "Chuyển hội thoại thành ticket thành công",
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create ticket from chat",
+      error: error.message,
+    });
+  }
+};
+
 const createTicket = async (req, res) => {
   try {
-    const { subject, description, order_id } = req.body;
+    const { subject, description, order_id, category } = req.body;
 
     if (!subject || !String(subject).trim()) {
       return res.status(400).json({
@@ -28,6 +101,7 @@ const createTicket = async (req, res) => {
       subject,
       description,
       order_id,
+      category,
     });
 
     return res.status(201).json({
@@ -143,8 +217,33 @@ const createMessage = async (req, res) => {
       id,
       req.user_id,
       req.body.message,
+      req.body.attachments,
       req.role
     );
+
+    // Phát sự kiện thông báo nếu nhân viên phản hồi ticket
+    const io = req.app.get("io");
+    if (io) {
+      const roleUpper = String(req.role).toUpperCase();
+      const SupportTicket = require("../models/SupportTicket.model");
+      
+      if (["ADMIN", "MANAGER", "STAFF"].includes(roleUpper)) {
+        // Staff gửi -> Báo cho Customer
+        const ticket = await SupportTicket.findById(id).lean();
+        if (ticket) {
+          io.to(`user_${ticket.user_id}`).emit("customer_receive_ticket_message", {
+            ticketId: id,
+            message: data
+          });
+        }
+      } else if (roleUpper === "CUSTOMER") {
+        // Customer gửi -> Báo cho Staff
+        io.to("staff_room").emit("staff_receive_ticket_message", {
+          ticketId: id,
+          message: data
+        });
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -374,7 +473,10 @@ const deleteTicket = async (req, res) => {
 };
 
 module.exports = {
+  uploadSupportFiles,
+  uploadSupportAttachments,
   createTicket,
+  createTicketFromChat,
   getTickets,
   getCustomerTickets,
   getAdminTickets,

@@ -903,7 +903,8 @@ const updateOrderById = async (
   updateFields,
   handledByUserId = null
 ) => {
-  const order = await Order.findById(id);
+  const order = await Order.findById(id)
+    .select("+guest_access_token_hash");
 
   if (!order) {
     throw new Error("Order not found");
@@ -918,6 +919,7 @@ const updateOrderById = async (
     "address_district",
     "address_address_line",
     "status",
+    "payment_status",
     "note",
   ];
 
@@ -935,15 +937,48 @@ const updateOrderById = async (
     );
   }
 
+  if (
+    updateData.payment_status &&
+    !PAYMENT_STATUS.includes(updateData.payment_status)
+  ) {
+    throw new Error(
+      `Invalid payment_status. Allowed: ${PAYMENT_STATUS.join(", ")}`
+    );
+  }
+
   if (updateData.status === "cancelled") {
     throw new Error("Use the cancel order endpoint to cancel an order");
   }
 
-  if (["completed", "cancelled"].includes(order.status) && updateData.status && updateData.status !== order.status) {
+  if (
+    ["completed", "cancelled"].includes(order.status) &&
+    updateData.status &&
+    updateData.status !== order.status
+  ) {
     throw new Error("Completed or cancelled orders cannot be changed");
   }
 
-  if (updateData.shipping_method_id && !isValidObjectId(updateData.shipping_method_id)) {
+  if (
+    order.status === "cancelled" &&
+    updateData.payment_status === "paid"
+  ) {
+    throw new Error("Cancelled order cannot be marked as paid");
+  }
+
+  if (
+    order.status === "completed" &&
+    updateData.payment_status &&
+    !["paid", "refunded"].includes(updateData.payment_status)
+  ) {
+    throw new Error(
+      "Completed order payment can only be paid or refunded"
+    );
+  }
+
+  if (
+    updateData.shipping_method_id &&
+    !isValidObjectId(updateData.shipping_method_id)
+  ) {
     throw new Error("Invalid shipping_method_id");
   }
 
@@ -953,11 +988,16 @@ const updateOrderById = async (
       : null;
   }
 
+  const effectivePaymentStatus =
+    updateData.payment_status || order.payment_status;
+
   if (updateData.status === "completed") {
     if (order.payment_method === "cod") {
       updateData.payment_status = "paid";
-    } else if (order.payment_status !== "paid") {
-      throw new Error("Online payment must be paid before completing the order");
+    } else if (effectivePaymentStatus !== "paid") {
+      throw new Error(
+        "Online payment must be paid before completing the order"
+      );
     }
   }
 
@@ -969,10 +1009,61 @@ const updateOrderById = async (
     throw new Error("No data to update");
   }
 
-  const data = await Order.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  }).select("-__v");
+  const data = await Order.findByIdAndUpdate(
+    id,
+    { $set: updateData },
+    {
+      returnDocument: "after",
+      runValidators: true,
+    }
+  )
+    .select("-__v")
+    .lean();
+
+  if (!data) {
+    throw new Error("Order not found");
+  }
+
+  // Đồng bộ giao dịch thanh toán gần nhất nếu đơn có payment transaction.
+  if (updateData.payment_status) {
+    const PaymentTransaction = require(
+      "../models/PaymentTransaction.model"
+    );
+
+    const transactionStatus =
+      updateData.payment_status === "unpaid"
+        ? "pending"
+        : updateData.payment_status;
+
+    const transactionUpdate = {
+      status: transactionStatus,
+    };
+
+    if (transactionStatus === "paid") {
+      transactionUpdate.paid_at = new Date();
+    }
+
+    if (["pending", "failed"].includes(transactionStatus)) {
+      transactionUpdate.paid_at = null;
+    }
+
+    try {
+      await PaymentTransaction.findOneAndUpdate(
+        { order_id: id },
+        { $set: transactionUpdate },
+        {
+          sort: { updated_at: -1 },
+          returnDocument: "after",
+          runValidators: true,
+        }
+      );
+    } catch (paymentSyncError) {
+      console.error(
+        "[order.updateOrderById.paymentSync]",
+        paymentSyncError.message
+      );
+    }
+  }
 
   return data;
 };

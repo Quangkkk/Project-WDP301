@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const productService = require("../services/product.service");
+const cloudinaryUploadService = require("../services/cloudinaryUpload.service");
 
 const isValidObjectId = (id) =>
   mongoose.Types.ObjectId.isValid(String(id || ""));
@@ -35,31 +36,110 @@ const sendProductError = (res, error, fallbackMessage) =>
     error: error?.message,
   });
 
-// Tải ảnh sản phẩm/phiên bản từ máy tính của Manager/Admin.
+// Tải ảnh sản phẩm/phiên bản từ máy tính lên Cloudinary.
 const uploadProductImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Vui lòng chọn ảnh để tải lên.",
+        message:
+          "Vui lòng chọn ảnh để tải lên.",
       });
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const url = `${baseUrl}/uploads/products/${req.file.filename}`;
+    console.log(
+      "Uploading product image:",
+      {
+        name: req.file.originalname,
+        type: req.file.mimetype,
+        size: req.file.size,
+      }
+    );
+
+    const uploaded =
+      await cloudinaryUploadService.uploadBuffer(
+        req.file,
+        {
+          folder:
+            process.env
+              .CLOUDINARY_PRODUCT_FOLDER ||
+            "techsale/products",
+
+          resourceType: "image",
+        }
+      );
 
     return res.status(201).json({
       success: true,
-      message: "Tải ảnh sản phẩm thành công.",
+      message:
+        "Tải ảnh sản phẩm lên Cloudinary thành công.",
+
       data: {
-        url,
-        filename: req.file.filename,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
+        url: uploaded.secure_url,
+        secure_url:
+          uploaded.secure_url,
+
+        public_id:
+          uploaded.public_id,
+
+        resource_type:
+          uploaded.resource_type,
+
+        format:
+          uploaded.format,
+
+        width:
+          uploaded.width,
+
+        height:
+          uploaded.height,
+
+        filename:
+          uploaded.public_id,
+
+        mimetype:
+          req.file.mimetype,
+
+        size:
+          uploaded.bytes ||
+          req.file.size,
+
+        provider:
+          "cloudinary",
       },
     });
   } catch (error) {
-    return sendProductError(res, error, "Không tải được ảnh sản phẩm.");
+    console.error(
+      "Upload product image failed:",
+      error
+    );
+
+    const message =
+      error?.message ||
+      "Không tải được ảnh sản phẩm lên Cloudinary.";
+
+    let statusCode = 500;
+
+    if (
+      message.includes("chưa được cấu hình") ||
+      message.includes("giá trị mẫu")
+    ) {
+      statusCode = 503;
+    }
+
+    if (
+      message.toLowerCase().includes("invalid api key") ||
+      message.toLowerCase().includes("invalid signature") ||
+      message.toLowerCase().includes("unknown api key")
+    ) {
+      statusCode = 401;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      error: message,
+    });
   }
 };
 

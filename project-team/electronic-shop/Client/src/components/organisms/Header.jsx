@@ -245,6 +245,7 @@ function Header() {
 
   const { user, loggedIn } = authState
   const role = getUserRole(user)
+  const isBackOffice = ['ADMIN', 'MANAGER', 'STAFF'].includes(role)
 
   const handleLogout = () => {
     const currentPath = `${location.pathname}${location.search}${location.hash}`
@@ -267,17 +268,15 @@ function Header() {
 
   return (
     <>
-      <header className='sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm'>
+      <header className='sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-sm'>
         <div className='container mx-auto px-4 py-3'>
           <div className='flex w-full items-center gap-4'>
-            {/* Logo */}
             <div className='shrink-0'>
               <BrandLogo />
             </div>
 
-            {/* Search */}
-            <div className='flex-1 flex justify-center px-2 md:px-6'>
-              <div className='w-full max-w-lg'>
+            <div className='min-w-0 flex-1 px-2 md:px-6'>
+              <div className='mx-auto w-full max-w-lg'>
                 <HeaderSearch />
               </div>
             </div>
@@ -287,7 +286,7 @@ function Header() {
                 <button
                   type='button'
                   onClick={() => setShowTrackModal(true)}
-                  className='flex items-center gap-2 !rounded-full bg-blue-50 px-4 py-2 font-bold text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none'
+                  className='flex items-center gap-2 !rounded-full bg-orange-50 px-4 py-2 font-bold text-orange-600 transition-colors hover:bg-orange-100 focus:outline-none'
                   title='Tra cứu đơn hàng'
                 >
                   <Truck className='h-5 w-5' />
@@ -299,7 +298,9 @@ function Header() {
               )}
 
               <CategoryDropdown />
+
               <CartButton role={role} />
+
               <HeaderActions
                 loggedIn={loggedIn}
                 user={user}
