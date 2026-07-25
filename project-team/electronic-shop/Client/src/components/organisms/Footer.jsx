@@ -1,43 +1,146 @@
+import { Link } from 'react-router-dom'
+
 import BrandLogo from '../atoms/BrandLogo'
+
+const shopLinks = [
+  {
+    label: 'Tất cả sản phẩm',
+    to: '/products',
+  },
+  {
+    label: 'Danh mục sản phẩm',
+    to: '/products',
+  },
+]
+
+const supportLinks = [
+  {
+    label: 'Gửi yêu cầu hỗ trợ',
+    to: '/support',
+  },
+  {
+    label: 'Tra cứu đơn hàng',
+    to: '/orders',
+  },
+  {
+    label: 'Đăng nhập',
+    to: '/login',
+  },
+]
+
+function FooterLink({
+  to,
+  children,
+}) {
+  return (
+    <Link
+      to={to}
+      className={`
+        text-sm text-slate-400 no-underline
+        transition-colors duration-200
+        hover:!text-orange-400
+      `}
+    >
+      {children}
+    </Link>
+  )
+}
 
 function Footer() {
   return (
-    <footer id="contact" className="border-t border-slate-800 bg-slate-900 py-12 text-slate-300">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          <div className="md:col-span-5">
-            <BrandLogo dark={true} />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-              Hệ thống bán hàng công nghệ trực tuyến.
+    <footer
+      id='contact'
+      className='border-t border-slate-800 bg-slate-950 text-slate-300'
+    >
+      <div className='container mx-auto px-4 py-10'>
+        <div className='grid grid-cols-1 gap-10 md:grid-cols-12'>
+          {/* Thông tin cửa hàng */}
+          <div className='md:col-span-6'>
+            <BrandLogo dark />
+
+            <p
+              className={`
+                mt-4 max-w-md text-sm leading-7
+                text-slate-400
+              `}
+            >
+              TechSale là hệ thống bán hàng công nghệ trực tuyến,
+              hỗ trợ mua sắm, thanh toán và theo dõi đơn hàng
+              thuận tiện.
+            </p>
+
+            <p className='mb-0 mt-3 text-sm text-slate-500'>
+              Hỗ trợ thanh toán COD, VietQR và ZaloPay.
             </p>
           </div>
-          
-          <div className="md:col-span-2">
-            <h6 className="mb-4 font-bold text-white uppercase tracking-wider text-xs">Cửa Hàng</h6>
-            <ul className="space-y-2">
-              <li><a href="/products" className="text-sm hover:text-white transition-colors">Sản Phẩm</a></li>
-              <li><a href="/products" className="text-sm hover:text-white transition-colors">Danh Mục</a></li>
+
+          {/* Cửa hàng */}
+          <div className='md:col-span-3'>
+            <h3
+              className={`
+                mb-4 text-xs font-black uppercase
+                tracking-[0.16em] text-white
+              `}
+            >
+              Cửa hàng
+            </h3>
+
+            <ul className='m-0 space-y-3 p-0'>
+              {shopLinks.map((link) => (
+                <li
+                  key={link.label}
+                  className='list-none'
+                >
+                  <FooterLink to={link.to}>
+                    {link.label}
+                  </FooterLink>
+                </li>
+              ))}
             </ul>
           </div>
-          
-          <div className="md:col-span-2">
-            <h6 className="mb-4 font-bold text-white uppercase tracking-wider text-xs">Hỗ Trợ</h6>
-            <ul className="space-y-2">
-              <li><a href="/support" className="text-sm hover:text-white transition-colors">Gửi yêu cầu hỗ trợ</a></li>
-            </ul>
-          </div>
-          
-          <div className="md:col-span-3">
-            <h6 className="mb-4 font-bold text-white uppercase tracking-wider text-xs">Tài khoản dùng thử</h6>
-            <ul className="space-y-2">
-              <li className="text-sm text-slate-400">customer@example.com</li>
-              <li className="text-sm text-slate-400">admin@example.com</li>
+
+          {/* Hỗ trợ */}
+          <div className='md:col-span-3'>
+            <h3
+              className={`
+                mb-4 text-xs font-black uppercase
+                tracking-[0.16em] text-white
+              `}
+            >
+              Hỗ trợ
+            </h3>
+
+            <ul className='m-0 space-y-3 p-0'>
+              {supportLinks.map((link) => (
+                <li
+                  key={link.label}
+                  className='list-none'
+                >
+                  <FooterLink to={link.to}>
+                    {link.label}
+                  </FooterLink>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
-        
-        <div className="mt-12 pt-8 border-t border-slate-800 text-center">
-          <p className="text-sm text-slate-500">&copy; 2026 TechSale. Đã đăng ký bản quyền.</p>
+
+        <div
+          className={`
+            mt-10 flex flex-col gap-2
+            border-t border-slate-800 pt-6
+            text-center sm:flex-row
+            sm:items-center sm:justify-between
+            sm:text-left
+          `}
+        >
+          <p className='mb-0 text-xs text-slate-500'>
+            © 2026 TechSale. Hệ thống bán hàng công nghệ trực tuyến.
+          </p>
+
+          <p className='mb-0 text-xs text-slate-600'>
+            Sản phẩm chính hãng · Thanh toán linh hoạt
+          </p>
         </div>
       </div>
     </footer>

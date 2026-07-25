@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { io } from 'socket.io-client'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -13,7 +14,7 @@ import EmptyState from '../../components/atoms/EmptyState'
 import LoadingText from '../../components/atoms/LoadingText'
 import TextField from '../../components/atoms/TextField'
 
-import { getErrorMessage } from '../../services/api'
+import { API_BASE_URL, getErrorMessage } from '../../services/api'
 import {
   createTicket,
   createTicketMessage,
@@ -22,7 +23,7 @@ import {
   updateTicket,
   uploadSupportFiles
 } from '../../services/support.service'
-import { getCurrentUser, getUserId } from '../../utils/authStorage'
+import { getAccessToken, getCurrentUser, getUserId } from '../../utils/authStorage'
 import { formatDate, getId, pickArray } from '../../utils/format'
 import MessageAttachments from '../../components/molecules/MessageAttachments'
 
@@ -102,10 +103,29 @@ function getTicketDescription(ticket) {
   return ticket?.description || 'Không có mô tả.'
 }
 
+function getTicketActivityTime(ticket) {
+  return new Date(
+    ticket?.last_message_at ||
+      ticket?.created_at ||
+      ticket?.updated_at ||
+      0,
+  ).getTime()
+}
+
+function sortTicketsByActivity(ticketList = []) {
+  return [...ticketList].sort(
+    (ticketA, ticketB) =>
+      getTicketActivityTime(ticketB) -
+      getTicketActivityTime(ticketA),
+  )
+}
+
 function SupportPage() {
   const user = getCurrentUser()
   const messagesEndRef = useRef(null)
   const createFileInputRef = useRef(null)
+  const selectedTicketRef = useRef(null)
+  const loadTicketsRef = useRef(null)
 
   const [tickets, setTickets] = useState([])
   const [selectedTicket, setSelectedTicket] = useState(null)
@@ -128,15 +148,25 @@ function SupportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
   const currentUserId = getUserId(user)
 
   const filteredTickets = useMemo(() => {
-    if (activeTab === 'all') return tickets
-    return tickets.filter((ticket) => {
-      if (activeTab === 'in_progress') return ticket.status === 'in_progress' || ticket.status === 'pending'
+    const sortedTickets = sortTicketsByActivity(tickets)
+
+    if (activeTab === 'all') return sortedTickets
+
+    return sortedTickets.filter((ticket) => {
+      if (activeTab === 'in_progress') {
+        return (
+          ticket.status === 'in_progress' ||
+          ticket.status === 'pending'
+        )
+      }
+
       return ticket.status === activeTab
     })
   }, [tickets, activeTab])
@@ -155,6 +185,10 @@ function SupportPage() {
   }, [tickets])
 
   const isClosed = selectedTicket?.status === 'closed'
+
+  useEffect(() => {
+    selectedTicketRef.current = selectedTicket
+  }, [selectedTicket])
 
   const loadTicketDetail = async (ticketId) => {
     if (!ticketId) return
@@ -190,10 +224,12 @@ function SupportPage() {
       })
 
       const data = pickArray(response, [])
-      setTickets(data)
+      setTickets(sortTicketsByActivity(data))
 
       if (data.length > 0) {
-        const currentSelectedId = getId(selectedTicket)
+        const currentSelectedId = getId(
+          selectedTicketRef.current,
+        )
         const stillExists = data.some((ticket) => getId(ticket) === currentSelectedId)
 
         if (currentSelectedId && stillExists) {
@@ -213,7 +249,122 @@ function SupportPage() {
   }
 
   useEffect(() => {
+    loadTicketsRef.current = loadTickets
+  })
+
+  useEffect(() => {
     loadTickets()
+  }, [])
+
+  useEffect(() => {
+    const token = getAccessToken()
+
+    if (!token) return undefined
+
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+    })
+
+    const upsertTicket = (ticket) => {
+      if (!ticket) return
+
+      const ticketId = getId(ticket)
+
+      setTickets((previous) => {
+        const next = previous.filter(
+          (item) =>
+            String(getId(item)) !== String(ticketId),
+        )
+
+        return sortTicketsByActivity([ticket, ...next])
+      })
+
+      if (
+        selectedTicketRef.current &&
+        String(getId(selectedTicketRef.current)) ===
+          String(ticketId)
+      ) {
+        setSelectedTicket(ticket)
+      }
+    }
+
+    const removeTicket = (ticketId) => {
+      setTickets((previous) =>
+        previous.filter(
+          (ticket) =>
+            String(getId(ticket)) !== String(ticketId),
+        ),
+      )
+
+      if (
+        selectedTicketRef.current &&
+        String(getId(selectedTicketRef.current)) ===
+          String(ticketId)
+      ) {
+        setSelectedTicket(null)
+        setMessages([])
+      }
+    }
+
+    const handleReconnect = () => {
+      loadTicketsRef.current?.()
+    }
+
+    socket.io.on('reconnect', handleReconnect)
+
+    socket.on(
+      'support_ticket_created',
+      ({ ticket }) => {
+        upsertTicket(ticket)
+      },
+    )
+
+    socket.on(
+      'customer_receive_ticket_message',
+      ({ ticketId, message: receivedMessage, ticket }) => {
+        if (ticket) {
+          upsertTicket(ticket)
+        }
+
+        const isSelected =
+          selectedTicketRef.current &&
+          String(getId(selectedTicketRef.current)) ===
+            String(ticketId)
+
+        if (!isSelected) return
+
+        setMessages((previous) => {
+          const exists = previous.some(
+            (item) =>
+              String(getId(item)) ===
+              String(getId(receivedMessage)),
+          )
+
+          return exists
+            ? previous
+            : [...previous, receivedMessage]
+        })
+      },
+    )
+
+    socket.on(
+      'support_ticket_updated',
+      ({ ticket }) => {
+        upsertTicket(ticket)
+      },
+    )
+
+    socket.on(
+      'support_ticket_deleted',
+      ({ ticketId }) => {
+        removeTicket(ticketId)
+      },
+    )
+
+    return () => {
+      socket.io.off('reconnect', handleReconnect)
+      socket.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -380,6 +531,7 @@ function SupportPage() {
         status: 'closed',
       })
 
+      setIsCloseConfirmOpen(false)
       setMessage('Đã đóng ticket.')
       await loadTicketDetail(getId(selectedTicket))
       await loadTickets()
@@ -549,8 +701,8 @@ function SupportPage() {
                             <Button
                               type='button'
                               variant='secondary'
-                              onClick={handleCloseTicket}
-                              isLoading={isClosing}
+                              onClick={() => setIsCloseConfirmOpen(true)}
+                              disabled={isClosing}
                             >
                               Đóng ticket
                             </Button>
@@ -714,6 +866,85 @@ function SupportPage() {
           )}
         </Container>
       </section>
+
+      <Modal
+        show={isCloseConfirmOpen}
+        onHide={() => {
+          if (!isClosing) {
+            setIsCloseConfirmOpen(false)
+          }
+        }}
+        centered
+        backdrop={isClosing ? 'static' : true}
+        keyboard={!isClosing}
+        aria-labelledby='close-ticket-warning-title'
+      >
+        <Modal.Header closeButton={!isClosing}>
+          <Modal.Title
+            id='close-ticket-warning-title'
+            className='d-flex align-items-center gap-3 font-bold text-slate-950'
+          >
+            <span
+              className='d-flex align-items-center justify-content-center !rounded-circle bg-orange-100 text-orange-600'
+              style={{
+                width: 42,
+                height: 42,
+                flexShrink: 0,
+              }}
+            >
+              <i className='bi bi-exclamation-triangle-fill' />
+            </span>
+
+            Xác nhận đóng ticket
+          </Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body className='p-4'>
+          <div
+            className='rounded-4 border border-orange-200 bg-orange-50 p-4'
+          >
+            <p className='mb-2 font-bold text-orange-900'>
+              Bạn sắp đóng ticket này.
+            </p>
+
+            <p className='mb-0 text-sm leading-relaxed text-orange-800'>
+              Sau khi đóng, bạn sẽ không thể gửi thêm tin nhắn trong
+              ticket này. Chỉ nên đóng khi vấn đề của bạn đã được giải
+              quyết hoàn toàn.
+            </p>
+          </div>
+
+          <div className='mt-4 rounded-4 border border-slate-200 bg-slate-50 p-3'>
+            <p className='mb-1 text-xs font-bold uppercase tracking-wider text-slate-500'>
+              Ticket
+            </p>
+
+            <p className='mb-0 text-sm font-semibold text-slate-900'>
+              {selectedTicket?.subject || 'Ticket hỗ trợ'}
+            </p>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => setIsCloseConfirmOpen(false)}
+            disabled={isClosing}
+          >
+            Tiếp tục trao đổi
+          </Button>
+
+          <Button
+            type='button'
+            onClick={handleCloseTicket}
+            isLoading={isClosing}
+            disabled={isClosing}
+          >
+            Vẫn đóng ticket
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal
         show={isCreateModalOpen}

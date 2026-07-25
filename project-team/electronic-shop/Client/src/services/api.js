@@ -35,8 +35,6 @@ const exactMessageMap = {
   'email and password are required': 'Vui lòng nhập email và mật khẩu.',
   'name, email and password are required': 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.',
   'email already exists': 'Email này đã được sử dụng.',
-  'phone number already exists': 'Số điện thoại này đã được sử dụng.',
-  'account information already exists': 'Thông tin tài khoản này đã được sử dụng.',
   'email is required': 'Vui lòng nhập email.',
   'password is required': 'Vui lòng nhập mật khẩu.',
   'password must be at least 6 characters': 'Mật khẩu phải có ít nhất 6 ký tự.',
@@ -114,6 +112,13 @@ const exactMessageMap = {
   'conversation is closed': 'Cuộc trò chuyện đã đóng.',
   'message content cannot be empty': 'Nội dung tin nhắn không được để trống.',
   'subject is required': 'Vui lòng nhập tiêu đề yêu cầu hỗ trợ.',
+  'this ticket belongs to another staff member': 'Ticket này đã thuộc nhân viên khác.',
+  'please claim this ticket before handling it': 'Bạn cần nhận ticket trước khi xử lý.',
+  'staff can only claim a ticket for themselves': 'Nhân viên chỉ có thể tự nhận ticket cho chính mình.',
+  'ticket has already been claimed by another staff member': 'Ticket đã được nhân viên khác nhận xử lý.',
+  'closed ticket cannot be claimed': 'Không thể nhận một ticket đã đóng.',
+  'assigned user is not a support staff member': 'Người được gán không phải nhân viên hỗ trợ.',
+  'staff can only delete their own assigned ticket': 'Nhân viên chỉ có thể xóa ticket được giao cho chính mình.',
 
   // Địa chỉ và dữ liệu chung
   'address not found': 'Không tìm thấy địa chỉ.',

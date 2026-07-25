@@ -95,7 +95,7 @@ function ChatNotice({ type = 'info', children }) {
 
   return (
     <div
-      className={`mb-3 !rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}
+      className={`mb-3 rounded-4 border px-4 py-3 text-sm font-semibold ${className}`}
     >
       {children}
     </div>
@@ -119,7 +119,7 @@ function MessageAttachments({ attachments = [], isMine }) {
               href={item.url}
               target='_blank'
               rel='noreferrer'
-              className='d-block overflow-hidden !rounded-3 border bg-white'
+              className='d-block overflow-hidden rounded-3 border bg-white'
               style={{
                 width: 190,
                 maxWidth: '100%',
@@ -146,11 +146,10 @@ function MessageAttachments({ attachments = [], isMine }) {
             href={item.url}
             target='_blank'
             rel='noreferrer'
-            className={`d-flex align-items-center gap-2 !rounded-3 border px-3 py-2 text-decoration-none ${
-              isMine
+            className={`d-flex align-items-center gap-2 rounded-3 border px-3 py-2 text-decoration-none ${isMine
                 ? 'border-white bg-white text-slate-700'
                 : 'border-slate-200 bg-slate-50 text-slate-700'
-            }`}
+              }`}
           >
             <i className='bi bi-paperclip' />
 
@@ -371,7 +370,7 @@ function ChatPage() {
 
       markConversationAsRead(conversationId, {
         user_id: currentUserId,
-      }).catch(() => {})
+      }).catch(() => { })
     }
 
     const handleConversationUpdated = (payload = {}) => {
@@ -495,40 +494,13 @@ function ChatPage() {
             />
           ) : (
             <Card
-              className='card-surface overflow-hidden'
+              className='card-surface d-flex flex-column overflow-hidden'
               style={{
-                minHeight: 650,
+                height: 'calc(100dvh - 230px)',
+                minHeight: 520,
+                maxHeight: 700,
               }}
             >
-              <div className='border-bottom bg-white p-4'>
-                <div className='d-flex flex-wrap align-items-center justify-content-between gap-3'>
-                  <div>
-                    <h2 className='mb-1 text-2xl font-semibold text-slate-950'>
-                      Hỗ trợ trực tuyến
-                    </h2>
-
-                    <p className='mb-0 text-sm text-slate-500'>
-                      Bạn có thể gửi tin nhắn, ảnh hoặc file cho bộ phận hỗ trợ.
-                    </p>
-                  </div>
-
-                  <span
-                    className={`!rounded-pill px-3 py-2 text-xs font-bold ${
-                      isClosed
-                        ? 'bg-slate-100 text-slate-600'
-                        : isSocketConnected
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {isClosed
-                      ? 'Đã đóng'
-                      : isSocketConnected
-                        ? 'Đang mở · Online'
-                        : 'Đang mở · Kết nối lại'}
-                  </span>
-                </div>
-              </div>
 
               <div
                 className='bg-slate-50 p-4'
@@ -553,13 +525,12 @@ function ChatPage() {
                       return (
                         <div
                           key={getMessageKey(item)}
-                          className={`d-flex gap-2 ${
-                            isMine ? 'justify-content-end' : 'justify-content-start'
-                          }`}
+                          className={`d-flex gap-2 ${isMine ? 'justify-content-end' : 'justify-content-start'
+                            }`}
                         >
                           {!isMine && (
                             <div
-                              className='d-flex align-items-center justify-content-center overflow-hidden !rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
+                              className='d-flex align-items-center justify-content-center overflow-hidden rounded-circle bg-white text-sm font-bold text-orange-600 shadow-sm'
                               style={{
                                 width: 36,
                                 height: 36,
@@ -579,19 +550,17 @@ function ChatPage() {
                           )}
 
                           <div
-                            className={`!rounded-4 px-3 py-2 shadow-sm ${
-                              isMine
+                            className={`rounded-4 px-3 py-2 shadow-sm ${isMine
                                 ? 'bg-orange-500 text-white'
                                 : 'bg-white text-slate-800'
-                            }`}
+                              }`}
                             style={{
                               maxWidth: '74%',
                             }}
                           >
                             <p
-                              className={`mb-1 text-xs ${
-                                isMine ? 'text-orange-100' : 'text-slate-400'
-                              }`}
+                              className={`mb-1 text-xs ${isMine ? 'text-orange-100' : 'text-slate-400'
+                                }`}
                             >
                               {isMine ? 'Bạn' : getSenderName(item)} ·{' '}
                               {formatDateTime(item.created_at)}
@@ -619,7 +588,7 @@ function ChatPage() {
 
               <div className='border-top bg-white p-3'>
                 {isClosed ? (
-                  <div className='!rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
+                  <div className='rounded-4 bg-slate-100 px-3 py-3 text-center text-sm font-bold text-slate-500'>
                     Cuộc trò chuyện đã đóng, không thể gửi thêm tin nhắn.
                   </div>
                 ) : (
@@ -667,7 +636,7 @@ function ChatPage() {
                       <button
                         type='button'
                         onClick={() => fileInputRef.current?.click()}
-                        className='d-flex align-items-center justify-content-center !rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+                        className='d-flex align-items-center justify-content-center rounded-circle border border-slate-200 bg-white text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
                         style={{
                           width: 46,
                           height: 46,

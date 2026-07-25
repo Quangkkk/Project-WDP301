@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { useNavigate } from 'react-router-dom'
 import { getAccessToken, getCurrentUser, getUserRole, getUserId } from '../../utils/authStorage'
@@ -64,12 +64,58 @@ function StaffNotificationWidget() {
 
   const socketRef = useRef(null)
   const panelRef = useRef(null)
-  const knownTicketIds = useRef(null)
+  const loadTicketItemsRef = useRef(null)
 
   // Tổng số chưa đọc
   const chatUnread = Object.values(chatItems).filter(i => i.unread).length
   const ticketUnread = Object.values(ticketItems).filter(i => i.unread).length
   const totalUnread = chatUnread + ticketUnread
+
+  const canSeeTicket = (ticket) => {
+    if (!ticket) return false
+    if (role !== 'STAFF') return true
+
+    const assignedStaffId = getId(ticket.assigned_staff_id)
+
+    return (
+      !assignedStaffId ||
+      String(assignedStaffId) === String(myId)
+    )
+  }
+
+  const loadTicketItems = async () => {
+    try {
+      const response = await getTickets()
+      const data = pickArray(response, [])
+
+      setTicketItems((previous) => {
+        const next = {}
+
+        data.forEach((ticket) => {
+          if (!canSeeTicket(ticket)) return
+
+          const ticketId = getId(ticket)
+
+          next[ticketId] = {
+            ticket,
+            unread: previous[ticketId]?.unread || false,
+            time:
+              ticket.last_message_at ||
+              ticket.created_at ||
+              ticket.updated_at,
+          }
+        })
+
+        return next
+      })
+    } catch (error) {
+      // Widget không làm gián đoạn trang khi tải thông báo lỗi.
+    }
+  }
+
+  useEffect(() => {
+    loadTicketItemsRef.current = loadTicketItems
+  })
 
   // ---- Đóng panel khi click ngoài ----
   useEffect(() => {
@@ -103,150 +149,282 @@ function StaffNotificationWidget() {
     loadConversations()
   }, [])
 
-  // ---- Kết nối Socket cho chat real-time ----
+  // ---- Tải ticket một lần khi widget được mở trong ứng dụng ----
   useEffect(() => {
-    if (!token) return
-    const socket = io(API_BASE_URL, { auth: { token } })
+    loadTicketItems()
+
+    if (
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // ---- Chat và ticket cập nhật real-time bằng Socket.IO ----
+  useEffect(() => {
+    if (!token) return undefined
+
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+    })
+
     socketRef.current = socket
+
+    const removeTicketItem = (ticketId) => {
+      setTicketItems((previous) => {
+        const next = { ...previous }
+        delete next[ticketId]
+        return next
+      })
+    }
+
+    const upsertTicketItem = (
+      ticket,
+      {
+        unread,
+        time,
+      } = {},
+    ) => {
+      if (!ticket) return
+
+      const ticketId = getId(ticket)
+
+      if (!canSeeTicket(ticket)) {
+        removeTicketItem(ticketId)
+        return
+      }
+
+      setTicketItems((previous) => ({
+        ...previous,
+        [ticketId]: {
+          ticket,
+          unread:
+            unread ??
+            previous[ticketId]?.unread ??
+            false,
+          time:
+            time ||
+            ticket.last_message_at ||
+            ticket.created_at ||
+            ticket.updated_at ||
+            new Date().toISOString(),
+        },
+      }))
+    }
+
+    const handleReconnect = () => {
+      loadTicketItemsRef.current?.()
+    }
 
     socket.on('connect', () => {
       socket.emit('chat:joinStaffRoom')
     })
 
-    socket.on('staff_receive_message', ({ conversationId, message }) => {
-      // Bỏ qua tin nhắn do chính mình gửi
-      if (String(message.sender_id?._id || message.sender_id) === String(myId)) return
+    socket.io.on('reconnect', handleReconnect)
 
-      setChatItems(prev => {
-        const existing = prev[conversationId] || {}
-        return {
-          ...prev,
-          [conversationId]: {
-            ...existing,
-            conv: existing.conv || null,
-            lastMsg: message.message || 'Đã gửi một tệp đính kèm',
-            senderName: message.sender_id?.name || existing.conv?.customer_id?.name || 'Khách hàng',
-            unread: true,
-            time: new Date().toISOString(),
-          }
-        }
-      })
-
-      playNotifSound('chat')
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const senderName = message.sender_id?.name || 'Khách hàng'
-        new Notification(`Tin nhắn mới từ ${senderName}`, {
-          body: message.message || 'Đã gửi một tệp đính kèm',
-          icon: '/vite.svg',
-          tag: `chat-${conversationId}`,
-        })
-      }
-    })
-
-    socket.on('staff_receive_ticket_message', ({ ticketId, message }) => {
-      // Bỏ qua tin nhắn do chính nhân viên gửi
-      if (String(message.sender_id?._id || message.sender_id) === String(myId)) return
-
-      setTicketItems(prev => {
-        const existing = prev[ticketId] || {}
-        return {
-          ...prev,
-          [ticketId]: {
-            ...existing,
-            unread: true,
-            time: new Date().toISOString()
-          }
-        }
-      })
-
-      playNotifSound('ticket')
-
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const senderName = message.sender_id?.name || 'Khách hàng'
-        new Notification(`Ticket phản hồi từ ${senderName}`, {
-          body: message.message || 'Khách hàng vừa phản hồi ticket hỗ trợ',
-          icon: '/vite.svg',
-          tag: `ticket-${ticketId}`,
-        })
-      }
-    })
-
-    return () => {
-      socket.disconnect()
-      socketRef.current = null
-    }
-  }, [token, myId])
-
-  // ---- Polling tickets mỗi 30s ----
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-
-    const poll = async () => {
-      try {
-        const response = await getTickets()
-        const data = pickArray(response, [])
-
-        if (knownTicketIds.current === null) {
-          // Lần đầu: khởi tạo baseline, đưa tất cả vào map nhưng không đánh dấu unread
-          knownTicketIds.current = new Set(data.map(t => getId(t)))
-          const map = {}
-          data.forEach(t => {
-            map[getId(t)] = {
-              ticket: t,
-              unread: false,
-              time: t.updated_at || t.created_at,
-            }
-          })
-          setTicketItems(map)
+    socket.on(
+      'staff_receive_message',
+      ({ conversationId, message }) => {
+        if (
+          String(
+            message.sender_id?._id ||
+              message.sender_id,
+          ) === String(myId)
+        ) {
           return
         }
 
-        let hasNew = false
-        const newItems = {}
+        setChatItems((previous) => {
+          const existing =
+            previous[conversationId] || {}
 
-        data.forEach(t => {
-          const tid = getId(t)
-          if (!knownTicketIds.current.has(tid)) {
-            // Ticket mới
-            knownTicketIds.current.add(tid)
-            newItems[tid] = { ticket: t, unread: true, time: t.created_at || new Date().toISOString() }
-            hasNew = true
-          } else {
-            // Giữ nguyên trạng thái unread cũ
-            newItems[tid] = { ticket: t, unread: false, time: t.updated_at || t.created_at }
+          return {
+            ...previous,
+            [conversationId]: {
+              ...existing,
+              conv: existing.conv || null,
+              lastMsg:
+                message.message ||
+                'Đã gửi một tệp đính kèm',
+              senderName:
+                message.sender_id?.name ||
+                existing.conv?.customer_id?.name ||
+                'Khách hàng',
+              unread: true,
+              time:
+                message.created_at ||
+                new Date().toISOString(),
+            },
           }
         })
 
-        if (hasNew) {
-          playNotifSound('ticket')
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Yêu cầu hỗ trợ mới!', {
-              body: 'Có ticket hỗ trợ mới từ khách hàng.',
+        playNotifSound('chat')
+
+        if (
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          const senderName =
+            message.sender_id?.name ||
+            'Khách hàng'
+
+          new Notification(
+            `Tin nhắn mới từ ${senderName}`,
+            {
+              body:
+                message.message ||
+                'Đã gửi một tệp đính kèm',
               icon: '/vite.svg',
-              tag: 'new-ticket',
-            })
-          }
+              tag: `chat-${conversationId}`,
+            },
+          )
+        }
+      },
+    )
+
+    socket.on(
+      'support_ticket_created',
+      ({ ticket }) => {
+        if (!canSeeTicket(ticket)) return
+
+        upsertTicketItem(ticket, {
+          unread: true,
+          time:
+            ticket.last_message_at ||
+            ticket.created_at ||
+            new Date().toISOString(),
+        })
+
+        playNotifSound('ticket')
+
+        if (
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          new Notification(
+            'Yêu cầu hỗ trợ mới!',
+            {
+              body: `${
+                ticket.user_id?.name ||
+                'Khách hàng'
+              }: ${
+                ticket.subject ||
+                'Yêu cầu hỗ trợ mới'
+              }`,
+              icon: '/vite.svg',
+              tag: `ticket-created-${getId(ticket)}`,
+            },
+          )
+        }
+      },
+    )
+
+    socket.on(
+      'staff_receive_ticket_message',
+      ({ ticketId, message, ticket }) => {
+        if (
+          String(
+            message.sender_id?._id ||
+              message.sender_id,
+          ) === String(myId)
+        ) {
+          return
         }
 
-        setTicketItems(prev => {
-          const merged = {}
-          data.forEach(t => {
-            const tid = getId(t)
-            merged[tid] = newItems[tid] || prev[tid] || { ticket: t, unread: false, time: t.updated_at || t.created_at }
-            if (!newItems[tid]) merged[tid].ticket = t
+        if (ticket) {
+          upsertTicketItem(ticket, {
+            unread: true,
+            time:
+              message.created_at ||
+              ticket.last_message_at ||
+              new Date().toISOString(),
           })
-          return merged
-        })
-      } catch (e) {}
-    }
+        } else {
+          setTicketItems((previous) => {
+            const existing = previous[ticketId]
 
-    poll() // chạy ngay lần đầu
-    const interval = setInterval(poll, 30000)
-    return () => clearInterval(interval)
-  }, [])
+            if (!existing) return previous
+
+            return {
+              ...previous,
+              [ticketId]: {
+                ...existing,
+                unread: true,
+                time:
+                  message.created_at ||
+                  new Date().toISOString(),
+              },
+            }
+          })
+        }
+
+        playNotifSound('ticket')
+
+        if (
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          const senderName =
+            message.sender_id?.name ||
+            'Khách hàng'
+
+          new Notification(
+            `Ticket phản hồi từ ${senderName}`,
+            {
+              body:
+                message.message ||
+                'Khách hàng vừa phản hồi ticket hỗ trợ',
+              icon: '/vite.svg',
+              tag: `ticket-message-${ticketId}`,
+            },
+          )
+        }
+      },
+    )
+
+    socket.on(
+      'support_ticket_assigned',
+      ({
+        ticketId,
+        assignedStaffId,
+        ticket,
+      }) => {
+        if (
+          role === 'STAFF' &&
+          String(assignedStaffId) !==
+            String(myId)
+        ) {
+          removeTicketItem(ticketId)
+          return
+        }
+
+        if (ticket) {
+          upsertTicketItem(ticket)
+        }
+      },
+    )
+
+    socket.on(
+      'support_ticket_updated',
+      ({ ticket }) => {
+        upsertTicketItem(ticket)
+      },
+    )
+
+    socket.on(
+      'support_ticket_deleted',
+      ({ ticketId }) => {
+        removeTicketItem(ticketId)
+      },
+    )
+
+    return () => {
+      socket.io.off('reconnect', handleReconnect)
+      socket.disconnect()
+      socketRef.current = null
+    }
+  }, [token, myId, role])
 
   // ---- Đánh dấu đã đọc khi click ----
   const handleChatClick = (convId) => {
@@ -564,6 +742,7 @@ function StaffNotificationWidget() {
                   const statusColors = {
                     open: { bg: '#dcfce7', text: '#16a34a' },
                     pending: { bg: '#fef3c7', text: '#d97706' },
+                    in_progress: { bg: '#fef3c7', text: '#d97706' },
                     closed: { bg: '#f1f5f9', text: '#64748b' },
                   }
                   const sc = statusColors[ticket.status] || statusColors.closed
@@ -618,7 +797,12 @@ function StaffNotificationWidget() {
                             background: sc.bg, color: sc.text,
                             padding: '2px 8px', borderRadius: 999,
                           }}>
-                            {ticket.status === 'open' ? 'Đang mở' : ticket.status === 'pending' ? 'Chờ xử lý' : 'Đã đóng'}
+                            {ticket.status === 'open'
+                              ? 'Đang mở'
+                              : ticket.status === 'pending' ||
+                                  ticket.status === 'in_progress'
+                                ? 'Đang xử lý'
+                                : 'Đã đóng'}
                           </span>
                           {ticket.category && (
                             <span style={{ fontSize: 10, color: '#94a3b8' }}>{ticket.category}</span>

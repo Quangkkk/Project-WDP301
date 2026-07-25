@@ -6,6 +6,8 @@ const User = require("../models/User.model");
 const ChatConversation = require("../models/ChatConversation.model");
 const ChatMessage = require("../models/ChatMessage.model");
 
+const normalizeRole = (role) => String(role || "").toUpperCase();
+
 const normalizeAttachments = (attachments = []) => {
   if (!Array.isArray(attachments)) return [];
 
@@ -29,15 +31,126 @@ const normalizeAttachments = (attachments = []) => {
     .filter((item) => item.url && /^https:\/\//i.test(item.url));
 };
 
-// Customer tao ticket ho tro moi
-const createTicket = async (customerId, { subject, description, order_id, category }) => {
+const getAssignedStaffId = (ticket) =>
+  String(ticket?.assigned_staff_id?._id || ticket?.assigned_staff_id || "");
+
+const getTicketId = (ticket) => String(ticket?._id || ticket || "");
+
+const assertTicketAccess = (
+  ticket,
+  userId,
+  role,
+  { requireAssignedForStaff = false } = {}
+) => {
+  const roleUpper = normalizeRole(role);
+  const currentUserId = String(userId || "");
+
+  if (roleUpper === "CUSTOMER") {
+    const ownerId = String(ticket?.user_id?._id || ticket?.user_id || "");
+
+    if (ownerId !== currentUserId) {
+      throw new Error("Unauthorized access to this ticket");
+    }
+
+    return;
+  }
+
+  if (roleUpper !== "STAFF") return;
+
+  const assignedStaffId = getAssignedStaffId(ticket);
+
+  if (assignedStaffId && assignedStaffId !== currentUserId) {
+    throw new Error("This ticket belongs to another staff member");
+  }
+
+  if (requireAssignedForStaff && !assignedStaffId) {
+    throw new Error("Please claim this ticket before handling it");
+  }
+};
+
+const populateTicketQuery = (query) =>
+  query
+    .populate("user_id", "name email phone img_url avatar avatar_url")
+    .populate(
+      "assigned_staff_id",
+      "name email phone img_url avatar avatar_url"
+    )
+    .populate("order_id", "total_amount status created_at");
+
+const getTicketSummaryById = async (ticketId) => {
+  if (!mongoose.Types.ObjectId.isValid(ticketId)) {
+    return null;
+  }
+
+  return populateTicketQuery(SupportTicket.findById(ticketId)).lean();
+};
+
+const attachLegacyLastMessageDates = async (tickets = []) => {
+  if (!Array.isArray(tickets) || tickets.length === 0) return [];
+
+  const missingIds = tickets
+    .filter((ticket) => !ticket.last_message_at)
+    .map((ticket) => ticket._id)
+    .filter(Boolean);
+
+  if (missingIds.length === 0) return tickets;
+
+  const lastMessages = await TicketMessage.aggregate([
+    {
+      $match: {
+        ticket_id: { $in: missingIds },
+      },
+    },
+    {
+      $group: {
+        _id: "$ticket_id",
+        last_message_at: { $max: "$created_at" },
+      },
+    },
+  ]);
+
+  const lastMessageMap = new Map(
+    lastMessages.map((item) => [
+      String(item._id),
+      item.last_message_at,
+    ])
+  );
+
+  return tickets.map((ticket) => ({
+    ...ticket,
+    last_message_at:
+      ticket.last_message_at || lastMessageMap.get(getTicketId(ticket)) || null,
+  }));
+};
+
+const sortTicketsByActivity = (tickets = []) =>
+  [...tickets].sort((ticketA, ticketB) => {
+    const timeA = new Date(
+      ticketA.last_message_at || ticketA.created_at || 0
+    ).getTime();
+
+    const timeB = new Date(
+      ticketB.last_message_at || ticketB.created_at || 0
+    ).getTime();
+
+    return timeB - timeA;
+  });
+
+// Customer tạo ticket hỗ trợ mới.
+const createTicket = async (
+  customerId,
+  { subject, description, order_id, category }
+) => {
   if (!subject || !subject.trim()) {
     throw new Error("Subject is required");
   }
 
-  // Validate order_id neu co truyen len
   if (order_id) {
-    const order = await Order.findOne({ _id: order_id, user_id: customerId });
+    const order = await Order.findOne({
+      _id: order_id,
+      user_id: customerId,
+    });
+
     if (!order) {
       throw new Error("Order not found or does not belong to you");
     }
@@ -50,77 +163,97 @@ const createTicket = async (customerId, { subject, description, order_id, catego
     description: description || null,
     category: category || "general",
     status: "open",
+    last_message_at: null,
   });
 
-  return ticket;
+  return getTicketSummaryById(ticket._id);
 };
 
-const createTicketFromChat = async (staffId, chatId, { subject, category }) => {
+const createTicketFromChat = async (
+  staffId,
+  chatId,
+  { subject, category }
+) => {
   const conversation = await ChatConversation.findById(chatId);
+
   if (!conversation) {
     throw new Error("Chat conversation not found");
   }
 
-  const chatMessages = await ChatMessage.find({ conversation_id: chatId }).sort({ created_at: 1 });
-  
-  let description = "Ticket được tạo từ cuộc hội thoại Chat.\n\n--- Nội dung Chat ---\n";
-  chatMessages.forEach(msg => {
-    const role = String(msg.sender_id) === String(conversation.customer_id) ? "Khách hàng" : "Nhân viên";
-    description += `[${role}]: ${msg.message || '(Gửi tệp đính kèm)'}\n`;
+  const chatMessages = await ChatMessage.find({
+    conversation_id: chatId,
+  }).sort({ created_at: 1 });
+
+  let description =
+    "Ticket được tạo từ cuộc hội thoại Chat.\n\n--- Nội dung Chat ---\n";
+
+  chatMessages.forEach((message) => {
+    const senderRole =
+      String(message.sender_id) === String(conversation.customer_id)
+        ? "Khách hàng"
+        : "Nhân viên";
+
+    description += `[${senderRole}]: ${
+      message.message || "(Gửi tệp đính kèm)"
+    }\n`;
   });
+
+  const latestChatMessage = chatMessages[chatMessages.length - 1];
 
   const ticket = await SupportTicket.create({
     user_id: conversation.customer_id,
     assigned_staff_id: staffId,
     subject: subject || "Hỗ trợ từ Chat",
-    description: description,
+    description,
     category: category || "general",
     status: "in_progress",
+    last_message_at: latestChatMessage?.created_at || new Date(),
   });
 
-  // Có thể tự động đóng chat nếu muốn, ở đây ta chỉ tạo ticket
-  conversation.status = 'closed';
+  conversation.status = "closed";
   await conversation.save();
 
-  return ticket;
+  return getTicketSummaryById(ticket._id);
 };
 
-// Customer lay danh sach ticket ho tro cua rieng minh
 const getCustomerTickets = async (customerId) => {
-  return await SupportTicket.find({ user_id: customerId })
-    .populate("assigned_staff_id", "name email phone")
-    .populate("order_id", "total_amount status")
-    .sort({ updated_at: -1 })
-    .lean();
+  const tickets = await populateTicketQuery(
+    SupportTicket.find({ user_id: customerId })
+  ).lean();
+
+  return sortTicketsByActivity(
+    await attachLegacyLastMessageDates(tickets)
+  );
 };
 
-// Customer hoac Staff xem chi tiet ticket va danh sach tin nhan
 const getTicketDetails = async (ticketId, userId, role) => {
-  const ticket = await SupportTicket.findById(ticketId)
-    .populate("user_id", "name email phone")
-    .populate("assigned_staff_id", "name email phone")
-    .populate("order_id", "total_amount status created_at")
-    .lean();
+  const ticket = await getTicketSummaryById(ticketId);
 
   if (!ticket) {
     throw new Error("Support ticket not found");
   }
 
-  // Neu la Customer thi phai la chu so huu ticket
-  if (String(role).toUpperCase() === "CUSTOMER" && String(ticket.user_id?._id || ticket.user_id) !== String(userId)) {
-    throw new Error("Unauthorized access to this ticket");
-  }
+  assertTicketAccess(ticket, userId, role);
 
   const messages = await TicketMessage.find({ ticket_id: ticketId })
-    .populate("sender_id", "name email img_url")
+    .populate("sender_id", "name email img_url avatar avatar_url")
     .sort({ created_at: 1 })
     .lean();
+
+  if (!ticket.last_message_at && messages.length > 0) {
+    ticket.last_message_at = messages[messages.length - 1].created_at;
+  }
 
   return { ticket, messages };
 };
 
-// Them tin nhan vao ticket
-const addMessage = async (ticketId, senderId, message, attachments = [], role) => {
+const addMessage = async (
+  ticketId,
+  senderId,
+  message,
+  attachments = [],
+  role
+) => {
   const cleanMessage = String(message || "").trim();
   const cleanAttachments = normalizeAttachments(attachments);
 
@@ -129,34 +262,33 @@ const addMessage = async (ticketId, senderId, message, attachments = [], role) =
   }
 
   const ticket = await SupportTicket.findById(ticketId);
+
   if (!ticket) {
     throw new Error("Support ticket not found");
   }
 
-  // Neu nguoi gui la Customer, kiem tra co phai chu so huu ticket khong
-  if (String(role).toUpperCase() === "CUSTOMER" && String(ticket.user_id) !== String(senderId)) {
-    throw new Error("Unauthorized to comment on this ticket");
-  }
+  assertTicketAccess(ticket, senderId, role, {
+    requireAssignedForStaff: normalizeRole(role) === "STAFF",
+  });
 
-  const ticketMsg = await TicketMessage.create({
+  const ticketMessage = await TicketMessage.create({
     ticket_id: ticketId,
     sender_id: senderId,
     message: cleanMessage,
     attachments: cleanAttachments,
   });
 
-  // Cap nhat thoi gian cap nhat cuoc tro chuyen
-  ticket.updated_at = new Date();
+  ticket.last_message_at = ticketMessage.created_at || new Date();
   await ticket.save();
 
-  return await TicketMessage.findById(ticketMsg._id)
-    .populate("sender_id", "name email img_url")
+  return TicketMessage.findById(ticketMessage._id)
+    .populate("sender_id", "name email img_url avatar avatar_url")
     .lean();
 };
 
-// Customer chu dong dong ticket cua minh
 const closeTicket = async (ticketId, userId) => {
   const ticket = await SupportTicket.findById(ticketId);
+
   if (!ticket) {
     throw new Error("Support ticket not found");
   }
@@ -169,61 +301,136 @@ const closeTicket = async (ticketId, userId) => {
   ticket.closed_at = new Date();
   await ticket.save();
 
-  return ticket;
+  return getTicketSummaryById(ticket._id);
 };
 
-// Admin/Manager/Staff doc toan bo tickets ho tro (co filters)
-const getAdminTickets = async ({ status, assigned_staff_id }) => {
+// STAFF chỉ thấy ticket chưa có người nhận hoặc ticket của chính mình.
+// ADMIN/MANAGER vẫn thấy toàn bộ ticket.
+const getAdminTickets = async ({
+  status,
+  assigned_staff_id,
+  requesterId,
+  requesterRole,
+}) => {
   const filter = {};
-  if (status) filter.status = status;
-  if (assigned_staff_id) filter.assigned_staff_id = assigned_staff_id;
+  const roleUpper = normalizeRole(requesterRole);
 
-  return await SupportTicket.find(filter)
-    .populate("user_id", "name email phone")
-    .populate("assigned_staff_id", "name email phone")
-    .populate("order_id", "total_amount status")
-    .sort({ created_at: -1 })
-    .lean();
-};
-
-// Admin/Manager/Staff gan ticket cho mot nhan vien ho tro
-const assignTicket = async (ticketId, assignedStaffId) => {
-  const ticket = await SupportTicket.findById(ticketId);
-  if (!ticket) {
-    throw new Error("Support ticket not found");
+  if (status) {
+    filter.status = status;
   }
 
-  const staff = await User.findById(assignedStaffId);
+  if (roleUpper === "STAFF") {
+    filter.$or = [
+      { assigned_staff_id: null },
+      { assigned_staff_id: requesterId },
+    ];
+  } else if (assigned_staff_id) {
+    filter.assigned_staff_id = assigned_staff_id;
+  }
+
+  const tickets = await populateTicketQuery(
+    SupportTicket.find(filter)
+  ).lean();
+
+  return sortTicketsByActivity(
+    await attachLegacyLastMessageDates(tickets)
+  );
+};
+
+const assignTicket = async (
+  ticketId,
+  assignedStaffId,
+  requesterId,
+  requesterRole
+) => {
+  const roleUpper = normalizeRole(requesterRole);
+  const targetStaffId = String(assignedStaffId || "");
+  const currentUserId = String(requesterId || "");
+
+  if (roleUpper === "STAFF" && targetStaffId !== currentUserId) {
+    throw new Error("Staff can only claim a ticket for themselves");
+  }
+
+  const staff = await User.findById(targetStaffId).populate("role_id", "code");
+
   if (!staff) {
     throw new Error("Staff user not found");
   }
 
-  ticket.assigned_staff_id = assignedStaffId;
-  // Tu dong chuyen sang in_progress neu dang la open
-  if (ticket.status === "open") {
-    ticket.status = "in_progress";
-  }
-  await ticket.save();
+  const targetRole = normalizeRole(staff.role_id?.code);
 
-  return ticket;
+  if (!["STAFF", "ADMIN", "MANAGER"].includes(targetRole)) {
+    throw new Error("Assigned user is not a support staff member");
+  }
+
+  const existingTicket = await SupportTicket.findById(ticketId).lean();
+
+  if (!existingTicket) {
+    throw new Error("Support ticket not found");
+  }
+
+  if (existingTicket.status === "closed") {
+    throw new Error("Closed ticket cannot be claimed");
+  }
+
+  const existingAssignee = getAssignedStaffId(existingTicket);
+
+  if (existingAssignee && existingAssignee !== targetStaffId) {
+    throw new Error("Ticket has already been claimed by another staff member");
+  }
+
+  const ticket = await SupportTicket.findOneAndUpdate(
+    {
+      _id: ticketId,
+      $or: [
+        { assigned_staff_id: null },
+        { assigned_staff_id: targetStaffId },
+      ],
+    },
+    {
+      $set: {
+        assigned_staff_id: targetStaffId,
+        status: "in_progress",
+        closed_at: null,
+      },
+    },
+    { new: true }
+  );
+
+  if (!ticket) {
+    throw new Error("Ticket has already been claimed by another staff member");
+  }
+
+  return getTicketSummaryById(ticket._id);
 };
 
-// Admin/Manager/Staff cap nhat trang thai ticket ho tro
-const updateTicketStatus = async (ticketId, { status }) => {
+const updateTicketStatus = async (
+  ticketId,
+  { status },
+  requesterId,
+  requesterRole
+) => {
   const ticket = await SupportTicket.findById(ticketId);
+
   if (!ticket) {
     throw new Error("Support ticket not found");
   }
 
+  assertTicketAccess(ticket, requesterId, requesterRole, {
+    requireAssignedForStaff: normalizeRole(requesterRole) === "STAFF",
+  });
+
   ticket.status = status;
+
   if (status === "closed") {
     ticket.closed_at = new Date();
   } else {
     ticket.closed_at = null;
   }
+
   await ticket.save();
 
-  return ticket;
+  return getTicketSummaryById(ticket._id);
 };
 
 module.exports = {
@@ -231,6 +438,7 @@ module.exports = {
   createTicketFromChat,
   getCustomerTickets,
   getTicketDetails,
+  getTicketSummaryById,
   addMessage,
   closeTicket,
   getAdminTickets,
