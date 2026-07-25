@@ -40,12 +40,27 @@ const getCustomerRole = async () => {
 // parameters: name, email, password, phone, img_url
 // return: User object duoc populate role
 const register = async ({ name, email, password, phone, img_url }) => {
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = String(email || "").toLowerCase().trim();
+  const normalizedPhone = String(phone || "").trim();
 
-  // Kiem tra email da ton tai chua
-  const existedUser = await User.findOne({ email: normalizedEmail });
-  if (existedUser) {
+  // Kiem tra email va so dien thoai da ton tai chua.
+  // Phone la truong tuy chon, vi vay chi kiem tra khi nguoi dung co nhap.
+  const duplicateConditions = [{ email: normalizedEmail }];
+
+  if (normalizedPhone) {
+    duplicateConditions.push({ phone: normalizedPhone });
+  }
+
+  const existedUser = await User.findOne({
+    $or: duplicateConditions,
+  }).select("email phone");
+
+  if (existedUser?.email === normalizedEmail) {
     throw new Error("Email already exists");
+  }
+
+  if (normalizedPhone && existedUser?.phone === normalizedPhone) {
+    throw new Error("Phone number already exists");
   }
 
   // Lay role customer mac dinh
@@ -64,7 +79,7 @@ const register = async ({ name, email, password, phone, img_url }) => {
     name,
     email: normalizedEmail,
     hash_pass,
-    phone: phone || null,
+    phone: normalizedPhone || undefined,
     img_url: img_url || null,
     status: "unverified",
     email_otp: otp,

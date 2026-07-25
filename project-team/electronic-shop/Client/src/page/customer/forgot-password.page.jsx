@@ -1,26 +1,21 @@
 import {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-
-import Container from 'react-bootstrap/Container'
-
-import {
-  Link,
-} from 'react-router-dom'
+  Check,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  Mail,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import Alert from '../../components/atoms/Alert'
 import Button from '../../components/atoms/Button'
-import TextField from '../../components/atoms/TextField'
-
+import AuthTextField from '../../components/atoms/AuthTextField'
 import AuthPanel from '../../components/organisms/AuthPanel'
-import MainLayout from '../../components/templates/MainLayout'
-
-import {
-  getErrorMessage,
-} from '../../services/api'
-
+import AuthLayout from '../../components/templates/AuthLayout'
+import { getErrorMessage } from '../../services/api'
 import {
   forgotPassword,
   resendResetOtp,
@@ -28,207 +23,98 @@ import {
   verifyResetOtp,
 } from '../../services/auth.service'
 
-const content = {
+const STEP_CONTENT = {
   email: {
-    title: 'Quên mật khẩu',
-
-    subtitle:
-      'Nhập email đã đăng ký để nhận mã OTP qua Gmail.',
+    title: 'Quên mật khẩu?',
+    subtitle: 'Nhập email đã đăng ký để nhận mã OTP đặt lại mật khẩu.',
   },
-
   otp: {
     title: 'Xác thực OTP',
-
-    subtitle:
-      'Nhập mã OTP 6 chữ số đã được gửi tới Gmail của bạn.',
+    subtitle: 'Nhập mã OTP gồm 6 chữ số đã được gửi đến email của bạn.',
   },
-
   password: {
-    title:
-      'Tạo mật khẩu mới',
-
-    subtitle:
-      'OTP hợp lệ. Hãy đặt mật khẩu mới cho tài khoản.',
+    title: 'Tạo mật khẩu mới',
+    subtitle: 'Đặt mật khẩu mới có ít nhất 6 ký tự cho tài khoản.',
   },
-
   success: {
-    title:
-      'Đặt lại thành công',
-
-    subtitle:
-      'Bạn có thể đăng nhập bằng mật khẩu mới.',
+    title: 'Đổi mật khẩu thành công',
+    subtitle: 'Bạn có thể đăng nhập lại bằng mật khẩu mới ngay bây giờ.',
   },
 }
 
-function ForgotPasswordPage() {
-  const [
-    step,
-    setStep,
-  ] = useState('email')
+const STEP_LABELS = ['Nhập email', 'Xác thực OTP', 'Mật khẩu mới']
 
-  const [
-    form,
-    setForm,
-  ] = useState({
+function getActiveStep(step) {
+  if (step === 'email') return 0
+  if (step === 'otp') return 1
+  return 2
+}
+
+function ForgotPasswordPage() {
+  const [step, setStep] = useState('email')
+  const [form, setForm] = useState({
     email: '',
     otp: '',
     password: '',
     confirmPassword: '',
   })
-
-  const [
-    resetToken,
-    setResetToken,
-  ] = useState('')
-
-  const [
-    fieldErrors,
-    setFieldErrors,
-  ] = useState({})
-
-  const [
-    error,
-    setError,
-  ] = useState('')
-
-  const [
-    message,
-    setMessage,
-  ] = useState('')
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(false)
-
-  const [
-    countdown,
-    setCountdown,
-  ] = useState(0)
+  const [resetToken, setResetToken] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
-    if (
-      step !== 'otp' ||
-      countdown <= 0
-    ) {
+    if (step !== 'otp' || countdown <= 0) {
       return undefined
     }
 
-    const timer =
-      window.setTimeout(
-        () => {
-          setCountdown(
-            (value) =>
-              Math.max(
-                0,
-                value - 1,
-              ),
-          )
-        },
-        1000,
-      )
+    const timer = window.setTimeout(() => {
+      setCountdown((value) => Math.max(0, value - 1))
+    }, 1000)
 
-    return () =>
-      window.clearTimeout(
-        timer,
-      )
-  }, [
-    step,
-    countdown,
-  ])
+    return () => window.clearTimeout(timer)
+  }, [step, countdown])
 
-  const updateField = (
-    name,
-    value,
-  ) => {
-    setForm(
-      (current) => ({
-        ...current,
-        [name]: value,
-      }),
-    )
+  const normalizedEmail = form.email.trim().toLowerCase()
+  const activeStep = getActiveStep(step)
 
-    setFieldErrors(
-      (current) => ({
-        ...current,
-        [name]: '',
-      }),
-    )
+  const disabled = useMemo(() => {
+    if (loading) return true
+    if (step === 'email') return !normalizedEmail
+    if (step === 'otp') return form.otp.length !== 6
+    if (step === 'password') {
+      return !form.password || !form.confirmPassword || !resetToken
+    }
+    return false
+  }, [form, loading, normalizedEmail, resetToken, step])
 
+  const updateField = (name, value) => {
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }))
+    setFieldErrors((current) => ({
+      ...current,
+      [name]: '',
+    }))
     setError('')
     setMessage('')
   }
 
-  const normalizedEmail =
-    form.email
-      .trim()
-      .toLowerCase()
-
-  const disabled =
-    useMemo(() => {
-      if (loading) {
-        return true
-      }
-
-      if (
-        step === 'email'
-      ) {
-        return !normalizedEmail
-      }
-
-      if (
-        step === 'otp'
-      ) {
-        return (
-          form.otp.length !==
-          6
-        )
-      }
-
-      if (
-        step ===
-        'password'
-      ) {
-        return (
-          !form.password ||
-          !form.confirmPassword ||
-          !resetToken
-        )
-      }
-
-      return false
-    }, [
-      loading,
-      step,
-      normalizedEmail,
-      form,
-      resetToken,
-    ])
-
-  const sendOtp = async (
-    event,
-  ) => {
+  const sendOtp = async (event) => {
     event.preventDefault()
 
     if (!normalizedEmail) {
-      setFieldErrors({
-        email:
-          'Vui lòng nhập email.',
-      })
-
+      setFieldErrors({ email: 'Vui lòng nhập email.' })
       return
     }
 
-    if (
-      !/^\S+@\S+\.\S+$/.test(
-        normalizedEmail,
-      )
-    ) {
-      setFieldErrors({
-        email:
-          'Email không hợp lệ.',
-      })
-
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setFieldErrors({ email: 'Email không hợp lệ.' })
       return
     }
 
@@ -237,269 +123,134 @@ function ForgotPasswordPage() {
       setError('')
       setMessage('')
 
-      const response =
-        await forgotPassword(
-          {
-            email:
-              normalizedEmail,
-          },
-        )
+      const response = await forgotPassword({ email: normalizedEmail })
 
-      setForm(
-        (current) => ({
-          ...current,
-
-          email:
-            normalizedEmail,
-
-          otp: '',
-        }),
-      )
-
+      setForm((current) => ({
+        ...current,
+        email: normalizedEmail,
+        otp: '',
+      }))
       setCountdown(60)
       setStep('otp')
-
-      setMessage(
-        response?.message ||
-          'Mã OTP đã được gửi tới Gmail.',
-      )
-    } catch (
-      requestError
-    ) {
-      setError(
-        getErrorMessage(
-          requestError,
-
-          'Không gửi được mã OTP.',
-        ),
-      )
+      setMessage(response?.message || 'Mã OTP đã được gửi tới email của bạn.')
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Không gửi được mã OTP.'))
     } finally {
       setLoading(false)
     }
   }
 
-  const verifyOtp =
-    async (event) => {
-      event.preventDefault()
+  const verifyOtp = async (event) => {
+    event.preventDefault()
 
-      if (
-        !/^\d{6}$/.test(
-          form.otp,
-        )
-      ) {
-        setFieldErrors({
-          otp:
-            'Mã OTP phải gồm 6 chữ số.',
-        })
-
-        return
-      }
-
-      try {
-        setLoading(true)
-        setError('')
-        setMessage('')
-
-        const response =
-          await verifyResetOtp(
-            {
-              email:
-                normalizedEmail,
-
-              otp:
-                form.otp,
-            },
-          )
-
-        const token =
-          response?.data
-            ?.reset_token ||
-          response
-            ?.reset_token
-
-        if (!token) {
-          throw new Error(
-            'API không trả về reset token.',
-          )
-        }
-
-        setResetToken(
-          token,
-        )
-
-        setStep(
-          'password',
-        )
-
-        setMessage(
-          response?.message ||
-            'Xác thực OTP thành công.',
-        )
-      } catch (
-        verifyError
-      ) {
-        setError(
-          getErrorMessage(
-            verifyError,
-
-            'Không xác thực được OTP.',
-          ),
-        )
-      } finally {
-        setLoading(false)
-      }
+    if (!/^\d{6}$/.test(form.otp)) {
+      setFieldErrors({ otp: 'Mã OTP phải gồm 6 chữ số.' })
+      return
     }
 
-  const resendOtp =
-    async () => {
-      if (
-        loading ||
-        countdown > 0
-      ) {
-        return
+    try {
+      setLoading(true)
+      setError('')
+      setMessage('')
+
+      const response = await verifyResetOtp({
+        email: normalizedEmail,
+        otp: form.otp,
+      })
+
+      const token = response?.data?.reset_token || response?.reset_token
+
+      if (!token) {
+        throw new Error('API không trả về reset token.')
       }
 
-      try {
-        setLoading(true)
-        setError('')
-        setMessage('')
+      setResetToken(token)
+      setStep('password')
+      setMessage(response?.message || 'Xác thực OTP thành công.')
+    } catch (verifyError) {
+      setError(getErrorMessage(verifyError, 'Không xác thực được OTP.'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
-        const response =
-          await resendResetOtp(
-            {
-              email:
-                normalizedEmail,
-            },
-          )
-
-        setForm(
-          (current) => ({
-            ...current,
-            otp: '',
-          }),
-        )
-
-        setCountdown(60)
-
-        setMessage(
-          response?.message ||
-            'Đã gửi lại mã OTP.',
-        )
-      } catch (
-        resendError
-      ) {
-        setError(
-          getErrorMessage(
-            resendError,
-
-            'Không gửi lại được OTP.',
-          ),
-        )
-      } finally {
-        setLoading(false)
-      }
+  const resendOtp = async () => {
+    if (loading || countdown > 0) {
+      return
     }
 
-  const submitNewPassword =
-    async (event) => {
-      event.preventDefault()
+    try {
+      setLoading(true)
+      setError('')
+      setMessage('')
 
-      const nextErrors = {}
+      const response = await resendResetOtp({ email: normalizedEmail })
 
-      if (!form.password) {
-        nextErrors.password =
-          'Vui lòng nhập mật khẩu mới.'
-      } else if (
-        form.password.length <
-        6
-      ) {
-        nextErrors.password =
-          'Mật khẩu phải có ít nhất 6 ký tự.'
-      }
-
-      if (
-        !form.confirmPassword
-      ) {
-        nextErrors.confirmPassword =
-          'Vui lòng xác nhận mật khẩu.'
-      } else if (
-        form.password !==
-        form.confirmPassword
-      ) {
-        nextErrors.confirmPassword =
-          'Mật khẩu xác nhận không khớp.'
-      }
-
-      if (
-        Object.keys(
-          nextErrors,
-        ).length > 0
-      ) {
-        setFieldErrors(
-          nextErrors,
-        )
-
-        return
-      }
-
-      try {
-        setLoading(true)
-        setError('')
-        setMessage('')
-
-        const response =
-          await resetPassword(
-            {
-              email:
-                normalizedEmail,
-
-              resetToken,
-
-              password:
-                form.password,
-
-              confirmPassword:
-                form.confirmPassword,
-            },
-          )
-
-        setStep(
-          'success',
-        )
-
-        setResetToken('')
-
-        setMessage(
-          response?.message ||
-            'Đặt lại mật khẩu thành công.',
-        )
-      } catch (
-        resetError
-      ) {
-        setError(
-          getErrorMessage(
-            resetError,
-
-            'Không đặt lại được mật khẩu.',
-          ),
-        )
-      } finally {
-        setLoading(false)
-      }
+      setForm((current) => ({
+        ...current,
+        otp: '',
+      }))
+      setCountdown(60)
+      setMessage(response?.message || 'Đã gửi lại mã OTP.')
+    } catch (resendError) {
+      setError(getErrorMessage(resendError, 'Không gửi lại được OTP.'))
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const submitNewPassword = async (event) => {
+    event.preventDefault()
+
+    const nextErrors = {}
+
+    if (!form.password) {
+      nextErrors.password = 'Vui lòng nhập mật khẩu mới.'
+    } else if (form.password.length < 6) {
+      nextErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự.'
+    }
+
+    if (!form.confirmPassword) {
+      nextErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu.'
+    } else if (form.password !== form.confirmPassword) {
+      nextErrors.confirmPassword = 'Mật khẩu xác nhận không khớp.'
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      setMessage('')
+
+      const response = await resetPassword({
+        email: normalizedEmail,
+        resetToken,
+        password: form.password,
+        confirmPassword: form.confirmPassword,
+      })
+
+      setStep('success')
+      setResetToken('')
+      setMessage(response?.message || 'Đặt lại mật khẩu thành công.')
+    } catch (resetError) {
+      setError(getErrorMessage(resetError, 'Không đặt lại được mật khẩu.'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const backToEmail = () => {
     setStep('email')
-
-    setForm(
-      (current) => ({
-        ...current,
-        otp: '',
-        password: '',
-        confirmPassword: '',
-      }),
-    )
-
+    setForm((current) => ({
+      ...current,
+      otp: '',
+      password: '',
+      confirmPassword: '',
+    }))
     setResetToken('')
     setCountdown(0)
     setFieldErrors({})
@@ -508,318 +259,260 @@ function ForgotPasswordPage() {
   }
 
   return (
-    <MainLayout>
-      <section className='page-section'>
-        <Container className='max-w-xl'>
-          <AuthPanel
-            title={
-              content[step]
-                .title
-            }
-            subtitle={
-              content[step]
-                .subtitle
-            }
-          >
-            <div className='mb-5 grid grid-cols-3 gap-2'>
-              {[
-                'Nhập email',
-                'Xác thực',
-                'Đổi mật khẩu',
-              ].map(
-                (
-                  label,
-                  index,
-                ) => {
-                  const active =
-                    step ===
-                    'email'
-                      ? 0
-                      : step ===
-                          'otp'
-                        ? 1
-                        : 2
+    <AuthLayout>
+      <AuthPanel
+        title={STEP_CONTENT[step].title}
+        subtitle={STEP_CONTENT[step].subtitle}
+        eyebrow='Khôi phục tài khoản'
+        asideTitle={step === 'success' ? 'Tài khoản đã sẵn sàng!' : 'Bảo vệ tài khoản của bạn'}
+        asideDescription={
+          step === 'success'
+            ? 'Mật khẩu đã được cập nhật. Hãy quay lại đăng nhập và tiếp tục mua sắm tại TechSale.'
+            : 'TechSale sử dụng OTP gửi qua email để xác minh đúng chủ tài khoản trước khi đổi mật khẩu.'
+        }
+        asideActionLabel='Quay lại đăng nhập'
+        asideActionTo='/login'
+      >
+        <div className='mb-6 grid grid-cols-3 gap-2'>
+          {STEP_LABELS.map((label, index) => {
+            const isCompleted = index < activeStep || step === 'success'
+            const isActive = index === activeStep && step !== 'success'
 
-                  return (
-                    <div
-                      key={
-                        label
-                      }
-                      className={`!rounded-lg px-2 py-2 text-center text-xs font-bold ${
-                        index <=
-                        active
-                          ? 'bg-orange-100 text-orange-700'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {index +
-                        1}
-                      . {label}
-                    </div>
-                  )
-                },
-              )}
-            </div>
-
-            <div className='mb-4 d-flex flex-column gap-3'>
-              <Alert type='danger'>
-                {error}
-              </Alert>
-
-              <Alert type='success'>
-                {message}
-              </Alert>
-            </div>
-
-            {step ===
-              'email' && (
-              <form
-                onSubmit={
-                  sendOtp
-                }
-                noValidate
-              >
-                <TextField
-                  label='Email đã đăng ký'
-                  id='email'
-                  type='email'
-                  autoComplete='email'
-                  placeholder='customer@example.com'
-                  value={
-                    form.email
-                  }
-                  error={
-                    fieldErrors.email
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    updateField(
-                      'email',
-
-                      event
-                        .target
-                        .value,
-                    )
-                  }
-                  className='mb-5'
-                />
-
-                <Button
-                  type='submit'
-                  className='w-100 py-3'
-                  isLoading={
-                    loading
-                  }
-                  disabled={
-                    disabled
-                  }
+            return (
+              <div key={label} className='text-center'>
+                <div
+                  className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition ${
+                    isCompleted
+                      ? 'bg-green-500 text-white'
+                      : isActive
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
+                        : 'bg-slate-100 text-slate-400'
+                  }`}
                 >
-                  Gửi mã OTP
-                </Button>
-              </form>
-            )}
-
-            {step ===
-              'otp' && (
-              <form
-                onSubmit={
-                  verifyOtp
-                }
-                noValidate
-              >
-                <p className='mb-4 !rounded-lg bg-slate-50 p-3 text-center text-sm text-slate-600'>
-                  OTP đã được
-                  gửi đến{' '}
-                  <b>
-                    {
-                      normalizedEmail
-                    }
-                  </b>
-                </p>
-
-                <TextField
-                  label='Mã OTP'
-                  id='otp'
-                  inputMode='numeric'
-                  autoComplete='one-time-code'
-                  maxLength={6}
-                  placeholder='000000'
-                  value={
-                    form.otp
-                  }
-                  error={
-                    fieldErrors.otp
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    updateField(
-                      'otp',
-
-                      event
-                        .target
-                        .value
-                        .replace(
-                          /\D/g,
-                          '',
-                        )
-                        .slice(
-                          0,
-                          6,
-                        ),
-                    )
-                  }
-                  className='mb-5'
-                />
-
-                <Button
-                  type='submit'
-                  className='w-100 py-3'
-                  isLoading={
-                    loading
-                  }
-                  disabled={
-                    disabled
-                  }
-                >
-                  Xác thực OTP
-                </Button>
-
-                <div className='mt-4 d-flex flex-column gap-3 text-center text-sm'>
-                  <button
-                    type='button'
-                    onClick={
-                      resendOtp
-                    }
-                    disabled={
-                      countdown >
-                        0 ||
-                      loading
-                    }
-                    className='border-0 bg-transparent font-bold text-orange-600 disabled:text-slate-400'
-                  >
-                    {countdown >
-                    0
-                      ? `Gửi lại OTP sau ${countdown}s`
-                      : 'Gửi lại mã OTP'}
-                  </button>
-
-                  <button
-                    type='button'
-                    onClick={
-                      backToEmail
-                    }
-                    className='border-0 bg-transparent font-bold text-slate-500'
-                  >
-                    Đổi email khác
-                  </button>
+                  {isCompleted ? <Check className='h-4 w-4' /> : index + 1}
                 </div>
-              </form>
-            )}
-
-            {step ===
-              'password' && (
-              <form
-                onSubmit={
-                  submitNewPassword
-                }
-                noValidate
-              >
-                <TextField
-                  label='Mật khẩu mới'
-                  id='password'
-                  type='password'
-                  autoComplete='new-password'
-                  value={
-                    form.password
-                  }
-                  error={
-                    fieldErrors.password
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    updateField(
-                      'password',
-
-                      event
-                        .target
-                        .value,
-                    )
-                  }
-                  className='mb-4'
-                />
-
-                <TextField
-                  label='Xác nhận mật khẩu'
-                  id='confirmPassword'
-                  type='password'
-                  autoComplete='new-password'
-                  value={
-                    form.confirmPassword
-                  }
-                  error={
-                    fieldErrors
-                      .confirmPassword
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    updateField(
-                      'confirmPassword',
-
-                      event
-                        .target
-                        .value,
-                    )
-                  }
-                  className='mb-5'
-                />
-
-                <Button
-                  type='submit'
-                  className='w-100 py-3'
-                  isLoading={
-                    loading
-                  }
-                  disabled={
-                    disabled
-                  }
+                <p
+                  className={`mt-2 text-[11px] font-bold sm:text-xs ${
+                    isCompleted || isActive ? 'text-slate-700' : 'text-slate-400'
+                  }`}
                 >
-                  Đặt lại mật khẩu
-                </Button>
-              </form>
-            )}
+                  {label}
+                </p>
+              </div>
+            )
+          })}
+        </div>
 
-            {step ===
-              'success' && (
-              <Button
-                as={Link}
-                to='/login'
-                className='w-100 py-3'
-              >
-                Quay lại đăng nhập
-              </Button>
-            )}
+        {error && (
+          <div className='mb-4'>
+            <Alert type='danger'>{error}</Alert>
+          </div>
+        )}
 
-            {step !==
-              'success' && (
-              <p className='mt-5 mb-0 text-center text-sm text-slate-500'>
-                Đã nhớ mật khẩu?{' '}
+        {message && step !== 'success' && (
+          <div className='mb-4'>
+            <Alert type='success'>{message}</Alert>
+          </div>
+        )}
 
-                <Link
-                  to='/login'
-                  className='font-bold text-orange-600'
-                >
-                  Quay lại đăng nhập
-                </Link>
+        {step === 'email' && (
+          <form onSubmit={sendOtp} noValidate>
+            <AuthTextField
+              label='Email đã đăng ký'
+              id='email'
+              type='email'
+              autoComplete='email'
+              placeholder='customer@example.com'
+              value={form.email}
+              error={fieldErrors.email}
+              onChange={(event) => updateField('email', event.target.value)}
+              icon={Mail}
+              inputClassName='!rounded-xl bg-slate-50 py-3.5 focus:bg-white'
+              className='mb-5'
+            />
+
+            <Button
+              type='submit'
+              variant='warning'
+              className='w-full !rounded-full py-3.5 text-base shadow-lg shadow-orange-200'
+              isLoading={loading}
+              disabled={disabled}
+            >
+              Gửi mã OTP
+            </Button>
+          </form>
+        )}
+
+        {step === 'otp' && (
+          <form onSubmit={verifyOtp} noValidate>
+            <div className='mb-5 rounded-2xl border border-orange-100 bg-orange-50 p-4 text-center'>
+              <Mail className='mx-auto mb-2 h-6 w-6 text-orange-600' />
+              <p className='text-sm text-slate-600'>OTP đã được gửi đến</p>
+              <p className='mt-1 break-all text-sm font-extrabold text-slate-900'>
+                {normalizedEmail}
               </p>
-            )}
-          </AuthPanel>
-        </Container>
-      </section>
-    </MainLayout>
+            </div>
+
+            <AuthTextField
+              label='Mã OTP'
+              id='otp'
+              inputMode='numeric'
+              autoComplete='one-time-code'
+              maxLength={6}
+              placeholder='000000'
+              value={form.otp}
+              error={fieldErrors.otp}
+              onChange={(event) =>
+                updateField(
+                  'otp',
+                  event.target.value.replace(/\D/g, '').slice(0, 6),
+                )
+              }
+              icon={KeyRound}
+              inputClassName='!rounded-xl bg-slate-50 py-4 text-center text-lg font-black tracking-[0.35em] focus:bg-white'
+              className='mb-5'
+            />
+
+            <Button
+              type='submit'
+              variant='warning'
+              className='w-full !rounded-full py-3.5 text-base shadow-lg shadow-orange-200'
+              isLoading={loading}
+              disabled={disabled}
+            >
+              Xác thực OTP
+            </Button>
+
+            <div className='mt-5 flex flex-col items-center gap-3 text-sm'>
+              <button
+                type='button'
+                onClick={resendOtp}
+                disabled={countdown > 0 || loading}
+                className='font-extrabold text-orange-600 transition hover:text-orange-700 disabled:text-slate-400'
+              >
+                {countdown > 0
+                  ? `Gửi lại OTP sau ${countdown}s`
+                  : 'Gửi lại mã OTP'}
+              </button>
+
+              <button
+                type='button'
+                onClick={backToEmail}
+                className='font-bold text-slate-500 transition hover:text-slate-800'
+              >
+                Sử dụng email khác
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === 'password' && (
+          <form onSubmit={submitNewPassword} noValidate>
+            <AuthTextField
+              label='Mật khẩu mới'
+              id='password'
+              type={showPassword ? 'text' : 'password'}
+              autoComplete='new-password'
+              placeholder='Tối thiểu 6 ký tự'
+              value={form.password}
+              error={fieldErrors.password}
+              onChange={(event) => updateField('password', event.target.value)}
+              icon={LockKeyhole}
+              endAdornment={(
+                <button
+                  type='button'
+                  onClick={() => setShowPassword((current) => !current)}
+                  className='rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showPassword ? (
+                    <EyeOff className='h-4 w-4' />
+                  ) : (
+                    <Eye className='h-4 w-4' />
+                  )}
+                </button>
+              )}
+              inputClassName='!rounded-xl bg-slate-50 py-3.5 focus:bg-white'
+              className='mb-4'
+            />
+
+            <AuthTextField
+              label='Xác nhận mật khẩu'
+              id='confirmPassword'
+              type={showConfirmPassword ? 'text' : 'password'}
+              autoComplete='new-password'
+              placeholder='Nhập lại mật khẩu mới'
+              value={form.confirmPassword}
+              error={fieldErrors.confirmPassword}
+              onChange={(event) =>
+                updateField('confirmPassword', event.target.value)
+              }
+              icon={LockKeyhole}
+              endAdornment={(
+                <button
+                  type='button'
+                  onClick={() =>
+                    setShowConfirmPassword((current) => !current)
+                  }
+                  className='rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
+                  aria-label={
+                    showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className='h-4 w-4' />
+                  ) : (
+                    <Eye className='h-4 w-4' />
+                  )}
+                </button>
+              )}
+              inputClassName='!rounded-xl bg-slate-50 py-3.5 focus:bg-white'
+              className='mb-5'
+            />
+
+            <Button
+              type='submit'
+              variant='warning'
+              className='w-full !rounded-full py-3.5 text-base shadow-lg shadow-orange-200'
+              isLoading={loading}
+              disabled={disabled}
+            >
+              Đặt lại mật khẩu
+            </Button>
+          </form>
+        )}
+
+        {step === 'success' && (
+          <div className='text-center'>
+            <div className='mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100'>
+              <CheckCircle2 className='h-10 w-10 text-green-600' />
+            </div>
+
+            <Alert type='success' className='mb-5 text-left'>
+              {message || 'Đặt lại mật khẩu thành công.'}
+            </Alert>
+
+            <Button
+              as={Link}
+              to='/login'
+              variant='warning'
+              className='w-full !rounded-full py-3.5 text-base shadow-lg shadow-orange-200'
+            >
+              Đăng nhập bằng mật khẩu mới
+            </Button>
+          </div>
+        )}
+
+        {step !== 'success' && (
+          <p className='mt-6 text-center text-sm text-slate-500 lg:hidden'>
+            Đã nhớ mật khẩu?{' '}
+            <Link to='/login' className='font-extrabold text-orange-600'>
+              Quay lại đăng nhập
+            </Link>
+          </p>
+        )}
+      </AuthPanel>
+    </AuthLayout>
   )
 }
 

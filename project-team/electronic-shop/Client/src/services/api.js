@@ -35,6 +35,8 @@ const exactMessageMap = {
   'email and password are required': 'Vui lòng nhập email và mật khẩu.',
   'name, email and password are required': 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.',
   'email already exists': 'Email này đã được sử dụng.',
+  'phone number already exists': 'Số điện thoại này đã được sử dụng.',
+  'account information already exists': 'Thông tin tài khoản này đã được sử dụng.',
   'email is required': 'Vui lòng nhập email.',
   'password is required': 'Vui lòng nhập mật khẩu.',
   'password must be at least 6 characters': 'Mật khẩu phải có ít nhất 6 ký tự.',

@@ -60,12 +60,45 @@ const register = async (req, res) => {
       data,
     });
   } catch (error) {
-    const statusCode = error.message === "Email already exists" ? 409 : 500;
+    let statusCode = 500;
+    let message = error.message || "Failed to register";
+
+    // Xu ly trung du lieu da duoc service phat hien.
+    if (message === "Email already exists") {
+      statusCode = 409;
+    }
+
+    if (message === "Phone number already exists") {
+      statusCode = 409;
+    }
+
+    // Van xu ly duplicate key tu MongoDB de tranh race condition:
+    // hai request dang ky cung luc co the vuot qua buoc findOne.
+    if (error?.code === 11000) {
+      statusCode = 409;
+
+      const duplicatedFields = {
+        ...(error.keyPattern || {}),
+        ...(error.keyValue || {}),
+      };
+
+      if (Object.prototype.hasOwnProperty.call(duplicatedFields, "phone")) {
+        message = "Phone number already exists";
+      } else if (Object.prototype.hasOwnProperty.call(duplicatedFields, "email")) {
+        message = "Email already exists";
+      } else {
+        message = "Account information already exists";
+      }
+    }
+
+    if (statusCode === 500) {
+      console.error("Register error:", error);
+    }
 
     return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to register",
-      error: error.message,
+      message,
+      error: message,
     });
   }
 };

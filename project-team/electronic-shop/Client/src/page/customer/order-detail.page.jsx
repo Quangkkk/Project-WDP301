@@ -59,7 +59,7 @@ function getPaymentMethodLabel(method) {
     const map = {
         cod: 'Thanh toán khi nhận hàng',
         bank_transfer: 'Chuyển khoản ngân hàng',
-        zalopay: 'ZaloPay Sandbox',
+        zalopay: 'ZaloPay',
     }
 
     return map[method] || method || '-'
@@ -240,8 +240,38 @@ function canCancelOrder(order) {
     return ['pending', 'confirmed', 'processing'].includes(order?.status)
 }
 
+function normalizeShippingMethodName(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+}
+
+function isStorePickupOrder(order) {
+    const shippingMethod = order?.shipping_method_id || {}
+    const fulfillmentType = String(
+        shippingMethod?.fulfillment_type || shippingMethod?.type || shippingMethod?.code || '',
+    )
+        .toLowerCase()
+        .trim()
+
+    if (['store_pickup', 'pickup', 'pick_up'].includes(fulfillmentType)) {
+        return true
+    }
+
+    const normalizedName = normalizeShippingMethodName(shippingMethod?.name)
+
+    return (
+        normalizedName.includes('nhan tai cua hang') ||
+        normalizedName.includes('nhan hang tai cua hang') ||
+        normalizedName.includes('store pickup')
+    )
+}
+
 function getReceiverAddress(order) {
     if (!order) return ''
+    if (isStorePickupOrder(order)) return 'Nhận tại cửa hàng'
 
     return [
         order.address_address_line,
@@ -892,7 +922,9 @@ const handleChatWithShop = (item) => {
                                             <Col md={7}>
                                                 <div className='h-100 rounded-4 border border-slate-100 bg-slate-50 p-3'>
                                                     <p className='mb-1 text-xs font-black uppercase text-slate-400'>
-                                                        Địa chỉ nhận hàng
+                                                        {isStorePickupOrder(order)
+                                                            ? 'Hình thức nhận hàng'
+                                                            : 'Địa chỉ nhận hàng'}
                                                     </p>
 
                                                     <p className='mb-0 text-sm leading-7 text-slate-700'>

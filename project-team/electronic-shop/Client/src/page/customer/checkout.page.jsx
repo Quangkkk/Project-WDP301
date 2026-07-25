@@ -158,6 +158,34 @@ function buildAddressForm(address, currentUser) {
   }
 }
 
+function normalizeShippingMethodName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function isStorePickupMethod(method) {
+  const fulfillmentType = String(
+    method?.fulfillment_type || method?.type || method?.code || '',
+  )
+    .toLowerCase()
+    .trim()
+
+  if (['store_pickup', 'pickup', 'pick_up'].includes(fulfillmentType)) {
+    return true
+  }
+
+  const normalizedName = normalizeShippingMethodName(method?.name)
+
+  return (
+    normalizedName.includes('nhan tai cua hang') ||
+    normalizedName.includes('nhan hang tai cua hang') ||
+    normalizedName.includes('store pickup')
+  )
+}
+
 function CheckoutPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -203,6 +231,7 @@ function CheckoutPage() {
     shippingMethods.find((item) => getId(item) === form.shipping_method_id) ||
     shippingMethods[0]
 
+  const isStorePickup = isStorePickupMethod(selectedShipping)
   const shippingFee = Number(selectedShipping?.base_fee || 0)
   const total = Math.max(subtotal + shippingFee - discount, 0)
 
@@ -436,18 +465,24 @@ function CheckoutPage() {
   }
 
   const validate = () => {
-    const requiredFields = [
-      'receiver_name',
-      'receiver_phone',
-      'address_province',
-      'address_district',
-      'address_ward',
-      'address_address_line',
-    ]
+    if (!form.shipping_method_id) {
+      return 'Vui lòng chọn phương thức giao hàng.'
+    }
 
-    for (const field of requiredFields) {
-      if (!String(form[field] || '').trim()) {
-        return 'Vui lòng nhập đầy đủ thông tin giao hàng.'
+    if (!isStorePickup) {
+      const requiredFields = [
+        'receiver_name',
+        'receiver_phone',
+        'address_province',
+        'address_district',
+        'address_ward',
+        'address_address_line',
+      ]
+
+      for (const field of requiredFields) {
+        if (!String(form[field] || '').trim()) {
+          return 'Vui lòng nhập đầy đủ thông tin giao hàng.'
+        }
       }
     }
 
@@ -466,10 +501,6 @@ function CheckoutPage() {
 
     if (!items.length) {
       return 'Không có sản phẩm nào được chọn để thanh toán.'
-    }
-
-    if (!form.shipping_method_id) {
-      return 'Vui lòng chọn phương thức giao hàng.'
     }
 
     return ''
@@ -498,6 +529,23 @@ function CheckoutPage() {
     setIsSubmitting(true)
     setError('')
     setMessage('')
+
+    let zaloPayWindow = null
+
+    if (form.payment_method === 'zalopay') {
+      zaloPayWindow = window.open('', 'zalopay-payment-window')
+
+      if (zaloPayWindow) {
+        zaloPayWindow.opener = null
+        zaloPayWindow.document.title = 'Đang mở ZaloPay'
+        zaloPayWindow.document.body.innerHTML = `
+          <div style="font-family: Arial, sans-serif; padding: 32px; text-align: center;">
+            <h2>Đang khởi tạo thanh toán ZaloPay...</h2>
+            <p>Vui lòng không đóng tab này.</p>
+          </div>
+        `
+      }
+    }
 
     let createdOrder = null
     let orderId = ''
@@ -548,27 +596,20 @@ function CheckoutPage() {
         shipping_method_id:
           form.shipping_method_id,
 
-        receiver_name:
-          form.receiver_name.trim(),
-
-        receiver_phone:
-          form.receiver_phone.trim(),
+        ...(!isStorePickup
+          ? {
+            receiver_name: form.receiver_name.trim(),
+            receiver_phone: form.receiver_phone.trim(),
+            address_province: form.address_province.trim(),
+            address_district: form.address_district.trim(),
+            address_ward: form.address_ward.trim(),
+            address_address_line: form.address_address_line.trim(),
+          }
+          : {}),
 
         ...(!user
           ? { receiver_email: form.receiver_email.trim().toLowerCase() }
           : {}),
-
-        address_province:
-          form.address_province.trim(),
-
-        address_district:
-          form.address_district.trim(),
-
-        address_ward:
-          form.address_ward.trim(),
-
-        address_address_line:
-          form.address_address_line.trim(),
 
         note:
           form.note.trim() || undefined,
@@ -661,6 +702,10 @@ function CheckoutPage() {
         top: 0,
         behavior: 'smooth',
       })
+
+      if (zaloPayWindow && !zaloPayWindow.closed) {
+        zaloPayWindow.close()
+      }
 
       setIsSubmitting(false)
       return
@@ -761,10 +806,36 @@ function CheckoutPage() {
           )
         }
 
-        window.location.assign(
-          paymentUrl,
+        if (zaloPayWindow && !zaloPayWindow.closed) {
+          zaloPayWindow.location.replace(paymentUrl)
+        } else {
+          window.open(
+            paymentUrl,
+            '_blank',
+            'noopener,noreferrer',
+          )
+        }
+
+        navigate(
+          `/payment-result/${orderId}`,
+          {
+            replace: true,
+            state: {
+              order:
+                paymentData.order ||
+                createdOrder,
+              payment:
+                paymentData.payment ||
+                {
+                  provider: 'zalopay',
+                  status: 'pending',
+                  payment_url: paymentUrl,
+                },
+            },
+          },
         )
 
+        setIsSubmitting(false)
         return
       }
     } catch (error) {
@@ -786,6 +857,10 @@ function CheckoutPage() {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message
+
+      if (zaloPayWindow && !zaloPayWindow.closed) {
+        zaloPayWindow.close()
+      }
 
       setError(
         backendMessage ||
@@ -844,6 +919,67 @@ function CheckoutPage() {
                 <Col lg={8}>
                   <Card className='card-surface mb-4'>
                     <Card.Body className='p-4'>
+                      {isStorePickup ? (
+                        <>
+                          <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3'>
+                            <div>
+                              <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
+                                Nhận hàng
+                              </p>
+
+                              <h3 className='mb-0 text-2xl font-black text-slate-950'>
+                                Nhận tại cửa hàng
+                              </h3>
+                            </div>
+
+                            <span className='!rounded-pill bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-700'>
+                              Miễn phí
+                            </span>
+                          </div>
+
+                          <div className='overflow-hidden !rounded-4 border border-emerald-100 bg-emerald-50/50'>
+                            <div
+                              className='bg-emerald-500'
+                              style={{
+                                height: 4,
+                              }}
+                            />
+
+                            <div className='p-4'>
+                              <div className='d-flex align-items-start gap-3'>
+                                <span className='text-2xl text-emerald-600'>
+                                  <i className='bi bi-shop' />
+                                </span>
+
+                                <div>
+                                  <p className='mb-1 text-lg font-black text-emerald-800'>
+                                    Không cần nhập thông tin giao hàng
+                                  </p>
+
+                                  <p className='mb-0 text-sm leading-7 text-slate-600'>
+                                    Đơn hàng sẽ được chuẩn bị để bạn đến nhận trực tiếp tại cửa hàng.
+                                    Nhân viên sẽ liên hệ qua thông tin tài khoản hoặc email đơn hàng khi cần.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {!user && (
+                            <div className='mt-4'>
+                              <TextField
+                                label='Email nhận thông báo và tra cứu đơn'
+                                name='receiver_email'
+                                type='email'
+                                value={form.receiver_email}
+                                onChange={handleChange}
+                                required
+                              />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
                       <div className='mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3'>
                         <div>
                           <p className='mb-1 text-xs font-black uppercase tracking-[0.25em] text-orange-600'>
@@ -1053,6 +1189,8 @@ function CheckoutPage() {
                           </Col>
                         </Row>
                       )}
+                        </>
+                      )}
 
                       <div className='mt-4'>
                         <TextAreaField
@@ -1112,7 +1250,7 @@ function CheckoutPage() {
                               },
                               {
                                 value: 'zalopay',
-                                label: 'ZaloPay Sandbox',
+                                label: 'ZaloPay',
                               },
                             ]}
                           />
