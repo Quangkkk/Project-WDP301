@@ -28,7 +28,7 @@ const couponService = require(
 );
 
 const {
-  sendOrderCreatedEmail,
+  sendOrderConfirmationEmailOnce,
 } = require(
   "./orderEmail.service"
 );
@@ -98,6 +98,33 @@ const createGuestAccessToken = () => {
 
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const normalizeShippingMethodName = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isStorePickupShippingMethod = (method) => {
+  const fulfillmentType = String(
+    method?.fulfillment_type || method?.type || method?.code || ""
+  )
+    .toLowerCase()
+    .trim();
+
+  if (["store_pickup", "pickup", "pick_up"].includes(fulfillmentType)) {
+    return true;
+  }
+
+  const normalizedName = normalizeShippingMethodName(method?.name);
+
+  return (
+    normalizedName.includes("nhan tai cua hang") ||
+    normalizedName.includes("nhan hang tai cua hang") ||
+    normalizedName.includes("store pickup")
+  );
+};
 
 const normalizeOrderCode = (value) =>
   String(value || "")
@@ -495,9 +522,12 @@ const createOrder = async (orderData) => {
   }
 
   let finalReceiverEmail = normalizeEmail(receiver_email);
+  let customer = null;
 
   if (isAuthenticatedOrder) {
-    const customer = await User.findById(user_id).select("email").lean();
+    customer = await User.findById(user_id)
+      .select("email name phone")
+      .lean();
 
     if (!customer) {
       throw new Error("User not found");
@@ -530,36 +560,53 @@ const createOrder = async (orderData) => {
   const district = address_district || shipping_district;
   const addressLine = address_address_line || shipping_address_line;
 
+  if (!shipping_method_id) {
+    throw new Error("Shipping method is required");
+  }
+
+  if (!isValidObjectId(shipping_method_id)) {
+    throw new Error("Invalid shipping_method_id");
+  }
+
+  const shippingMethod = await ShippingMethod.findById(shipping_method_id);
+
+  if (!shippingMethod) {
+    throw new Error("Shipping method not found");
+  }
+
+  if (shippingMethod.is_active === false) {
+    throw new Error("Shipping method is inactive");
+  }
+
+  const isStorePickup = isStorePickupShippingMethod(shippingMethod);
+  const finalReceiverName = String(
+    receiver_name || (isStorePickup ? customer?.name : "") || ""
+  ).trim();
+  const finalReceiverPhone = String(
+    receiver_phone || (isStorePickup ? customer?.phone : "") || ""
+  ).trim();
+  const finalProvince = isStorePickup ? "" : String(province || "").trim();
+  const finalWard = isStorePickup ? "" : String(ward || "").trim();
+  const finalDistrict = isStorePickup ? "" : String(district || "").trim();
+  const finalAddressLine = isStorePickup
+    ? ""
+    : String(addressLine || "").trim();
+
   if (
-    !receiver_name ||
-    !receiver_phone ||
-    !province ||
-    !ward ||
-    !district ||
-    !addressLine
+    !isStorePickup &&
+    (!finalReceiverName ||
+      !finalReceiverPhone ||
+      !finalProvince ||
+      !finalWard ||
+      !finalDistrict ||
+      !finalAddressLine)
   ) {
     throw new Error("Missing receiver/address information");
   }
 
-  let shippingFee = 0;
-
-  if (shipping_method_id) {
-    if (!isValidObjectId(shipping_method_id)) {
-      throw new Error("Invalid shipping_method_id");
-    }
-
-    const shippingMethod = await ShippingMethod.findById(shipping_method_id);
-
-    if (!shippingMethod) {
-      throw new Error("Shipping method not found");
-    }
-
-    if (shippingMethod.is_active === false) {
-      throw new Error("Shipping method is inactive");
-    }
-
-    shippingFee = Number(shippingMethod.base_fee || 0);
-  }
+  const shippingFee = isStorePickup
+    ? 0
+    : Number(shippingMethod.base_fee || 0);
 
   const hasExplicitItems = Array.isArray(items) && items.length > 0;
   const finalItems = await getItemsFromRequestOrCart({
@@ -596,17 +643,19 @@ const createOrder = async (orderData) => {
     _id: orderId,
     order_code: orderCode,
     user_id: isAuthenticatedOrder ? user_id : null,
-    shipping_method_id: shipping_method_id || null,
-    receiver_name: String(receiver_name).trim(),
-    receiver_phone: String(receiver_phone).trim(),
+    shipping_method_id,
+    receiver_name: finalReceiverName,
+    receiver_phone: finalReceiverPhone,
     receiver_email: finalReceiverEmail,
     guest_access_token_hash: guestAccess.hash,
-    address_province: String(province).trim(),
-    address_ward: String(ward).trim(),
-    address_district: String(district).trim(),
-    address_address_line: String(addressLine).trim(),
+    address_province: finalProvince,
+    address_ward: finalWard,
+    address_district: finalDistrict,
+    address_address_line: finalAddressLine,
     subtotal,
     total_amount: totalAmount,
+    shipping_fee: shippingFee,
+    discount_amount: discountAmount,
     status: "pending",
     payment_method: normalizedPaymentMethod,
     payment_status: normalizedPaymentMethod === "cod" ? "unpaid" : "pending",
@@ -705,20 +754,25 @@ const createOrder = async (orderData) => {
   }
 
   /*
-   * Đơn hàng đã tạo và trừ tồn kho thành công.
+   * COD: gửi email ngay sau khi tạo đơn.
+   * VietQR/ZaloPay: chỉ gửi sau khi payment_status chuyển sang paid.
    * Email lỗi không được làm mất đơn hàng.
    */
-  try {
-    await sendOrderCreatedEmail({
-      order,
-      shippingFee,
-      discountAmount,
-    });
-  } catch (emailError) {
-    console.error(
-      "[order.createOrder.confirmationEmail]",
-      emailError.message
-    );
+  if (normalizedPaymentMethod === "cod") {
+    try {
+      await sendOrderConfirmationEmailOnce(
+        order._id,
+        {
+          shippingFee,
+          discountAmount,
+        }
+      );
+    } catch (emailError) {
+      console.error(
+        "[order.createOrder.confirmationEmail]",
+        emailError.message
+      );
+    }
   }
 
   return {
@@ -1087,6 +1141,29 @@ const updateOrderById = async (
       console.error(
         "[order.updateOrderById.paymentSync]",
         paymentSyncError.message
+      );
+    }
+  }
+
+  const becamePaid =
+    updateData.payment_status === "paid" &&
+    order.payment_status !== "paid";
+
+  if (
+    becamePaid &&
+    ["bank_transfer", "zalopay"].includes(
+      order.payment_method
+    )
+  ) {
+    try {
+      await sendOrderConfirmationEmailOnce(
+        id,
+        { requirePaid: true }
+      );
+    } catch (emailError) {
+      console.error(
+        "[order.updateOrderById.confirmationEmail]",
+        emailError.message
       );
     }
   }

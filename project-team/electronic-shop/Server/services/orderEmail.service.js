@@ -1,4 +1,6 @@
+const Order = require("../models/Orders.model");
 const OrderItem = require("../models/OrderItem.model");
+const ShippingMethod = require("../models/ShippingMethod.model");
 const sendMail = require("../mailtrap/nodemailer");
 
 const formatMoney = (value) =>
@@ -72,10 +74,37 @@ const buildAddress = (order) =>
     .map(escapeHtml)
     .join(", ");
 
+const normalizeShippingMethodName = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isStorePickupShippingMethod = (method) => {
+  const fulfillmentType = String(
+    method?.fulfillment_type || method?.type || method?.code || ""
+  )
+    .toLowerCase()
+    .trim();
+
+  if (["store_pickup", "pickup", "pick_up"].includes(fulfillmentType)) {
+    return true;
+  }
+
+  const normalizedName = normalizeShippingMethodName(method?.name);
+
+  return (
+    normalizedName.includes("nhan tai cua hang") ||
+    normalizedName.includes("nhan hang tai cua hang") ||
+    normalizedName.includes("store pickup")
+  );
+};
+
 const sendOrderCreatedEmail = async ({
   order,
-  shippingFee = 0,
-  discountAmount = 0,
+  shippingFee,
+  discountAmount,
 }) => {
   if (!order?._id) {
     throw new Error(
@@ -218,11 +247,56 @@ const sendOrderCreatedEmail = async ({
     order.total_amount || 0
   );
 
+  const shippingMethod = order.shipping_method_id
+    ? await ShippingMethod.findById(order.shipping_method_id)
+        .select("name base_fee fulfillment_type type code")
+        .lean()
+    : null;
+
+  const isStorePickup = isStorePickupShippingMethod(shippingMethod);
+
+  let resolvedShippingFee =
+    shippingFee === undefined || shippingFee === null
+      ? order.shipping_fee === undefined || order.shipping_fee === null
+        ? null
+        : Number(order.shipping_fee || 0)
+      : Number(shippingFee || 0);
+
+  if (resolvedShippingFee === null) {
+    resolvedShippingFee = Number(
+      shippingMethod?.base_fee || 0
+    );
+  }
+
+  const resolvedDiscountAmount =
+    discountAmount === undefined || discountAmount === null
+      ? order.discount_amount === undefined ||
+        order.discount_amount === null
+        ? Math.max(
+            subtotal + resolvedShippingFee - totalAmount,
+            0
+          )
+        : Math.max(Number(order.discount_amount || 0), 0)
+      : Math.max(Number(discountAmount || 0), 0);
+
+  const isOnlinePaymentConfirmed =
+    ["bank_transfer", "zalopay"].includes(
+      order.payment_method
+    ) && order.payment_status === "paid";
+
+  const emailTitle = isOnlinePaymentConfirmed
+    ? "Thanh toán thành công"
+    : "Đặt hàng thành công";
+
+  const emailDescription = isOnlinePaymentConfirmed
+    ? "TechSale đã ghi nhận thanh toán cho đơn hàng của bạn."
+    : "TechSale đã nhận được đơn hàng của bạn.";
+
   await sendMail({
     email: receiverEmail,
 
     subject:
-      `Đặt hàng thành công - ${orderCode}`,
+      `${emailTitle} - ${orderCode}`,
 
     html: `
       <div
@@ -257,7 +331,7 @@ const sendOrderCreatedEmail = async ({
                 font-size: 26px;
               "
             >
-              Đặt hàng thành công
+              ${emailTitle}
             </h1>
 
             <p
@@ -265,7 +339,7 @@ const sendOrderCreatedEmail = async ({
                 margin: 8px 0 0;
               "
             >
-              TechSale đã nhận được đơn hàng của bạn.
+              ${emailDescription}
             </p>
           </div>
 
@@ -460,7 +534,7 @@ const sendOrderCreatedEmail = async ({
                       font-weight: 700;
                     "
                   >
-                    ${formatMoney(shippingFee)}
+                    ${formatMoney(resolvedShippingFee)}
                   </td>
                 </tr>
 
@@ -477,7 +551,7 @@ const sendOrderCreatedEmail = async ({
                     "
                   >
                     -${formatMoney(
-                      discountAmount
+                      resolvedDiscountAmount
                     )}
                   </td>
                 </tr>
@@ -524,29 +598,31 @@ const sendOrderCreatedEmail = async ({
                 background: #f8fafc;
               "
             >
-              <div style="margin-bottom: 6px;">
-                <strong>Người nhận:</strong>
+              ${
+                isStorePickup
+                  ? `
+                    <div>
+                      <strong>Hình thức nhận hàng:</strong>
+                      Nhận tại cửa hàng
+                    </div>
+                  `
+                  : `
+                    <div style="margin-bottom: 6px;">
+                      <strong>Người nhận:</strong>
+                      ${escapeHtml(order.receiver_name || "-")}
+                    </div>
 
-                ${escapeHtml(
-                  order.receiver_name ||
-                    "-"
-                )}
-              </div>
+                    <div style="margin-bottom: 6px;">
+                      <strong>Số điện thoại:</strong>
+                      ${escapeHtml(order.receiver_phone || "-")}
+                    </div>
 
-              <div style="margin-bottom: 6px;">
-                <strong>Số điện thoại:</strong>
-
-                ${escapeHtml(
-                  order.receiver_phone ||
-                    "-"
-                )}
-              </div>
-
-              <div>
-                <strong>Địa chỉ:</strong>
-
-                ${buildAddress(order) || "-"}
-              </div>
+                    <div>
+                      <strong>Địa chỉ:</strong>
+                      ${buildAddress(order) || "-"}
+                    </div>
+                  `
+              }
             </div>
 
             <p
@@ -557,9 +633,11 @@ const sendOrderCreatedEmail = async ({
                 line-height: 1.6;
               "
             >
-              Với chuyển khoản hoặc ZaloPay,
-              trạng thái thanh toán có thể được cập nhật
-              sau khi cổng thanh toán xác nhận giao dịch.
+              ${
+                isOnlinePaymentConfirmed
+                  ? "Khoản thanh toán online đã được xác nhận thành công."
+                  : "Bạn sẽ thanh toán khi nhận hàng. Nhân viên sẽ sớm xử lý đơn hàng."
+              }
             </p>
           </div>
         </div>
@@ -568,6 +646,83 @@ const sendOrderCreatedEmail = async ({
   });
 };
 
+const sendOrderConfirmationEmailOnce = async (
+  orderId,
+  {
+    requirePaid = false,
+    shippingFee,
+    discountAmount,
+  } = {}
+) => {
+  const filter = {
+    _id: orderId,
+    confirmation_email_sent_at: null,
+    confirmation_email_sending: { $ne: true },
+  };
+
+  if (requirePaid) {
+    filter.payment_status = "paid";
+  }
+
+  const order = await Order.findOneAndUpdate(
+    filter,
+    {
+      $set: {
+        confirmation_email_sending: true,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select(
+    "+confirmation_email_sending +confirmation_email_sent_at"
+  );
+
+  if (!order) {
+    return false;
+  }
+
+  try {
+    await sendOrderCreatedEmail({
+      order,
+      shippingFee,
+      discountAmount,
+    });
+
+    await Order.updateOne(
+      {
+        _id: order._id,
+        confirmation_email_sending: true,
+      },
+      {
+        $set: {
+          confirmation_email_sent_at: new Date(),
+        },
+        $unset: {
+          confirmation_email_sending: "",
+        },
+      }
+    );
+
+    return true;
+  } catch (error) {
+    await Order.updateOne(
+      {
+        _id: order._id,
+        confirmation_email_sent_at: null,
+      },
+      {
+        $unset: {
+          confirmation_email_sending: "",
+        },
+      }
+    );
+
+    throw error;
+  }
+};
+
 module.exports = {
   sendOrderCreatedEmail,
+  sendOrderConfirmationEmailOnce,
 };

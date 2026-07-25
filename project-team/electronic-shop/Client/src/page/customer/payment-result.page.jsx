@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -24,7 +24,7 @@ function getPaymentLabel(provider) {
   const map = {
     cod: 'Thanh toán khi nhận hàng',
     bank_transfer: 'Chuyển khoản ngân hàng',
-    zalopay: 'ZaloPay Sandbox',
+    zalopay: 'ZaloPay',
   }
 
   return map[provider] || provider || 'Thanh toán'
@@ -99,29 +99,58 @@ function PaymentResultPage() {
       .join(', ')
   }, [order])
 
-  const loadPayment = async () => {
-    try {
-      setIsLoading(true)
-      setError('')
+  const loadPayment = useCallback(
+    async ({ silent = false } = {}) => {
+      try {
+        if (!silent) {
+          setIsLoading(true)
+          setError('')
+        }
 
-      const guestOrderToken = getGuestOrderToken(orderId)
-      const response = await getPaymentByOrder(orderId, guestOrderToken)
-      const data = response?.data || {}
+        const guestOrderToken = getGuestOrderToken(orderId)
+        const response = await getPaymentByOrder(orderId, guestOrderToken)
+        const data = response?.data || {}
 
-      setOrder(data.order || null)
-      setPayment(data.payment || null)
-    } catch (error) {
-      setError(getErrorMessage(error, 'Không tải được thông tin thanh toán.'))
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        setOrder(data.order || null)
+        setPayment(data.payment || null)
+      } catch (error) {
+        if (!silent) {
+          setError(
+            getErrorMessage(
+              error,
+              'Không tải được thông tin thanh toán.',
+            ),
+          )
+        }
+      } finally {
+        if (!silent) {
+          setIsLoading(false)
+        }
+      }
+    },
+    [orderId],
+  )
 
   useEffect(() => {
     if (orderId) {
       loadPayment()
     }
-  }, [orderId])
+  }, [orderId, loadPayment])
+
+  useEffect(() => {
+    if (
+      provider !== 'zalopay' ||
+      ['paid', 'failed', 'cancelled', 'expired', 'refunded'].includes(status)
+    ) {
+      return undefined
+    }
+
+    const timer = window.setInterval(() => {
+      loadPayment({ silent: true })
+    }, 3000)
+
+    return () => window.clearInterval(timer)
+  }, [provider, status, loadPayment])
 
   return (
     <MainLayout>
@@ -329,7 +358,7 @@ function PaymentResultPage() {
 
                           <p className='mb-3 text-slate-600'>
                             Đơn hàng đã được tạo. Bạn có thể bấm nút bên dưới
-                            để mở lại cổng thanh toán ZaloPay Sandbox.
+                            để mở lại cổng thanh toán ZaloPay.
                           </p>
 
                           <Button

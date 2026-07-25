@@ -1,11 +1,12 @@
+import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import Alert from '../../components/atoms/Alert'
 import Button from '../../components/atoms/Button'
-import TextField from '../../components/atoms/TextField'
+import AuthTextField from '../../components/atoms/AuthTextField'
 import AuthPanel from '../../components/organisms/AuthPanel'
-import MainLayout from '../../components/templates/MainLayout'
+import AuthLayout from '../../components/templates/AuthLayout'
 
 import { getErrorMessage } from '../../services/api'
 import { login } from '../../services/auth.service'
@@ -49,9 +50,7 @@ function isBackOfficePath(path) {
   const pathname = getPathname(path)
 
   return ['/admin', '/manager', '/staff'].some(
-    (prefix) =>
-      pathname === prefix ||
-      pathname.startsWith(`${prefix}/`),
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   )
 }
 
@@ -76,6 +75,7 @@ function LoginPage() {
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const isDisabled = useMemo(
     () => !form.email.trim() || !form.password.trim() || isLoading,
@@ -141,10 +141,7 @@ function LoginPage() {
         response?.data?.access_token ||
         response?.data?.token
 
-      const user =
-        response?.user ||
-        response?.data?.user ||
-        response?.data
+      const user = response?.user || response?.data?.user || response?.data
 
       if (!token || !user || typeof user !== 'object') {
         throw new Error('Phản hồi đăng nhập thiếu token hoặc thông tin người dùng.')
@@ -154,21 +151,24 @@ function LoginPage() {
 
       const role = getUserRole(user)
 
-      // Các role quản trị luôn vào dashboard, không quay lại trang public trước đó.
       if (BACK_OFFICE_ROLES.includes(role)) {
-        const dest = role === 'STAFF' ? '/staff' : role === 'MANAGER' ? '/manager' : '/admin'
-        navigate(dest, { replace: true })
+        const destination =
+          role === 'STAFF'
+            ? '/staff'
+            : role === 'MANAGER'
+              ? '/manager'
+              : '/admin'
+
+        navigate(destination, { replace: true })
         return
       }
 
-      // CUSTOMER quay lại đúng trang đã đứng trước khi mở trang đăng nhập.
       if (role === 'CUSTOMER') {
         const redirectPath = getCustomerRedirectPath(location.state?.from)
         navigate(redirectPath, { replace: true })
         return
       }
 
-      // Role không xác định không được tự chuyển vào trang quản trị.
       navigate('/', { replace: true })
     } catch (error) {
       setMessage(getErrorMessage(error, 'Đăng nhập thất bại.'))
@@ -178,86 +178,100 @@ function LoginPage() {
   }
 
   return (
-    <MainLayout>
-      <section className='py-12 md:py-20'>
-        <div className='container mx-auto max-w-lg px-4'>
-          <AuthPanel
-            title='Đăng nhập'
-            subtitle='Chào mừng trở lại. Đăng nhập để tiếp tục mua sắm.'
-          >
-            {message && (
-              <div className='mb-6'>
-                <Alert type='danger'>{message}</Alert>
-              </div>
+    <AuthLayout>
+      <AuthPanel
+        title='Đăng nhập'asideTitle='Chào mừng trở lại!'
+        asideDescription='Tiếp tục hành trình mua sắm công nghệ với sản phẩm chính hãng, thanh toán linh hoạt và hỗ trợ nhanh chóng.'
+        asideActionLabel='Tạo tài khoản'
+        asideActionTo='/register'
+      >
+        {message && (
+          <div className='mb-5'>
+            <Alert type='danger'>{message}</Alert>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <AuthTextField
+            label='Email'
+            id='email'
+            name='email'
+            type='email'
+            autoComplete='email'
+            placeholder='customer@example.com'
+            value={form.email}
+            error={errors.email}
+            onChange={handleChange}
+            icon={Mail}
+            inputClassName='!rounded-xl bg-slate-50 py-3.5 focus:bg-white'
+            className='mb-4'
+          />
+
+          <AuthTextField
+            label='Mật khẩu'
+            id='password'
+            name='password'
+            type={showPassword ? 'text' : 'password'}
+            autoComplete='current-password'
+            placeholder='Nhập mật khẩu'
+            value={form.password}
+            error={errors.password}
+            onChange={handleChange}
+            icon={LockKeyhole}
+            endAdornment={(
+              <button
+                type='button'
+                onClick={() => setShowPassword((current) => !current)}
+                className='rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700'
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? (
+                  <EyeOff className='h-5 w-5' />
+                ) : (
+                  <Eye className='h-5 w-5' />
+                )}
+              </button>
             )}
+            inputClassName='!rounded-xl bg-slate-50 py-3.5 focus:bg-white'
+            className='mb-4'
+          />
 
-            <form onSubmit={handleSubmit} noValidate>
-              <TextField
-                label='Email'
-                id='email'
-                name='email'
-                type='email'
-                autoComplete='email'
-                placeholder='customer@example.com'
-                value={form.email}
-                error={errors.email}
-                onChange={handleChange}
-                className='mb-5'
+          <div className='mb-6 flex flex-wrap items-center justify-between gap-3 text-sm'>
+            <label className='flex cursor-pointer items-center gap-2 text-slate-600'>
+              <input
+                type='checkbox'
+                className='h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500'
               />
+              <span className='font-semibold'>Ghi nhớ tài khoản</span>
+            </label>
 
-              <TextField
-                label='Mật khẩu'
-                id='password'
-                name='password'
-                type='password'
-                autoComplete='current-password'
-                placeholder='••••••••'
-                value={form.password}
-                error={errors.password}
-                onChange={handleChange}
-                className='mb-5'
-              />
+            <Link
+              to='/forgot-password'
+              className='font-extrabold text-orange-600 transition hover:text-orange-700'
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
 
-              <div className='mb-8 flex items-center justify-between text-sm'>
-                <label className='flex cursor-pointer items-center gap-2 text-slate-600'>
-                  <input
-                    type='checkbox'
-                    className='h-4 w-4 !rounded border-slate-300 text-orange-600 focus:ring-orange-500'
-                  />
-                  <span className='font-medium'>Ghi nhớ tài khoản</span>
-                </label>
+          <Button
+            type='submit'
+            variant='warning'
+            className='w-full !rounded-full py-3.5 text-base shadow-lg shadow-orange-200'
+            isLoading={isLoading}
+            disabled={isDisabled}
+          >
+            Đăng nhập
+          </Button>
+        </form>
 
-                <Link
-                  to='/forgot-password'
-                  className='font-bold text-orange-600 transition-colors hover:text-orange-700'
-                >
-                  Quên mật khẩu?
-                </Link>
-              </div>
-
-              <Button
-                type='submit'
-                className='w-full py-3 text-lg'
-                isLoading={isLoading}
-                disabled={isDisabled}
-              >
-                Đăng nhập
-              </Button>
-            </form>
-
-            <p className='mt-8 text-center text-slate-500'>
-              Bạn chưa có tài khoản?{' '}
-              <Link
-                to='/register'
-                className='font-bold text-orange-600 transition-colors hover:text-orange-700'
-              >
-                Đăng ký ngay
-              </Link>
-            </p>
-          </AuthPanel>
-        </div>
-      </section>
-    </MainLayout>
+        <p className='mt-6 text-center text-sm text-slate-500 lg:hidden'>
+          Bạn chưa có tài khoản?{' '}
+          <Link to='/register' className='font-extrabold text-orange-600'>
+            Đăng ký ngay
+          </Link>
+        </p>
+      </AuthPanel>
+    </AuthLayout>
   )
 }
 

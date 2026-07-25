@@ -1076,7 +1076,7 @@ function ProductDetailPage() {
                         ›
                       </button>
 
-                      <span className='position-absolute end-0 top-0 me-3 mt-3 !rounded-pill bg-slate-900/75 px-3 py-2 text-xs font-black text-white'>
+                      <span className='position-absolute end-0 top-0 me-3 mt-3 rounded-pill px-3 py-2 text-xs font-black'>
                         {activeImageIndex + 1} / {variantCarouselItems.length}
                       </span>
                     </>

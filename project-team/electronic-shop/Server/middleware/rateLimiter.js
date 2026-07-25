@@ -1,5 +1,4 @@
-// In-memory rate limiter de chan brute-force ma don hang tu khach vang lai (Guest)
-// Gioi han toi da 5 requests trong vong 1 phut cho moi dia chi IP
+
 const ipRequestTimes = new Map();
 
 const rateLimiter = (req, res, next) => {

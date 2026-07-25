@@ -156,32 +156,32 @@ const orderSchema = new mongoose.Schema(
     },
     receiver_name: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     receiver_phone: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     address_province: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     address_ward: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     address_district: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     address_address_line: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     subtotal: {
@@ -193,6 +193,16 @@ const orderSchema = new mongoose.Schema(
     total_amount: {
       type: Number,
       required: true,
+      min: 0,
+      default: 0,
+    },
+    shipping_fee: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    discount_amount: {
+      type: Number,
       min: 0,
       default: 0,
     },
@@ -249,6 +259,16 @@ const orderSchema = new mongoose.Schema(
     },
     guest_access_token_hash: {
       type: String,
+      default: null,
+      select: false,
+    },
+    confirmation_email_sending: {
+      type: Boolean,
+      default: false,
+      select: false,
+    },
+    confirmation_email_sent_at: {
+      type: Date,
       default: null,
       select: false,
     },

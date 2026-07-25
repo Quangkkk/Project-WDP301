@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      default: null,
+      default: undefined,
       trim: true,
     },
     date_of_birth: {

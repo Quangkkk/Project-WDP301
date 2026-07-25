@@ -6,6 +6,11 @@ const Order = require(
 const PaymentTransaction = require(
   "../models/PaymentTransaction.model"
 );
+const {
+  sendOrderConfirmationEmailOnce,
+} = require(
+  "./orderEmail.service"
+);
 
 const PRIVILEGED_ROLES = [
   "ADMIN",
@@ -242,6 +247,18 @@ const markZaloPayAsPaid = async (
 
   await payment.save();
 
+  try {
+    await sendOrderConfirmationEmailOnce(
+      order._id,
+      { requirePaid: true }
+    );
+  } catch (emailError) {
+    console.error(
+      "[payment.markZaloPayAsPaid.confirmationEmail]",
+      emailError.message
+    );
+  }
+
   return payment;
 };
 
@@ -377,6 +394,25 @@ const getPaymentByOrder = async (
       console.error(
         "[payment.queryZaloPayTransaction]",
         error.message
+      );
+    }
+  }
+
+  if (
+    order?.payment_status === "paid" &&
+    ["bank_transfer", "zalopay"].includes(
+      order.payment_method
+    )
+  ) {
+    try {
+      await sendOrderConfirmationEmailOnce(
+        order._id,
+        { requirePaid: true }
+      );
+    } catch (emailError) {
+      console.error(
+        "[payment.getPaymentByOrder.confirmationEmail]",
+        emailError.message
       );
     }
   }
@@ -926,6 +962,18 @@ const confirmBankTransferPayment = async (
 
   if (!updatedOrder) {
     throw new Error("Cancelled order cannot be marked as paid");
+  }
+
+  try {
+    await sendOrderConfirmationEmailOnce(
+      updatedOrder._id,
+      { requirePaid: true }
+    );
+  } catch (emailError) {
+    console.error(
+      "[payment.confirmBankTransfer.confirmationEmail]",
+      emailError.message
+    );
   }
 
   return {
